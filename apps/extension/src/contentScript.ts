@@ -1,0 +1,169 @@
+import type { StoredTranscript } from './types';
+import {
+  fetchTranscriptSegments,
+  toJson3Url,
+} from './youtubeTranscript';
+import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
+import { getVideoIdFromUrl } from './playerSync';
+import { createCaptureSidebar } from './sidebarPanel';
+
+// ------------------------------------------------------------
+// Page-world bridge
+// ------------------------------------------------------------
+
+const BRIDGE_SOURCE = 'YT_TRANSCRIPT_CAPTURE_BRIDGE';
+let lastCapturedVideoId: string | null = null;
+
+type BridgeMessage = {
+  source: typeof BRIDGE_SOURCE;
+  type: 'TIMEDTEXT_URL';
+  url: string;
+};
+
+const sidebar = createCaptureSidebar();
+let currentVideoId: string | null = getVideoIdFromUrl();
+
+/**
+ * Send transcript to background for storage.
+ */
+async function sendTranscriptToBackground(
+  transcript: StoredTranscript,
+): Promise<void> {
+  await chrome.runtime.sendMessage({ type: 'SAVE_TRANSCRIPT', transcript });
+}
+
+async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
+  if (!videoId) {
+    sidebar.setTranscript(null);
+    return;
+  }
+  const stored = await getTranscript(videoId);
+  sidebar.setTranscript(stored);
+}
+
+async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
+  try {
+    const urlObj = new URL(timedtextUrl);
+    const videoId = urlObj.searchParams.get('v');
+    const lang = urlObj.searchParams.get('lang') ?? 'unknown';
+    if (!videoId) return;
+
+    // Prevent duplicate captures for the same video.
+    if (lastCapturedVideoId === videoId) {
+      return;
+    }
+    lastCapturedVideoId = videoId;
+
+    const json3Url = toJson3Url(timedtextUrl);
+    const segments = await fetchTranscriptSegments(json3Url);
+
+    const stored: StoredTranscript = {
+      videoId,
+      videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      languageCode: lang,
+      capturedAt: new Date().toISOString(),
+      source: 'interceptedTimedtextUrl',
+      segments,
+    };
+    await sendTranscriptToBackground(stored);
+    console.debug('Transcript captured and sent to background:', stored);
+
+    // Keep sidebar in sync if this is the active video.
+    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+      currentVideoId = videoId;
+      sidebar.setTranscript(stored);
+    }
+  } catch (err) {
+    lastCapturedVideoId = null;
+    console.error('Error capturing transcript:', err);
+  }
+}
+
+function installInterceptedUrlHandler(): void {
+  window.addEventListener('message', (event: MessageEvent) => {
+    const data = event.data as Partial<BridgeMessage>;
+    if (!data || data.source !== BRIDGE_SOURCE) return;
+    if (data.type === 'TIMEDTEXT_URL' && typeof data.url === 'string') {
+      void handleInterceptedURL(data.url);
+    }
+  });
+}
+
+function installKeyboardShortcut(): void {
+  window.addEventListener(
+    'keydown',
+    (ev: KeyboardEvent) => {
+      // Ignore when typing in inputs / editable fields.
+      const target = ev.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return;
+      }
+
+      // Alt+C toggles the capture sidebar (plain "C" is YouTube captions).
+      if (
+        ev.altKey &&
+        !ev.metaKey &&
+        !ev.ctrlKey &&
+        ev.code === 'KeyC'
+      ) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        sidebar.toggle();
+      }
+    },
+    true,
+  );
+}
+
+function installStorageListener(): void {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    const change = changes[TRANSCRIPTS_STORAGE_KEY];
+    if (!change) return;
+
+    const videoId = getVideoIdFromUrl() ?? currentVideoId;
+    if (!videoId) return;
+
+    const map = (change.newValue ?? {}) as Record<string, StoredTranscript>;
+    sidebar.setTranscript(map[videoId] ?? null);
+  });
+}
+
+/**
+ * YouTube SPA navigations change the URL without a full reload.
+ */
+function installSpaNavigationWatcher(): void {
+  let lastHref = location.href;
+
+  const check = (): void => {
+    if (location.href === lastHref) return;
+    lastHref = location.href;
+
+    const nextId = getVideoIdFromUrl();
+    if (nextId === currentVideoId) return;
+
+    currentVideoId = nextId;
+    // Reset intercept dedupe so the new video can be captured.
+    lastCapturedVideoId = null;
+    void loadTranscriptForVideo(nextId);
+  };
+
+  window.addEventListener('yt-navigate-finish', check);
+  window.addEventListener('popstate', check);
+
+  // Fallback: poll lightly for URL changes YouTube may not announce.
+  window.setInterval(check, 800);
+}
+
+// Boot
+installInterceptedUrlHandler();
+installKeyboardShortcut();
+installStorageListener();
+installSpaNavigationWatcher();
+void loadTranscriptForVideo(currentVideoId);
