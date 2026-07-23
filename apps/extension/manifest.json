@@ -20,5 +20,6 @@
       "run_at": "document_start",
       "world": "MAIN"
     }
-  ]
+  ],
+  "version_name": "0.1.0"
 }
