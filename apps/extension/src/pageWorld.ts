@@ -1,9 +1,10 @@
 (() => {
   const w = window as any;
+  // If the bridge is already installed, return.
   if (w.__ytTranscriptCaptureBridgeInstalled) return;
   w.__ytTranscriptCaptureBridgeInstalled = true;
 
-  const BRIDGE_SOURCE_LOCAL = "YT_TRANSCRIPT_CAPTURE_BRIDGE";
+  const BRIDGE_SOURCE = "YT_TRANSCRIPT_CAPTURE_BRIDGE";
 
   // Patch fetch to observe timedtext requests.
   const originalFetch = window.fetch;
@@ -18,13 +19,14 @@
 
     if (typeof url === "string" && url.includes("youtube.com/api/timedtext")) {
       window.postMessage(
-        { source: BRIDGE_SOURCE_LOCAL, type: "TIMEDTEXT_URL", url },
+        { source: BRIDGE_SOURCE, type: "TIMEDTEXT_URL", url },
         "*",
       );
     }
 
     return originalFetch(input, init);
   };
+
 
   const originalOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (
@@ -42,14 +44,12 @@
 
     if (urlStr && urlStr.includes("youtube.com/api/timedtext")) {
       window.postMessage(
-        { source: BRIDGE_SOURCE_LOCAL, type: "TIMEDTEXT_URL", url: urlStr },
+        { source: BRIDGE_SOURCE, type: "TIMEDTEXT_URL", url: urlStr },
         "*",
       );
     }
 
     return (originalOpen as any).apply(this, [method, url, ...args]);
   };
-
-  // Respond to requests from the extension world.
 
 })();

@@ -182,7 +182,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       <div class="panel" part="panel">
         <div class="header">
           <div>
-            <div class="title">Capture any Language Piece</div>
+            <div class="title">Language Snippets</div>
             <div class="mode-badge">${state.mode === 'watch' ? 'watch mode' : 'capture mode'}</div>
           </div>
           <button type="button" class="close-btn" data-action="close" aria-label="Close">✕</button>

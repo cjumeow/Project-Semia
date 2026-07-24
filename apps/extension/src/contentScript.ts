@@ -79,7 +79,7 @@ async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
   }
 }
 
-function installInterceptedUrlHandler(): void {
+function installPageWorldListener(): void {
   window.addEventListener('message', (event: MessageEvent) => {
     const data = event.data as Partial<BridgeMessage>;
     if (!data || data.source !== BRIDGE_SOURCE) return;
@@ -121,6 +121,7 @@ function installKeyboardShortcut(): void {
   );
 }
 
+// To listen for changes to the transcripts storage.
 function installStorageListener(): void {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -162,7 +163,7 @@ function installSpaNavigationWatcher(): void {
 }
 
 // Boot
-installInterceptedUrlHandler();
+installPageWorldListener();
 installKeyboardShortcut();
 installStorageListener();
 installSpaNavigationWatcher();
