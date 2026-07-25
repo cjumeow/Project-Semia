@@ -5,6 +5,7 @@ import {
 } from './youtubeTranscript';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
 import { getVideoIdFromUrl } from './playerSync';
+import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 
 // ------------------------------------------------------------
@@ -21,7 +22,15 @@ type BridgeMessage = {
 };
 
 const sidebar = createCaptureSidebar();
+const captionOverlay = createCaptionOverlay({
+  onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
+});
 let currentVideoId: string | null = getVideoIdFromUrl();
+
+function syncTranscriptToUi(transcript: StoredTranscript | null): void {
+  sidebar.setTranscript(transcript);
+  captionOverlay.setTranscript(transcript);
+}
 
 /**
  * Send transcript to background for storage.
@@ -34,11 +43,11 @@ async function sendTranscriptToBackground(
 
 async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
   if (!videoId) {
-    sidebar.setTranscript(null);
+    syncTranscriptToUi(null);
     return;
   }
   const stored = await getTranscript(videoId);
-  sidebar.setTranscript(stored);
+  syncTranscriptToUi(stored);
 }
 
 async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
@@ -71,7 +80,7 @@ async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
     // Keep sidebar in sync if this is the active video.
     if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
       currentVideoId = videoId;
-      sidebar.setTranscript(stored);
+      syncTranscriptToUi(stored);
     }
   } catch (err) {
     lastCapturedVideoId = null;
@@ -115,6 +124,19 @@ function installKeyboardShortcut(): void {
         ev.preventDefault();
         ev.stopPropagation();
         sidebar.toggle();
+        return;
+      }
+
+      // Alt+S quick-captures the focus word (no two-click range).
+      if (
+        ev.altKey &&
+        !ev.metaKey &&
+        !ev.ctrlKey &&
+        ev.code === 'KeyS'
+      ) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void sidebar.quickCapture();
       }
     },
     true,
@@ -132,7 +154,7 @@ function installStorageListener(): void {
     if (!videoId) return;
 
     const map = (change.newValue ?? {}) as Record<string, StoredTranscript>;
-    sidebar.setTranscript(map[videoId] ?? null);
+    syncTranscriptToUi(map[videoId] ?? null);
   });
 }
 
