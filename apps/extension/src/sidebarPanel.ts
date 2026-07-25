@@ -62,6 +62,8 @@ export type CaptureSidebar = {
   setTranscript: (transcript: StoredTranscript | null) => void;
   /** Save focusWord only (no two-click range). Requires capture mode with focusWord. */
   quickCapture: () => Promise<boolean>;
+  /** Open sidebar in capture mode with focusWord from the video overlay. */
+  beginCaptureFromOverlay: (ref: WordRef) => void;
   destroy: () => void;
 };
 
@@ -129,9 +131,9 @@ export function createCaptureSidebar(): CaptureSidebar {
     if (!state.transcript || segments.length === 0) {
       hint = 'Waiting for transcript… Turn on captions if needed.';
     } else if (state.mode === 'watch') {
-      hint = 'Click a word to focus and start selecting.';
+      hint = 'Click a word in the video subtitles to start capture.';
     } else if (state.selection.phase === 'idle') {
-      hint = 'Click two words to set the range, or Alt+S to capture the focus word.';
+      hint = 'Click start word, then end word. Alt+S to capture the focus word only.';
     } else if (state.selection.phase === 'awaiting-end') {
       hint = 'Click another word to finish the range.';
     } else {
@@ -283,23 +285,30 @@ export function createCaptureSidebar(): CaptureSidebar {
   }
 
   function onWordClick(ref: WordRef): void {
+    if (state.mode !== 'capture') return;
+
     const wordText = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
     if (!wordText) return;
 
-    // First word click while watching → enter Capture with focusWord
-    if (state.mode === 'watch') {
-      pauseVideo();
-      state.mode = 'capture';
-      state.focusWord = { ...ref, text: wordText };
-      state.selection = clearSelection();
-      state.statusMessage = '';
-      render();
-      return;
-    }
-
-    // Capture mode: two-click selection (focusWord stays as-is)
     state.selection = applyWordClick(state.selection, ref);
     state.statusMessage = '';
+    render();
+  }
+
+  function beginCaptureFromOverlay(ref: WordRef): void {
+    if (!state.transcript) return;
+    const wordText = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
+    if (!wordText) return;
+
+    pauseVideo();
+    state.open = true;
+    state.mode = 'capture';
+    state.focusWord = { ...ref, text: wordText };
+    state.selection = clearSelection();
+    state.activeCueIndex = ref.cueIndex;
+    lastWatchCenter = ref.cueIndex;
+    state.statusMessage = '';
+    attachTimeListener();
     render();
   }
 
@@ -345,7 +354,7 @@ export function createCaptureSidebar(): CaptureSidebar {
   async function quickCapture(): Promise<boolean> {
     if (!state.open) return false;
     if (!state.focusWord || !state.transcript) {
-      state.statusMessage = 'Click a word to set the focus word first.';
+      state.statusMessage = 'Click a word in the video subtitles first.';
       render();
       return false;
     }
@@ -510,6 +519,7 @@ export function createCaptureSidebar(): CaptureSidebar {
     isOpen: () => state.open,
     setTranscript,
     quickCapture,
+    beginCaptureFromOverlay,
     destroy: () => {
       window.removeEventListener('keydown', onKeyDown, true);
       destroyWithPoll();
