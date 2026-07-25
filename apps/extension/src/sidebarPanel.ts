@@ -5,6 +5,7 @@ import {
   getCurrentTime,
   getVideoElement,
   pauseVideo,
+  seekTo,
 } from './playerSync';
 import { saveFragment } from './storage';
 import {
@@ -171,7 +172,7 @@ export function createCaptureSidebar(): CaptureSidebar {
 
         return `
           <div class="cue${isActive ? ' active' : ''}" data-cue-index="${cueIndex}">
-            <span class="cue-time">${formatTime(seg.start)}</span>
+            <button type="button" class="cue-time" data-action="seek-cue" data-cue-index="${cueIndex}" aria-label="Jump to ${formatTime(seg.start)}">${formatTime(seg.start)}</button>
             <div class="words">${tokenHtml}</div>
           </div>
         `;
@@ -222,6 +223,16 @@ export function createCaptureSidebar(): CaptureSidebar {
         void handleCapture();
       });
 
+    root.querySelectorAll<HTMLElement>('[data-action="seek-cue"]').forEach((el) => {
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const cueIndex = Number(el.dataset.cueIndex);
+        if (!Number.isFinite(cueIndex)) return;
+        jumpToCue(cueIndex);
+      });
+    });
+
     root.querySelectorAll<HTMLElement>('.word').forEach((el) => {
       el.addEventListener('click', (ev) => {
         ev.preventDefault();
@@ -232,6 +243,40 @@ export function createCaptureSidebar(): CaptureSidebar {
         onWordClick({ cueIndex, wordIndex });
       });
     });
+  }
+
+  function jumpToCue(cueIndex: number): void {
+    const segments = state.transcript?.segments ?? [];
+    if (cueIndex < 0 || cueIndex >= segments.length) return;
+    const seg = segments[cueIndex]!;
+    seekTo(seg.start);
+    if (state.mode === 'watch') {
+      state.activeCueIndex = cueIndex;
+      lastWatchCenter = cueIndex;
+      render();
+    }
+  }
+
+  function navigateCue(delta: number): void {
+    const segments = state.transcript?.segments ?? [];
+    if (segments.length === 0) return;
+
+    const current =
+      state.mode === 'watch'
+        ? state.activeCueIndex
+        : findCueIndexByTime(segments, getCurrentTime());
+    const next = Math.max(0, Math.min(segments.length - 1, current + delta));
+    jumpToCue(next);
+  }
+
+  function isTypingTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT')
+    );
   }
 
   function onWordClick(ref: WordRef): void {
@@ -405,9 +450,19 @@ export function createCaptureSidebar(): CaptureSidebar {
     originalDestroy();
   }
 
-  // Escape handling while open
+  // Keyboard while sidebar open: Esc + cue navigation
   const onKeyDown = (ev: KeyboardEvent): void => {
     if (!state.open) return;
+    if (isTypingTarget(ev.target)) return;
+
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+      if (ev.altKey || ev.metaKey || ev.ctrlKey) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      navigateCue(ev.key === 'ArrowLeft' ? -1 : 1);
+      return;
+    }
+
     if (ev.key !== 'Escape') return;
 
     if (state.selection.phase !== 'idle') {
