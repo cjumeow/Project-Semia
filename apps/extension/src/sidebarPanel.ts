@@ -21,6 +21,7 @@ import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import type {
   FocusRef,
   LanguageFragment,
+  SelectionRange,
   StoredTranscript,
   WordRef,
 } from './types';
@@ -59,6 +60,8 @@ export type CaptureSidebar = {
   toggle: () => void;
   isOpen: () => boolean;
   setTranscript: (transcript: StoredTranscript | null) => void;
+  /** Save focusWord only (no two-click range). Requires capture mode with focusWord. */
+  quickCapture: () => Promise<boolean>;
   destroy: () => void;
 };
 
@@ -128,7 +131,7 @@ export function createCaptureSidebar(): CaptureSidebar {
     } else if (state.mode === 'watch') {
       hint = 'Click a word to focus and start selecting.';
     } else if (state.selection.phase === 'idle') {
-      hint = 'Click two words to set the selection range.';
+      hint = 'Click two words to set the range, or Alt+S to capture the focus word.';
     } else if (state.selection.phase === 'awaiting-end') {
       hint = 'Click another word to finish the range.';
     } else {
@@ -300,12 +303,10 @@ export function createCaptureSidebar(): CaptureSidebar {
     render();
   }
 
-  async function handleCapture(): Promise<void> {
-    if (state.selection.phase !== 'complete' || !state.focusWord) return;
-    const transcript = state.transcript;
-    if (!transcript) return;
+  async function saveFragmentForRange(range: SelectionRange): Promise<boolean> {
+    if (!state.focusWord || !state.transcript) return false;
 
-    const range = state.selection.range;
+    const transcript = state.transcript;
     const selectedText = extractSelectedText(tokensByCue, range);
     const bounds = selectionTimeBounds(transcript.segments, range);
     const center = state.focusWord.cueIndex;
@@ -329,11 +330,31 @@ export function createCaptureSidebar(): CaptureSidebar {
 
     await saveFragment(fragment);
     state.statusMessage = 'Captured.';
-    // Close after short feedback
     render();
     window.setTimeout(() => {
       close();
     }, 400);
+    return true;
+  }
+
+  async function handleCapture(): Promise<void> {
+    if (state.selection.phase !== 'complete' || !state.focusWord) return;
+    await saveFragmentForRange(state.selection.range);
+  }
+
+  async function quickCapture(): Promise<boolean> {
+    if (!state.open) return false;
+    if (!state.focusWord || !state.transcript) {
+      state.statusMessage = 'Click a word to set the focus word first.';
+      render();
+      return false;
+    }
+
+    const ref: WordRef = {
+      cueIndex: state.focusWord.cueIndex,
+      wordIndex: state.focusWord.wordIndex,
+    };
+    return saveFragmentForRange({ start: ref, end: ref });
   }
 
   function resetCaptureKeepOpen(): void {
@@ -488,6 +509,7 @@ export function createCaptureSidebar(): CaptureSidebar {
     toggle,
     isOpen: () => state.open,
     setTranscript,
+    quickCapture,
     destroy: () => {
       window.removeEventListener('keydown', onKeyDown, true);
       destroyWithPoll();

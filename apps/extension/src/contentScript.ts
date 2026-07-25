@@ -115,6 +115,19 @@ function installKeyboardShortcut(): void {
         ev.preventDefault();
         ev.stopPropagation();
         sidebar.toggle();
+        return;
+      }
+
+      // Alt+S quick-captures the focus word (no two-click range).
+      if (
+        ev.altKey &&
+        !ev.metaKey &&
+        !ev.ctrlKey &&
+        ev.code === 'KeyS'
+      ) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void sidebar.quickCapture();
       }
     },
     true,
