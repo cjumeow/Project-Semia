@@ -1,12 +1,6 @@
 import panelCss from './sidebarPanel.css';
 import { getContextCueIndices } from './contextWindow';
-import {
-  findCueIndexByTime,
-  getCurrentTime,
-  getVideoElement,
-  pauseVideo,
-  seekTo,
-} from './playerSync';
+import { pauseVideo, playVideo, seekTo, findCueIndexByTime, getCurrentTime } from './playerSync';
 import { saveFragment } from './storage';
 import {
   applyWordClick,
@@ -18,6 +12,7 @@ import {
   wordRefsEqual,
 } from './selection';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
+import { translateSelectionText } from './translateSelection';
 import type {
   FocusRef,
   LanguageFragment,
@@ -27,27 +22,29 @@ import type {
 } from './types';
 
 const HOST_ID = 'semia-capture-sidebar-host';
-
-type SidebarMode = 'watch' | 'capture';
+const TRANSLATION_DEBOUNCE_MS = 200;
+const CAPTURE_SUCCESS_MS = 750;
+const PANEL_CLOSE_MS = 320;
 
 type SidebarState = {
   open: boolean;
-  mode: SidebarMode;
   transcript: StoredTranscript | null;
-  /** Watch-mode center cue (follows playback). */
-  activeCueIndex: number;
-  /** Capture-mode frozen center (= focusWord.cueIndex). */
+  /** Anchor for the ±2 context window (fixed for this capture session). */
+  centerCueIndex: number;
   focusWord: FocusRef | null;
   selection: SelectionState;
-  statusMessage: string;
+  translationText: string;
+  translationLoading: boolean;
+  translationError: string;
+  captureSuccess: boolean;
+  panelEntering: boolean;
 };
-
 
 function formatTime(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   const m = Math.floor(s / 60);
   const r = s % 60;
-  return `${m}:${r.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, '0')}:${r.toString().padStart(2, '0')}`;
 }
 
 function createId(): string {
@@ -55,15 +52,14 @@ function createId(): string {
 }
 
 export type CaptureSidebar = {
-  open: () => void;
-  close: () => void;
-  toggle: () => void;
   isOpen: () => boolean;
   setTranscript: (transcript: StoredTranscript | null) => void;
-  /** Save focusWord only (no two-click range). Requires capture mode with focusWord. */
-  quickCapture: () => Promise<boolean>;
-  /** Open sidebar in capture mode with focusWord from the video overlay. */
+  /** Open sidebar with focusWord from the video overlay. */
   beginCaptureFromOverlay: (ref: WordRef) => void;
+  /** Alt+Z: open at current cue without a focus word. */
+  beginCaptureFromShortcut: () => void;
+  /** Alt+S: complete selection at focus word (start = end). */
+  selectFocusWord: () => void;
   destroy: () => void;
 };
 
@@ -85,17 +81,22 @@ export function createCaptureSidebar(): CaptureSidebar {
 
   const state: SidebarState = {
     open: false,
-    mode: 'watch',
     transcript: null,
-    activeCueIndex: 0,
+    centerCueIndex: 0,
     focusWord: null,
     selection: clearSelection(),
-    statusMessage: '',
+    translationText: '',
+    translationLoading: false,
+    translationError: '',
+    captureSuccess: false,
+    panelEntering: false,
   };
 
   let tokensByCue: CueToken[][] = [];
-  let timeListenerAttached = false;
-  let lastWatchCenter = -1;
+  let translationDebounceId = 0;
+  let translationAbort: AbortController | null = null;
+  let translationGeneration = 0;
+  let isClosing = false;
 
   function rebuildTokens(): void {
     const lang = state.transcript?.languageCode ?? 'en';
@@ -105,10 +106,122 @@ export function createCaptureSidebar(): CaptureSidebar {
   }
 
   function getCenterIndex(): number {
-    if (state.mode === 'capture' && state.focusWord) {
-      return state.focusWord.cueIndex;
+    return state.centerCueIndex;
+  }
+
+  function getActiveCueIndex(): number {
+    const segments = state.transcript?.segments ?? [];
+    if (segments.length === 0) return state.centerCueIndex;
+    const idx = findCueIndexByTime(segments, getCurrentTime());
+    return idx >= 0 ? idx : state.centerCueIndex;
+  }
+
+  function resolveFocusWordForSave(range: SelectionRange): FocusRef | null {
+    if (state.focusWord) return state.focusWord;
+
+    const ref = range.start;
+    const text = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
+    if (!text) return null;
+    return { ...ref, text };
+  }
+
+  function resolveFocusWordForShortcut(): WordRef | null {
+    if (state.focusWord) {
+      return {
+        cueIndex: state.focusWord.cueIndex,
+        wordIndex: state.focusWord.wordIndex,
+      };
     }
-    return state.activeCueIndex;
+
+    const activeCue = getActiveCueIndex();
+    const tokens = tokensByCue[activeCue] ?? [];
+    const firstWord = tokens.find((t): t is CueToken & { isWord: true } => t.isWord);
+    if (!firstWord) return null;
+    return { cueIndex: activeCue, wordIndex: firstWord.wordIndex };
+  }
+
+  function resetTranslation(): void {
+    translationAbort?.abort();
+    translationAbort = null;
+    state.translationText = '';
+    state.translationLoading = false;
+    state.translationError = '';
+  }
+
+  function scheduleTranslation(): void {
+    translationAbort?.abort();
+    translationAbort = null;
+    window.clearTimeout(translationDebounceId);
+
+    if (state.selection.phase !== 'complete') {
+      resetTranslation();
+      return;
+    }
+
+    const selectedText = extractSelectedText(
+      tokensByCue,
+      state.selection.range,
+    ).trim();
+    if (!selectedText) {
+      resetTranslation();
+      return;
+    }
+
+    state.translationLoading = true;
+    state.translationError = '';
+    state.translationText = '';
+    renderTranslationOnly();
+
+    const generation = ++translationGeneration;
+    translationDebounceId = window.setTimeout(() => {
+      void fetchTranslation(selectedText, generation);
+    }, TRANSLATION_DEBOUNCE_MS);
+  }
+
+  async function fetchTranslation(
+    text: string,
+    generation: number,
+  ): Promise<void> {
+    translationAbort?.abort();
+    const controller = new AbortController();
+    translationAbort = controller;
+
+    try {
+      const translated = await translateSelectionText(text, controller.signal);
+      if (generation !== translationGeneration) return;
+      state.translationText = translated;
+      state.translationLoading = false;
+      state.translationError = '';
+      renderTranslationOnly();
+    } catch (err) {
+      if (controller.signal.aborted || generation !== translationGeneration) {
+        return;
+      }
+      state.translationLoading = false;
+      state.translationError = 'Translation unavailable.';
+      renderTranslationOnly();
+      console.debug('Selection translation failed:', err);
+    }
+  }
+
+  function renderTranslationOnly(): void {
+    const translationEl = root.querySelector<HTMLElement>(
+      '[data-region="translation-body"]',
+    );
+    if (!translationEl) return;
+    translationEl.textContent = getTranslationDisplay();
+  }
+
+  function getTranslationDisplay(): string {
+    if (state.selection.phase !== 'complete') return '';
+    if (state.translationLoading) return '…';
+    if (state.translationError) return state.translationError;
+    return state.translationText;
+  }
+
+  function getSelectionDisplay(): string {
+    if (state.selection.phase !== 'complete') return '';
+    return extractSelectedText(tokensByCue, state.selection.range);
   }
 
   function render(): void {
@@ -119,109 +232,91 @@ export function createCaptureSidebar(): CaptureSidebar {
 
     const segments = state.transcript?.segments ?? [];
     const center = getCenterIndex();
+    const activeCueIndex = getActiveCueIndex();
     const indices =
       segments.length > 0 ? getContextCueIndices(center, segments.length) : [];
 
-    const previewText =
-      state.selection.phase === 'complete'
-        ? extractSelectedText(tokensByCue, state.selection.range)
-        : '';
+    const selectionText = getSelectionDisplay();
+    const translationText = getTranslationDisplay();
 
-    let hint = '';
-    if (!state.transcript || segments.length === 0) {
-      hint = 'Waiting for transcript… Turn on captions if needed.';
-    } else if (state.mode === 'watch') {
-      hint = 'Click a word in the video subtitles to start capture.';
-    } else if (state.selection.phase === 'idle') {
-      hint = 'Click start word, then end word. Alt+S to capture the focus word only.';
-    } else if (state.selection.phase === 'awaiting-end') {
-      hint = 'Click another word to finish the range.';
-    } else {
-      hint = 'Selection ready. Capture or click a word to reselect.';
-    }
+    const cuesHtml =
+      segments.length === 0
+        ? `<div class="empty">Waiting for transcript… Turn on captions if needed.</div>`
+        : indices
+            .map((cueIndex) => {
+              const seg = segments[cueIndex]!;
+              const tokens = tokensByCue[cueIndex] ?? [];
+              const tokenHtml = tokens
+                .map((token) => {
+                  if (!token.isWord) {
+                    return `<span class="punct">${escapeHtml(token.text)}</span>`;
+                  }
+                  const ref: WordRef = {
+                    cueIndex,
+                    wordIndex: token.wordIndex,
+                  };
+                  const classes = ['word'];
+                  if (state.focusWord && wordRefsEqual(state.focusWord, ref)) {
+                    classes.push('focus-word');
+                  }
+                  if (
+                    state.selection.phase === 'awaiting-end' &&
+                    wordRefsEqual(state.selection.start, ref)
+                  ) {
+                    classes.push('selection-start');
+                  }
+                  if (
+                    state.selection.phase === 'complete' &&
+                    isWordInRange(ref, state.selection.range)
+                  ) {
+                    classes.push('selection-range');
+                  }
+                  return `<span class="${classes.join(' ')}" data-cue="${cueIndex}" data-word="${token.wordIndex}">${escapeHtml(token.text)}</span>`;
+                })
+                .join('');
 
-    const cuesHtml = indices
-      .map((cueIndex) => {
-        const seg = segments[cueIndex]!;
-        const tokens = tokensByCue[cueIndex] ?? [];
-        const isActive =
-          state.mode === 'watch' && cueIndex === state.activeCueIndex;
-        const tokenHtml = tokens
-          .map((token) => {
-            if (!token.isWord) {
-              return `<span class="punct">${escapeHtml(token.text)}</span>`;
-            }
-            const ref: WordRef = { cueIndex, wordIndex: token.wordIndex };
-            const classes = ['word'];
-            if (
-              state.focusWord &&
-              wordRefsEqual(state.focusWord, ref)
-            ) {
-              classes.push('focus-word');
-            }
-            if (
-              state.selection.phase === 'awaiting-end' &&
-              wordRefsEqual(state.selection.start, ref)
-            ) {
-              classes.push('selection-start');
-            }
-            if (
-              state.selection.phase === 'complete' &&
-              isWordInRange(ref, state.selection.range)
-            ) {
-              classes.push('selection-range');
-            }
-            return `<span class="${classes.join(' ')}" data-cue="${cueIndex}" data-word="${token.wordIndex}">${escapeHtml(token.text)}</span>`;
-          })
-          .join('');
-
-        return `
-          <div class="cue${isActive ? ' active' : ''}" data-cue-index="${cueIndex}">
-            <button type="button" class="cue-time" data-action="seek-cue" data-cue-index="${cueIndex}" aria-label="Jump to ${formatTime(seg.start)}">${formatTime(seg.start)}</button>
-            <div class="words">${tokenHtml}</div>
-          </div>
-        `;
-      })
-      .join('');
+              return `
+                <div class="cue" data-cue-index="${cueIndex}">
+                  <button type="button" class="cue-time${cueIndex === activeCueIndex ? ' cue-time-active' : ''}" data-action="seek-cue" data-cue-index="${cueIndex}" aria-label="Jump to ${formatTime(seg.start)}">${formatTime(seg.start)}</button>
+                  <div class="words">${tokenHtml}</div>
+                </div>
+              `;
+            })
+            .join('');
 
     root.innerHTML = `
-      <div class="panel" part="panel">
+      <div class="panel${state.panelEntering ? ' panel-entering' : ''}" part="panel">
         <div class="header">
-          <div>
-            <div class="title">Language Snippets</div>
-            <div class="mode-badge">${state.mode === 'watch' ? 'watch mode' : 'capture mode'}</div>
+          <div class="title-row">
+            <div class="title">LingoPanel</div>
+            ${
+              state.captureSuccess
+                ? `<div class="capture-success" aria-live="assertive">Captured!</div>`
+                : ''
+            }
           </div>
-          <button type="button" class="close-btn" data-action="close" aria-label="Close">✕</button>
         </div>
         <div class="body">
-          ${
-            segments.length === 0
-              ? `<div class="empty">${escapeHtml(hint)}</div>`
-              : `${cuesHtml}<div class="hint">${escapeHtml(hint)}</div>`
-          }
-          ${
-            previewText
-              ? `<div class="preview"><span class="preview-label">Selected</span>${escapeHtml(previewText)}</div>`
-              : ''
-          }
+          <div class="cues">${cuesHtml}</div>
+          <div class="snippet-box">
+            <div class="snippet-label">Selection</div>
+            <div class="snippet-body" data-region="selection-body">${escapeHtml(selectionText)}</div>
+          </div>
+          <div class="snippet-box">
+            <div class="snippet-label">Translation</div>
+            <div class="snippet-body translation" data-region="translation-body">${escapeHtml(translationText)}</div>
+          </div>
         </div>
         <div class="footer">
-          <button type="button" class="btn" data-action="clear" ${state.selection.phase === 'idle' && !state.focusWord ? 'disabled' : ''}>Clear</button>
-          <button type="button" class="btn primary" data-action="capture" ${state.selection.phase !== 'complete' ? 'disabled' : ''}>Capture</button>
+          <button type="button" class="btn" data-action="back">Back to video</button>
+          <button type="button" class="btn primary" data-action="capture" ${state.selection.phase !== 'complete' || state.captureSuccess ? 'disabled' : ''}>Capture It!</button>
         </div>
-        ${state.statusMessage ? `<div class="status">${escapeHtml(state.statusMessage)}</div>` : ''}
       </div>
     `;
 
     root
-      .querySelector('[data-action="close"]')
-      ?.addEventListener('click', () => close());
-    root
-      .querySelector('[data-action="clear"]')
-      ?.addEventListener('click', () => {
-        resetCaptureKeepOpen();
-        render();
-      });
+      .querySelector('[data-action="back"]')
+      ?.addEventListener('click', () => exitCapture());
     root
       .querySelector('[data-action="capture"]')
       ?.addEventListener('click', () => {
@@ -248,30 +343,94 @@ export function createCaptureSidebar(): CaptureSidebar {
         onWordClick({ cueIndex, wordIndex });
       });
     });
-  }
 
-  function jumpToCue(cueIndex: number): void {
-    const segments = state.transcript?.segments ?? [];
-    if (cueIndex < 0 || cueIndex >= segments.length) return;
-    const seg = segments[cueIndex]!;
-    seekTo(seg.start);
-    if (state.mode === 'watch') {
-      state.activeCueIndex = cueIndex;
-      lastWatchCenter = cueIndex;
-      render();
+    if (state.panelEntering) {
+      const panel = root.querySelector<HTMLElement>('.panel');
+      panel?.addEventListener(
+        'animationend',
+        () => {
+          state.panelEntering = false;
+        },
+        { once: true },
+      );
     }
   }
 
-  function navigateCue(delta: number): void {
+  function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  async function closePanelAnimated(): Promise<void> {
+    if (isClosing) return;
+    isClosing = true;
+
+    const panel = root.querySelector<HTMLElement>('.panel');
+    if (!panel) {
+      finishExitCapture();
+      isClosing = false;
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const done = (): void => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      const onTransitionEnd = (ev: TransitionEvent): void => {
+        if (ev.target !== panel || ev.propertyName !== 'transform') return;
+        panel.removeEventListener('transitionend', onTransitionEnd);
+        done();
+      };
+
+      panel.addEventListener('transitionend', onTransitionEnd);
+      window.setTimeout(done, PANEL_CLOSE_MS + 50);
+      panel.classList.add('panel-closing');
+    });
+
+    finishExitCapture();
+    isClosing = false;
+  }
+
+  function finishExitCapture(): void {
+    translationGeneration += 1;
+    window.clearTimeout(translationDebounceId);
+    resetTranslation();
+    state.open = false;
+    state.captureSuccess = false;
+    state.panelEntering = false;
+    state.centerCueIndex = 0;
+    state.focusWord = null;
+    state.selection = clearSelection();
+    root.innerHTML = '';
+    playVideo();
+  }
+
+  function seekToCueIndex(cueIndex: number): void {
+    const segments = state.transcript?.segments ?? [];
+    if (cueIndex < 0 || cueIndex >= segments.length) return;
+    seekTo(segments[cueIndex]!.start);
+    if (state.open) render();
+  }
+
+  function navigateCaptureCue(delta: number): void {
     const segments = state.transcript?.segments ?? [];
     if (segments.length === 0) return;
 
-    const current =
-      state.mode === 'watch'
-        ? state.activeCueIndex
-        : findCueIndexByTime(segments, getCurrentTime());
+    const current = findCueIndexByTime(segments, getCurrentTime());
+    if (current < 0) return;
+
     const next = Math.max(0, Math.min(segments.length - 1, current + delta));
-    jumpToCue(next);
+    if (next === current) return;
+    seekToCueIndex(next);
+  }
+
+  function jumpToCue(cueIndex: number): void {
+    seekToCueIndex(cueIndex);
   }
 
   function isTypingTarget(target: EventTarget | null): boolean {
@@ -285,13 +444,42 @@ export function createCaptureSidebar(): CaptureSidebar {
   }
 
   function onWordClick(ref: WordRef): void {
-    if (state.mode !== 'capture') return;
+    if (!state.open) return;
 
     const wordText = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
     if (!wordText) return;
 
     state.selection = applyWordClick(state.selection, ref);
-    state.statusMessage = '';
+    scheduleTranslation();
+    render();
+  }
+
+  function selectFocusWord(): void {
+    if (!state.open) return;
+
+    const ref = resolveFocusWordForShortcut();
+    if (!ref) return;
+
+    state.selection = {
+      phase: 'complete',
+      range: { start: ref, end: ref },
+    };
+    scheduleTranslation();
+    render();
+  }
+
+  function openCaptureSession(options: {
+    centerCueIndex: number;
+    focusWord: FocusRef | null;
+  }): void {
+    pauseVideo();
+    state.open = true;
+    state.captureSuccess = false;
+    state.panelEntering = true;
+    state.centerCueIndex = options.centerCueIndex;
+    state.focusWord = options.focusWord;
+    state.selection = clearSelection();
+    resetTranslation();
     render();
   }
 
@@ -300,25 +488,48 @@ export function createCaptureSidebar(): CaptureSidebar {
     const wordText = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
     if (!wordText) return;
 
-    pauseVideo();
-    state.open = true;
-    state.mode = 'capture';
-    state.focusWord = { ...ref, text: wordText };
-    state.selection = clearSelection();
-    state.activeCueIndex = ref.cueIndex;
-    lastWatchCenter = ref.cueIndex;
-    state.statusMessage = '';
-    attachTimeListener();
-    render();
+    openCaptureSession({
+      centerCueIndex: ref.cueIndex,
+      focusWord: { ...ref, text: wordText },
+    });
   }
 
-  async function saveFragmentForRange(range: SelectionRange): Promise<boolean> {
-    if (!state.focusWord || !state.transcript) return false;
+  function beginCaptureFromShortcut(): void {
+    if (!state.transcript?.segments.length || state.open) return;
+
+    const idx = findCueIndexByTime(
+      state.transcript.segments,
+      getCurrentTime(),
+    );
+    const center = idx >= 0 ? idx : 0;
+
+    openCaptureSession({
+      centerCueIndex: center,
+      focusWord: null,
+    });
+  }
+
+  function exitCapture(): void {
+    void closePanelAnimated();
+  }
+
+  async function showCaptureSuccessAndClose(): Promise<void> {
+    state.captureSuccess = true;
+    render();
+    await delay(CAPTURE_SUCCESS_MS);
+    await closePanelAnimated();
+  }
+
+  async function saveFragmentForRange(range: SelectionRange): Promise<void> {
+    if (!state.transcript) return;
+
+    const focusWord = resolveFocusWordForSave(range);
+    if (!focusWord) return;
 
     const transcript = state.transcript;
     const selectedText = extractSelectedText(tokensByCue, range);
     const bounds = selectionTimeBounds(transcript.segments, range);
-    const center = state.focusWord.cueIndex;
+    const center = state.centerCueIndex;
     const indices = getContextCueIndices(center, transcript.segments.length);
     const contextCues = indices.map((i) => transcript.segments[i]!);
 
@@ -329,7 +540,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       languageCode: transcript.languageCode,
       selectedText,
       selection: range,
-      focusWord: state.focusWord,
+      focusWord,
       contextCues,
       contextCueIndices: [indices[0]!, indices[indices.length - 1]!],
       start: bounds.start,
@@ -338,104 +549,12 @@ export function createCaptureSidebar(): CaptureSidebar {
     };
 
     await saveFragment(fragment);
-    state.statusMessage = 'Captured.';
-    render();
-    window.setTimeout(() => {
-      close();
-    }, 400);
-    return true;
+    await showCaptureSuccessAndClose();
   }
 
   async function handleCapture(): Promise<void> {
-    if (state.selection.phase !== 'complete' || !state.focusWord) return;
+    if (state.selection.phase !== 'complete') return;
     await saveFragmentForRange(state.selection.range);
-  }
-
-  async function quickCapture(): Promise<boolean> {
-    if (!state.open) return false;
-    if (!state.focusWord || !state.transcript) {
-      state.statusMessage = 'Click a word in the video subtitles first.';
-      render();
-      return false;
-    }
-
-    const ref: WordRef = {
-      cueIndex: state.focusWord.cueIndex,
-      wordIndex: state.focusWord.wordIndex,
-    };
-    return saveFragmentForRange({ start: ref, end: ref });
-  }
-
-  function resetCaptureKeepOpen(): void {
-    state.mode = 'watch';
-    state.focusWord = null;
-    state.selection = clearSelection();
-    state.statusMessage = '';
-    syncActiveCueFromPlayer(true);
-  }
-
-  function syncActiveCueFromPlayer(forceRender: boolean): void {
-    if (!state.open || state.mode !== 'watch') return;
-    const segments = state.transcript?.segments ?? [];
-    if (segments.length === 0) return;
-
-    const idx = findCueIndexByTime(segments, getCurrentTime());
-    if (idx < 0) return;
-
-    if (idx !== state.activeCueIndex || forceRender) {
-      state.activeCueIndex = idx;
-      if (idx !== lastWatchCenter || forceRender) {
-        lastWatchCenter = idx;
-        render();
-      }
-    }
-  }
-
-  function onTimeUpdate(): void {
-    syncActiveCueFromPlayer(false);
-  }
-
-  function attachTimeListener(): void {
-    if (timeListenerAttached) return;
-    const video = getVideoElement();
-    if (!video) return;
-    video.addEventListener('timeupdate', onTimeUpdate);
-    timeListenerAttached = true;
-  }
-
-  function detachTimeListener(): void {
-    const video = getVideoElement();
-    if (video && timeListenerAttached) {
-      video.removeEventListener('timeupdate', onTimeUpdate);
-    }
-    timeListenerAttached = false;
-  }
-
-  function open(): void {
-    state.open = true;
-    state.mode = 'watch';
-    state.focusWord = null;
-    state.selection = clearSelection();
-    state.statusMessage = '';
-    attachTimeListener();
-    syncActiveCueFromPlayer(true);
-    render();
-  }
-
-  function close(): void {
-    state.open = false;
-    state.mode = 'watch';
-    state.focusWord = null;
-    state.selection = clearSelection();
-    state.statusMessage = '';
-    lastWatchCenter = -1;
-    detachTimeListener();
-    render();
-  }
-
-  function toggle(): void {
-    if (state.open) close();
-    else open();
   }
 
   function setTranscript(transcript: StoredTranscript | null): void {
@@ -445,42 +564,27 @@ export function createCaptureSidebar(): CaptureSidebar {
     rebuildTokens();
 
     if (prevId !== nextId) {
-      state.mode = 'watch';
-      state.focusWord = null;
-      state.selection = clearSelection();
-      state.activeCueIndex = 0;
-      lastWatchCenter = -1;
-      state.statusMessage = '';
-    }
-
-    if (state.open) {
-      attachTimeListener();
-      syncActiveCueFromPlayer(true);
-    } else {
+      if (state.open) {
+        finishExitCapture();
+      } else {
+        state.centerCueIndex = 0;
+        state.focusWord = null;
+        state.selection = clearSelection();
+        resetTranslation();
+        render();
+      }
+    } else if (state.open) {
       render();
     }
   }
 
   function destroy(): void {
-    detachTimeListener();
+    translationGeneration += 1;
+    window.clearTimeout(translationDebounceId);
+    translationAbort?.abort();
     host.remove();
   }
 
-  // Re-attach time listener if video element appears later
-  const videoPoll = window.setInterval(() => {
-    if (state.open && !timeListenerAttached && getVideoElement()) {
-      attachTimeListener();
-      syncActiveCueFromPlayer(true);
-    }
-  }, 1000);
-
-  const originalDestroy = destroy;
-  function destroyWithPoll(): void {
-    window.clearInterval(videoPoll);
-    originalDestroy();
-  }
-
-  // Keyboard while sidebar open: Esc + cue navigation
   const onKeyDown = (ev: KeyboardEvent): void => {
     if (!state.open) return;
     if (isTypingTarget(ev.target)) return;
@@ -489,7 +593,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       if (ev.altKey || ev.metaKey || ev.ctrlKey) return;
       ev.preventDefault();
       ev.stopPropagation();
-      navigateCue(ev.key === 'ArrowLeft' ? -1 : 1);
+      navigateCaptureCue(ev.key === 'ArrowLeft' ? -1 : 1);
       return;
     }
 
@@ -497,32 +601,26 @@ export function createCaptureSidebar(): CaptureSidebar {
 
     if (state.selection.phase !== 'idle') {
       state.selection = clearSelection();
+      resetTranslation();
       render();
       ev.preventDefault();
       return;
     }
-    if (state.mode === 'capture') {
-      resetCaptureKeepOpen();
-      render();
-      ev.preventDefault();
-      return;
-    }
-    close();
+
+    exitCapture();
     ev.preventDefault();
   };
   window.addEventListener('keydown', onKeyDown, true);
 
   return {
-    open,
-    close,
-    toggle,
     isOpen: () => state.open,
     setTranscript,
-    quickCapture,
     beginCaptureFromOverlay,
+    beginCaptureFromShortcut,
+    selectFocusWord,
     destroy: () => {
       window.removeEventListener('keydown', onKeyDown, true);
-      destroyWithPoll();
+      destroy();
     },
   };
 }
