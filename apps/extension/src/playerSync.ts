@@ -17,6 +17,12 @@ export function pauseVideo(): void {
   getVideoElement()?.pause();
 }
 
+export function playVideo(): void {
+  const video = getVideoElement();
+  if (!video) return;
+  void video.play();
+}
+
 export function getCurrentTime(): number {
   return getVideoElement()?.currentTime ?? 0;
 }
@@ -47,6 +53,20 @@ export function seekTo(timeSeconds: number): void {
   const video = getVideoElement();
   if (!video) return;
   video.currentTime = timeSeconds;
+}
+
+/** Seek to the previous or next cue relative to current playback time. */
+export function navigateCue(
+  segments: TranscriptSegment[],
+  delta: number,
+): void {
+  if (segments.length === 0) return;
+
+  const current = findCueIndexByTime(segments, getCurrentTime());
+  if (current < 0) return;
+
+  const next = Math.max(0, Math.min(segments.length - 1, current + delta));
+  seekTo(segments[next]!.start);
 }
 
 /**

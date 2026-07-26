@@ -4,7 +4,7 @@ import {
   toJson3Url,
 } from './youtubeTranscript';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
-import { getVideoIdFromUrl } from './playerSync';
+import { getVideoIdFromUrl, navigateCue } from './playerSync';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 
@@ -26,8 +26,10 @@ const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
 });
 let currentVideoId: string | null = getVideoIdFromUrl();
+let currentTranscript: StoredTranscript | null = null;
 
 function syncTranscriptToUi(transcript: StoredTranscript | null): void {
+  currentTranscript = transcript;
   sidebar.setTranscript(transcript);
   captionOverlay.setTranscript(transcript);
 }
@@ -102,7 +104,6 @@ function installKeyboardShortcut(): void {
   window.addEventListener(
     'keydown',
     (ev: KeyboardEvent) => {
-      // Ignore when typing in inputs / editable fields.
       const target = ev.target;
       if (
         target instanceof HTMLElement &&
@@ -114,29 +115,48 @@ function installKeyboardShortcut(): void {
         return;
       }
 
-      // Alt+C toggles the capture sidebar (plain "C" is YouTube captions).
+      // ←/→: previous/next cue while watching (not in capture).
       if (
-        ev.altKey &&
+        !sidebar.isOpen() &&
+        !ev.altKey &&
         !ev.metaKey &&
         !ev.ctrlKey &&
-        ev.code === 'KeyC'
+        (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')
       ) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        sidebar.toggle();
+        const segments = currentTranscript?.segments ?? [];
+        if (segments.length > 0) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          navigateCue(segments, ev.key === 'ArrowLeft' ? -1 : 1);
+        }
         return;
       }
 
-      // Alt+S quick-captures the focus word (no two-click range).
+      // Alt+Z: open panel at current cue (no focus word).
       if (
         ev.altKey &&
         !ev.metaKey &&
         !ev.ctrlKey &&
-        ev.code === 'KeyS'
+        ev.code === 'KeyZ' &&
+        !sidebar.isOpen()
       ) {
         ev.preventDefault();
         ev.stopPropagation();
-        void sidebar.quickCapture();
+        sidebar.beginCaptureFromShortcut();
+        return;
+      }
+
+      // Alt+S: select focus word as start=end (view translation before Capture It!).
+      if (
+        ev.altKey &&
+        !ev.metaKey &&
+        !ev.ctrlKey &&
+        ev.code === 'KeyS' &&
+        sidebar.isOpen()
+      ) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        sidebar.selectFocusWord();
       }
     },
     true,
