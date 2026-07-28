@@ -1,5 +1,23 @@
+import { generateSnippetNote } from './ai/generateSnippetNote';
+import { listFragments } from './fragmentsStorage';
+import { openSemiaPage } from './openSemia';
+import { getSnippetNotes, saveSnippetNote } from './snippetNotesStorage';
 import type { BackgroundMessage } from './types';
 import { saveTranscript, saveTranscriptError } from './storage';
+import { FRAGMENTS_STORAGE_KEY, SNIPPET_NOTES_STORAGE_KEY } from '@semia/shared';
+
+chrome.action.onClicked.addListener(() => {
+  openSemiaPage();
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') return;
+  if (changes[FRAGMENTS_STORAGE_KEY] || changes[SNIPPET_NOTES_STORAGE_KEY]) {
+    void chrome.runtime
+      .sendMessage({ type: 'FRAGMENTS_CHANGED' })
+      .catch(() => {});
+  }
+});
 
 // Service worker entry.
 chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendResponse) => {
@@ -16,11 +34,36 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendR
       return;
     }
 
+    if (message.type === 'OPEN_SEMIA') {
+      openSemiaPage();
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'LIST_FRAGMENTS') {
+      const fragments = await listFragments();
+      sendResponse({ ok: true, fragments });
+      return;
+    }
+
+    if (message.type === 'LIST_SNIPPET_NOTES') {
+      const notes = await getSnippetNotes();
+      sendResponse({ ok: true, notes });
+      return;
+    }
+
+    if (message.type === 'GENERATE_SNIPPET_NOTE') {
+      const note = await generateSnippetNote(message.fragment);
+      await saveSnippetNote(message.fragment.id, note);
+      sendResponse({ ok: true, note });
+      return;
+    }
+
     sendResponse({ ok: false, error: 'Unknown message type' });
   })().catch((err) => {
     sendResponse({ ok: false, error: String(err?.message ?? err) });
   });
-  
+
   // Keep the message channel open for async sendResponse.
   return true;
 });

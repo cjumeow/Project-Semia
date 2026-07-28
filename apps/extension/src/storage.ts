@@ -3,9 +3,15 @@ import type {
   StoredTranscript,
   StoredTranscriptError,
 } from './types';
+import {
+  FRAGMENTS_STORAGE_KEY,
+  TRANSCRIPTS_STORAGE_KEY,
+} from '@semia/shared';
 
-export const TRANSCRIPTS_STORAGE_KEY = 'youtubeTranscripts';
-export const FRAGMENTS_STORAGE_KEY = 'languageFragments';
+export {
+  FRAGMENTS_STORAGE_KEY,
+  TRANSCRIPTS_STORAGE_KEY,
+} from '@semia/shared';
 const ERROR_STORAGE_KEY = 'youtubeTranscriptErrors';
 
 /**

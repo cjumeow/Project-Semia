@@ -1,5 +1,5 @@
 {
-  "name": "youtube-transcript-capture-extension-ts",
+  "name": "@semia/extension",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -12,5 +12,8 @@
     "esbuild": "^0.25.8",
     "typescript": "^5.6.3"
   },
-  "version_name": "0.3.0"
+  "version_name": "0.3.0",
+  "dependencies": {
+    "@semia/shared": "^0.0.0"
+  }
 }

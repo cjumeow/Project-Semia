@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SEMIA Settings</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 24px;
+        max-width: 480px;
+        color: #2e3440;
+      }
+      h1 {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      label {
+        display: block;
+        margin-top: 16px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      input,
+      select {
+        width: 100%;
+        margin-top: 6px;
+        padding: 8px 10px;
+        border: 1px solid #d8dee9;
+        border-radius: 8px;
+        font: inherit;
+        box-sizing: border-box;
+      }
+      p {
+        font-size: 12px;
+        color: #4c566a;
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 20px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        background: #2e3440;
+        color: #eceff4;
+        font: inherit;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 12px;
+        font-size: 12px;
+        min-height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SEMIA Settings</h1>
+    <p>
+      Your API key stays in this extension only. The background worker calls
+      your chosen AI provider; SEMIA UI never sees the key.
+    </p>
+
+    <label for="aiProvider">AI provider</label>
+    <select id="aiProvider">
+      <option value="deepseek">DeepSeek</option>
+      <option value="openai">OpenAI</option>
+    </select>
+
+    <label for="apiKey">API key</label>
+    <input id="apiKey" type="password" autocomplete="off" placeholder="sk-..." />
+
+    <label for="nativeLanguage">Explanation language (your native language)</label>
+    <select id="nativeLanguage">
+      <option value="zh-TW">繁體中文 (zh-TW)</option>
+      <option value="zh-CN">简体中文 (zh-CN)</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+    </select>
+
+    <button id="save" type="button">Save</button>
+    <div id="status" role="status"></div>
+
+    <script src="dist/options.js"></script>
+  </body>
+</html>

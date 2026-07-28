@@ -3,10 +3,19 @@
   "name": "Project-Semia",
   "version": "0.1.0",
   "description": "Automatically captures YouTube transcripts on video pages and stores them in chrome.storage.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "tabs"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "action": {
+    "default_title": "Open SEMIA"
+  },
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://translate.googleapis.com/*"
+    "https://translate.googleapis.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.openai.com/*"
   ],
   "background": {
     "service_worker": "dist/background.js"
