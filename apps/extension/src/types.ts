@@ -1,9 +1,10 @@
-import type { StoredTranscript } from '@semia/shared';
+import type { LanguageFragment, StoredTranscript } from '@semia/shared';
 
 export type {
   FocusRef,
   LanguageFragment,
   SelectionRange,
+  SnippetNote,
   StoredTranscript,
   TranscriptSegment,
   WordRef,
@@ -19,4 +20,9 @@ export type StoredTranscriptError = {
 
 export type BackgroundMessage =
   | { type: 'SAVE_TRANSCRIPT'; transcript: StoredTranscript }
-  | { type: 'SAVE_TRANSCRIPT_ERROR'; error: StoredTranscriptError };
+  | { type: 'SAVE_TRANSCRIPT_ERROR'; error: StoredTranscriptError }
+  | { type: 'OPEN_SEMIA' }
+  | { type: 'LIST_FRAGMENTS' }
+  | { type: 'LIST_SNIPPET_NOTES' }
+  | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
+  | { type: 'FRAGMENTS_CHANGED' };

@@ -1,28 +1,28 @@
 import { useState } from 'react';
 import type { VideoGroup } from '../types/corpus';
 
-type CorpusSidebarProps = {
+type SemiaSidebarProps = {
   groups: VideoGroup[];
   selectedVideoId: string | null;
   onSelectVideo: (videoId: string) => void;
 };
 
-export function CorpusSidebar({
+export function SemiaSidebar({
   groups,
   selectedVideoId,
   onSelectVideo,
-}: CorpusSidebarProps) {
+}: SemiaSidebarProps) {
   const [youtubeExpanded, setYoutubeExpanded] = useState(true);
 
   return (
     <aside className="flex h-full flex-col bg-surface">
       <header className="shrink-0 border-b border-border px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-          Project Semia
-        </p>
-        <h1 className="mt-0.5 text-base font-semibold tracking-tight text-text">
-          Corpus
+        <h1 className="text-base font-semibold tracking-tight text-text">
+          SEMIA
         </h1>
+        <p className="mt-0.5 text-[10px] text-text-muted">
+          Language snippets library
+        </p>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

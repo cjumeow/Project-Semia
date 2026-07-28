@@ -1,4 +1,4 @@
-import type { LanguageFragment } from '@semia/shared';
+import type { LanguageFragment, SnippetNote } from '@semia/shared';
 
 /** Display metadata for a captured YouTube video. */
 export type VideoMeta = {
@@ -7,13 +7,7 @@ export type VideoMeta = {
   channel: string;
 };
 
-/** Structured note content shown on the right-hand card. */
-export type SnippetNote = {
-  originalSpeech: string;
-  naturalTranslation: string;
-  backgroundNote: string;
-  example: string;
-};
+export type { SnippetNote } from '@semia/shared';
 
 /** A captured snippet with its associated note. */
 export type CorpusSnippet = LanguageFragment & {
@@ -33,3 +27,7 @@ export type CorpusSelection = {
   videoId: string | null;
   snippetId: string | null;
 };
+
+export function isGeneratedNote(note: SnippetNote): boolean {
+  return Boolean(note.generatedAt);
+}

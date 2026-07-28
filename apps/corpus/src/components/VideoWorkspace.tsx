@@ -1,6 +1,6 @@
 import type { VideoGroup } from '../types/corpus';
-import { buildYouTubeEmbedUrl } from '../utils/youtubeUrl';
 import { SelectionList } from './SelectionList';
+import { VideoPreview } from './VideoPreview';
 
 type VideoWorkspaceProps = {
   group: VideoGroup | undefined;
@@ -25,8 +25,6 @@ export function VideoWorkspace({
     );
   }
 
-  const embedUrl = buildYouTubeEmbedUrl(group.meta.videoId, seekSeconds);
-
   return (
     <section className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
       <header className="shrink-0 border-b border-border bg-surface px-5 py-4">
@@ -36,17 +34,12 @@ export function VideoWorkspace({
         <p className="mt-1 text-xs text-text-muted">{group.meta.channel}</p>
       </header>
 
-      <div className="shrink-0 p-5">
-        <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-black shadow-sm">
-          <iframe
-            key={embedUrl}
-            src={embedUrl}
-            title={group.meta.title}
-            className="h-full w-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
+      <div className="shrink-0 px-4 pb-4 pt-5">
+        <VideoPreview
+          videoId={group.meta.videoId}
+          title={group.meta.title}
+          seekSeconds={seekSeconds}
+        />
       </div>
 
       <div className="min-h-0 flex-1 px-5 pb-6">

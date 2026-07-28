@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
+type ResizeEdge = 'start' | 'end';
+
 type UseResizableWidthOptions = {
   min: number;
   max: number;
   defaultWidth: number;
   storageKey?: string;
+  /** `end` = drag handle on the right (sidebar). `start` = handle on the left (detail panel). */
+  edge?: ResizeEdge;
 };
 
 export function useResizableWidth({
@@ -12,6 +16,7 @@ export function useResizableWidth({
   max,
   defaultWidth,
   storageKey,
+  edge = 'end',
 }: UseResizableWidthOptions) {
   const [width, setWidth] = useState(() => {
     if (!storageKey) return defaultWidth;
@@ -36,7 +41,9 @@ export function useResizableWidth({
       const startWidth = width;
 
       const onPointerMove = (moveEvent: PointerEvent): void => {
-        const next = startWidth + (moveEvent.clientX - startX);
+        const delta = moveEvent.clientX - startX;
+        const next =
+          edge === 'end' ? startWidth + delta : startWidth - delta;
         setWidth(Math.min(max, Math.max(min, next)));
       };
 
@@ -52,7 +59,7 @@ export function useResizableWidth({
       document.addEventListener('pointermove', onPointerMove);
       document.addEventListener('pointerup', onPointerUp);
     },
-    [width, min, max],
+    [width, min, max, edge],
   );
 
   return { width, onResizeStart };

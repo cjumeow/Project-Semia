@@ -10,6 +10,22 @@ export function buildYouTubeEmbedUrl(
   return url.toString();
 }
 
+export function buildYouTubeWatchUrl(
+  videoId: string,
+  startSeconds?: number,
+): string {
+  const url = new URL('https://www.youtube.com/watch');
+  url.searchParams.set('v', videoId);
+  if (startSeconds !== undefined && startSeconds > 0) {
+    url.searchParams.set('t', `${Math.floor(startSeconds)}s`);
+  }
+  return url.toString();
+}
+
+export function buildYouTubeThumbnailUrl(videoId: string): string {
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+}
+
 export function buildYouTubeTimestampUrl(
   videoUrl: string,
   startSeconds: number,

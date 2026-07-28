@@ -32,7 +32,13 @@ const buildOptionsList = [
     entryPoints: ['src/pageWorld.ts'],
     outfile: 'dist/pageWorld.js',
     format: 'iife',
-  }
+  },
+  {
+    ...baseOptions,
+    entryPoints: ['src/options.ts'],
+    outfile: 'dist/options.js',
+    format: 'iife',
+  },
 ];
 
 

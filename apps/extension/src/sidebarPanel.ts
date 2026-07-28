@@ -307,6 +307,7 @@ export function createCaptureSidebar(): CaptureSidebar {
         <div class="header">
           <div class="title-row">
             <div class="title">LingoPanel</div>
+            <button type="button" class="semia-link" data-action="open-semia">SEMIA</button>
             ${
               state.captureSuccess
                 ? `<div class="capture-success" aria-live="assertive">Captured!</div>`
@@ -335,6 +336,11 @@ export function createCaptureSidebar(): CaptureSidebar {
     root
       .querySelector('[data-action="back"]')
       ?.addEventListener('click', () => exitCapture());
+    root
+      .querySelector('[data-action="open-semia"]')
+      ?.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ type: 'OPEN_SEMIA' });
+      });
     root
       .querySelector('[data-action="capture"]')
       ?.addEventListener('click', () => {
