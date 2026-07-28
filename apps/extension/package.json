@@ -1,7 +1,7 @@
 {
   "name": "@semia/extension",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "build": "node ./scripts/build.mjs",
@@ -12,7 +12,7 @@
     "esbuild": "^0.25.8",
     "typescript": "^5.6.3"
   },
-  "version_name": "0.3.0",
+  "version_name": "0.4.0",
   "dependencies": {
     "@semia/shared": "^0.0.0"
   }
