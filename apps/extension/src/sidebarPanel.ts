@@ -13,6 +13,7 @@ import {
 } from './selection';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import { translateSelectionText } from './translateSelection';
+import { TRANSLATION_RIPPLE_HTML } from './translationRipple';
 import type {
   FocusRef,
   LanguageFragment,
@@ -22,7 +23,7 @@ import type {
 } from './types';
 
 const HOST_ID = 'semia-capture-sidebar-host';
-const TRANSLATION_DEBOUNCE_MS = 200;
+const TRANSLATION_DEBOUNCE_MS = 50;
 const CAPTURE_SUCCESS_MS = 750;
 const PANEL_CLOSE_MS = 320;
 
@@ -59,7 +60,7 @@ export type CaptureSidebar = {
   /** Alt+Z: open at current cue without a focus word. */
   beginCaptureFromShortcut: () => void;
   /** Alt+S: complete selection at focus word (start = end). */
-  selectFocusWord: () => void;
+  selectFocusWord: () => boolean;
   destroy: () => void;
 };
 
@@ -133,11 +134,12 @@ export function createCaptureSidebar(): CaptureSidebar {
       };
     }
 
-    const activeCue = getActiveCueIndex();
-    const tokens = tokensByCue[activeCue] ?? [];
+    // Use the capture session's center cue (not player time) when no focus word.
+    const cueIndex = state.centerCueIndex;
+    const tokens = tokensByCue[cueIndex] ?? [];
     const firstWord = tokens.find((t): t is CueToken & { isWord: true } => t.isWord);
     if (!firstWord) return null;
-    return { cueIndex: activeCue, wordIndex: firstWord.wordIndex };
+    return { cueIndex, wordIndex: firstWord.wordIndex };
   }
 
   function resetTranslation(): void {
@@ -209,14 +211,30 @@ export function createCaptureSidebar(): CaptureSidebar {
       '[data-region="translation-body"]',
     );
     if (!translationEl) return;
-    translationEl.textContent = getTranslationDisplay();
+    applyTranslationBody(translationEl);
   }
 
-  function getTranslationDisplay(): string {
+  function applyTranslationBody(el: HTMLElement): void {
+    if (state.selection.phase !== 'complete') {
+      el.textContent = '';
+      return;
+    }
+    if (state.translationLoading) {
+      el.innerHTML = TRANSLATION_RIPPLE_HTML;
+      return;
+    }
+    if (state.translationError) {
+      el.textContent = state.translationError;
+      return;
+    }
+    el.textContent = state.translationText;
+  }
+
+  function getTranslationBodyHtml(): string {
     if (state.selection.phase !== 'complete') return '';
-    if (state.translationLoading) return '…';
-    if (state.translationError) return state.translationError;
-    return state.translationText;
+    if (state.translationLoading) return TRANSLATION_RIPPLE_HTML;
+    if (state.translationError) return escapeHtml(state.translationError);
+    return escapeHtml(state.translationText);
   }
 
   function getSelectionDisplay(): string {
@@ -237,7 +255,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       segments.length > 0 ? getContextCueIndices(center, segments.length) : [];
 
     const selectionText = getSelectionDisplay();
-    const translationText = getTranslationDisplay();
+    const translationHtml = getTranslationBodyHtml();
 
     const cuesHtml =
       segments.length === 0
@@ -304,7 +322,7 @@ export function createCaptureSidebar(): CaptureSidebar {
           </div>
           <div class="snippet-box">
             <div class="snippet-label">Translation</div>
-            <div class="snippet-body translation" data-region="translation-body">${escapeHtml(translationText)}</div>
+            <div class="snippet-body translation" data-region="translation-body">${translationHtml}</div>
           </div>
         </div>
         <div class="footer">
@@ -454,18 +472,23 @@ export function createCaptureSidebar(): CaptureSidebar {
     render();
   }
 
-  function selectFocusWord(): void {
-    if (!state.open) return;
+  function selectFocusWord(): boolean {
+    if (!state.open) return false;
 
     const ref = resolveFocusWordForShortcut();
-    if (!ref) return;
+    if (!ref) return false;
 
+    const wordText = getWordText(tokensByCue[ref.cueIndex] ?? [], ref.wordIndex);
+    if (!wordText) return false;
+
+    state.focusWord = { ...ref, text: wordText };
     state.selection = {
       phase: 'complete',
       range: { start: ref, end: ref },
     };
     scheduleTranslation();
     render();
+    return true;
   }
 
   function openCaptureSession(options: {
@@ -594,6 +617,18 @@ export function createCaptureSidebar(): CaptureSidebar {
       ev.preventDefault();
       ev.stopPropagation();
       navigateCaptureCue(ev.key === 'ArrowLeft' ? -1 : 1);
+      return;
+    }
+
+    if (
+      ev.altKey &&
+      !ev.metaKey &&
+      !ev.ctrlKey &&
+      ev.code === 'KeyS'
+    ) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      selectFocusWord();
       return;
     }
 

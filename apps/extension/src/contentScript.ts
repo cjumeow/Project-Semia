@@ -147,15 +147,12 @@ function installKeyboardShortcut(): void {
       }
 
       // Alt+S: select focus word as start=end (view translation before Capture It!).
-      if (
-        ev.altKey &&
-        !ev.metaKey &&
-        !ev.ctrlKey &&
-        ev.code === 'KeyS' &&
-        sidebar.isOpen()
-      ) {
+      if (ev.altKey && !ev.metaKey && !ev.ctrlKey && ev.code === 'KeyS') {
         ev.preventDefault();
         ev.stopPropagation();
+        if (!sidebar.isOpen()) {
+          sidebar.beginCaptureFromShortcut();
+        }
         sidebar.selectFocusWord();
       }
     },
