@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Project-Semia",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Automatically captures YouTube transcripts on video pages and stores them in chrome.storage.",
   "permissions": ["storage", "tabs"],
   "options_ui": {
@@ -33,5 +33,5 @@
       "world": "MAIN"
     }
   ],
-  "version_name": "0.4.1"
+  "version_name": "0.4.2"
 }
