@@ -2,13 +2,20 @@
     "name": "project-semia",
     "private": true,
     "workspaces": [
-      "apps/*",
-      "packages/*"
+        "apps/*",
+        "packages/*"
     ],
     "scripts": {
-      "dev:corpus": "npm run dev -w @semia/corpus",
-      "build:extension": "npm run build -w @semia/extension",
-      "build:corpus": "npm run build -w @semia/corpus",
-      "build": "npm run build:extension && npm run build:corpus && node scripts/assemble-extension.mjs"
+        "dev:corpus": "npm run dev -w @semia/corpus",
+        "build:extension": "npm run build -w @semia/extension",
+        "build:corpus": "npm run build -w @semia/corpus",
+        "build": "npm run build:extension && npm run build:corpus && node scripts/assemble-extension.mjs",
+      "test": "vitest run",
+      "test:watch": "vitest",
+      "typecheck": "npm run typecheck -w @semia/extension && npm run typecheck -w @semia/corpus",
+      "verify": "npm run typecheck && npm run test && npm run build"
+    },
+    "devDependencies": {
+        "vitest": "^4.1.10"
     }
-  }
+}
