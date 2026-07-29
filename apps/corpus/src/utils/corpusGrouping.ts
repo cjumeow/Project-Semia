@@ -1,3 +1,4 @@
+import { youtubeStartSeconds, youtubeVideoId } from '@semia/shared';
 import type { CorpusSnippet, VideoGroup, VideoMeta } from '../types/corpus';
 
 type GroupOptions = {
@@ -13,15 +14,19 @@ export function groupSnippetsByVideo(
   const byVideo = new Map<string, CorpusSnippet[]>();
 
   for (const snippet of snippets) {
-    const list = byVideo.get(snippet.videoId) ?? [];
+    if (snippet.anchor.kind !== 'youtube') continue;
+    const videoId = youtubeVideoId(snippet);
+    const list = byVideo.get(videoId) ?? [];
     list.push(snippet);
-    byVideo.set(snippet.videoId, list);
+    byVideo.set(videoId, list);
   }
 
   const groups: VideoGroup[] = [];
 
   for (const [videoId, videoSnippets] of byVideo) {
-    const sorted = [...videoSnippets].sort((a, b) => a.start - b.start);
+    const sorted = [...videoSnippets].sort(
+      (a, b) => youtubeStartSeconds(a) - youtubeStartSeconds(b),
+    );
     const latestCapturedAt = sorted.reduce(
       (latest, s) => (s.capturedAt > latest ? s.capturedAt : latest),
       sorted[0]!.capturedAt,

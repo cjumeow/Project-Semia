@@ -5,23 +5,28 @@ import { fragmentToSnippet, placeholderNote } from './fragmentToSnippet';
 
 const fragment: LanguageFragment = {
   id: 'frag-1',
-  videoId: 'abc123',
-  videoUrl: 'https://www.youtube.com/watch?v=abc123',
-  languageCode: 'en',
   selectedText: 'break a leg',
-  selection: {
-    start: { cueIndex: 4, wordIndex: 0 },
-    end: { cueIndex: 4, wordIndex: 2 },
-  },
-  focusWord: { cueIndex: 4, wordIndex: 0, text: 'break' },
-  contextCues: [
-    { text: 'Good luck out there.', start: 15, duration: 3 },
-    { text: 'Break a leg!', start: 18, duration: 2 },
-  ],
-  contextCueIndices: [3, 5],
-  start: 18,
-  end: 20,
+  contextText: 'Good luck out there. Break a leg!',
+  languageCode: 'en',
+  sourceUrl: 'https://www.youtube.com/watch?v=abc123',
+  sourceTitle: 'YouTube · abc123',
   capturedAt: '2026-07-29T00:00:00.000Z',
+  anchor: {
+    kind: 'youtube',
+    videoId: 'abc123',
+    selection: {
+      start: { cueIndex: 4, wordIndex: 0 },
+      end: { cueIndex: 4, wordIndex: 2 },
+    },
+    focusWord: { cueIndex: 4, wordIndex: 0, text: 'break' },
+    contextCues: [
+      { text: 'Good luck out there.', start: 15, duration: 3 },
+      { text: 'Break a leg!', start: 18, duration: 2 },
+    ],
+    contextCueIndices: [3, 5],
+    startSeconds: 18,
+    endSeconds: 20,
+  },
 };
 
 describe('placeholderNote', () => {
@@ -34,7 +39,7 @@ describe('placeholderNote', () => {
   });
 
   it('still reads sensibly when no context was captured', () => {
-    const note = placeholderNote({ ...fragment, contextCues: [] });
+    const note = placeholderNote({ ...fragment, contextText: '' });
 
     expect(note.backgroundNote).toBe('(Note not generated yet.)');
   });

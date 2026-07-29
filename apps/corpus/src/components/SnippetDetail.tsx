@@ -1,3 +1,4 @@
+import { youtubeStartSeconds } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import { useCorpusNote } from '../hooks/useCorpusNote';
 import { formatTimestamp } from '../utils/youtubeUrl';
@@ -51,7 +52,7 @@ export function SnippetDetail({
         </h2>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <span className="rounded-md border border-border bg-canvas px-2 py-0.5 font-mono text-xs tabular-nums text-text-secondary">
-            {formatTimestamp(snippet.start)}
+            {formatTimestamp(youtubeStartSeconds(snippet))}
           </span>
           {onRegenerate ? (
             <button

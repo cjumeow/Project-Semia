@@ -27,7 +27,43 @@ export type SelectionRange = {
   end: WordRef;
 };
 
-export type LanguageFragment = {
+export type YouTubeAnchor = {
+  kind: 'youtube';
+  videoId: string;
+  selection: SelectionRange;
+  focusWord: FocusRef;
+  contextCues: TranscriptSegment[];
+  contextCueIndices: [number, number];
+  startSeconds: number;
+  endSeconds: number;
+};
+
+/** Reserved for Phase 2 web capture; not written yet. */
+export type WebAnchor = {
+  kind: 'web';
+  textQuote: { exact: string; prefix?: string; suffix?: string };
+  textPosition: { start: number; end: number };
+  cssSelector?: string;
+};
+
+export type FragmentAnchor = YouTubeAnchor | WebAnchor;
+
+export type FragmentBase = {
+  id: string;
+  selectedText: string;
+  contextText: string;
+  languageCode: string;
+  sourceUrl: string;
+  sourceTitle: string;
+  capturedAt: string;
+};
+
+export type LanguageFragment = FragmentBase & {
+  anchor: FragmentAnchor;
+};
+
+/** Pre-refactor flat shape stored in older extension versions. */
+export type LegacyLanguageFragment = {
   id: string;
   videoId: string;
   videoUrl: string;

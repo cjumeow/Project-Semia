@@ -6,9 +6,9 @@ import {
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
+  normalizeFragments,
 } from '@semia/shared';
 import { isExtensionContext } from '../utils/extensionContext';
-import { normalizeFragments } from '../utils/normalizeFragments';
 
 type OkResponse<T> = { ok: true } & T;
 type ErrResponse = { ok: false; error: string };

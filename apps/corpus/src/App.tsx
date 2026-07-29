@@ -1,3 +1,4 @@
+import { youtubeStartSeconds } from '@semia/shared';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -103,7 +104,9 @@ export default function App() {
         <VideoWorkspace
           group={selectedGroup}
           selectedSnippetId={selection.snippetId}
-          seekSeconds={selectedSnippet?.start}
+          seekSeconds={
+            selectedSnippet ? youtubeStartSeconds(selectedSnippet) : undefined
+          }
           onSelectSnippet={selectSnippet}
         />
       )}

@@ -1,3 +1,4 @@
+import { youtubeVideoId } from '@semia/shared';
 import { useEffect, useMemo, useState } from 'react';
 import type { CorpusSelection, VideoGroup } from '../types/corpus';
 import { findSnippet, findVideoGroup } from '../utils/corpusGrouping';
@@ -75,7 +76,7 @@ export function useCorpusSelection(
   const selectSnippet = (snippetId: string): void => {
     const snippet = findSnippet(groups, snippetId);
     if (!snippet) return;
-    setSelection({ videoId: snippet.videoId, snippetId });
+    setSelection({ videoId: youtubeVideoId(snippet), snippetId });
   };
 
   return {
