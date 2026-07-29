@@ -13,8 +13,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -55,18 +53,19 @@ jobs:
           zip -r "../../semia-extension-${GITHUB_REF_NAME}.zip" \
             manifest.json options.html dist/
 
-      # Annotated tags carry hand-written notes. On a lightweight tag %(contents)
-      # would yield the bump commit message, so fall back to generated notes
-      # unless the tag is a real tag object.
+      # Annotated tags carry hand-written notes, read over the API because
+      # actions/checkout rewrites refs/tags/<tag> to point at the commit,
+      # which loses the tag object locally. Lightweight tags have no message,
+      # so those fall back to GitHub's generated commit list.
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ZIP="semia-extension-${GITHUB_REF_NAME}.zip"
-          OBJECT_TYPE=$(git for-each-ref --format='%(objecttype)' "refs/tags/$GITHUB_REF_NAME")
+          REF=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME")
           NOTES=""
-          if [ "$OBJECT_TYPE" = "tag" ]; then
-            NOTES=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")
+          if [ "$(jq -r .object.type <<<"$REF")" = "tag" ]; then
+            NOTES=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$(jq -r .object.sha <<<"$REF")" --jq .message)
           fi
 
           if [ -n "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]; then
