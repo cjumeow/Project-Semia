@@ -1,21 +1,40 @@
 import type { SnippetNote } from '../types/corpus';
+import { TextDots } from './TextDots';
 
 type NoteCardProps = {
   note: SnippetNote;
   generating?: boolean;
 };
 
+const NOTE_FIELDS = [
+  { key: 'originalSpeech', label: 'Original Speech', multiline: false },
+  { key: 'naturalTranslation', label: 'Natural Translation', multiline: false },
+  { key: 'backgroundNote', label: 'Background Note', multiline: true },
+] as const satisfies ReadonlyArray<{
+  key: keyof SnippetNote;
+  label: string;
+  multiline: boolean;
+}>;
+
 export function NoteCard({ note, generating }: NoteCardProps) {
   return (
     <article className="rounded-xl border border-border bg-surface p-5 shadow-sm">
       {generating ? (
-        <p className="mb-4 text-sm text-text-muted">Generating note…</p>
+        <p className="mb-4 text-sm text-text-muted">
+          <TextDots>Generating</TextDots>
+        </p>
       ) : null}
       <dl className="flex flex-col gap-5">
-        <NoteField label="Original Speech" value={note.originalSpeech} />
-        <NoteField label="Natural Translation" value={note.naturalTranslation} />
-        <NoteField label="Background Note" value={note.backgroundNote} multiline />
-        {note.example ? (
+        {NOTE_FIELDS.map(({ key, label, multiline }) => (
+          <NoteField
+            key={key}
+            label={label}
+            value={generating ? '' : note[key]}
+            multiline={multiline}
+            loading={generating}
+          />
+        ))}
+        {!generating && note.example ? (
           <NoteField label="Example" value={note.example} isExample />
         ) : null}
       </dl>
@@ -28,9 +47,16 @@ type NoteFieldProps = {
   value: string;
   isExample?: boolean;
   multiline?: boolean;
+  loading?: boolean;
 };
 
-function NoteField({ label, value, isExample, multiline }: NoteFieldProps) {
+function NoteField({
+  label,
+  value,
+  isExample,
+  multiline,
+  loading,
+}: NoteFieldProps) {
   return (
     <div>
       <dt className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
@@ -38,11 +64,11 @@ function NoteField({ label, value, isExample, multiline }: NoteFieldProps) {
       </dt>
       <dd
         className={[
-          'mt-1.5 text-sm leading-relaxed text-text',
+          'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed text-text',
           multiline ? 'whitespace-pre-line' : '',
         ].join(' ')}
       >
-        {isExample ? (
+        {loading ? null : isExample ? (
           <ul className="list-disc pl-4">
             <li>{value}</li>
           </ul>
