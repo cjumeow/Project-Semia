@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node ./scripts/build.mjs",
-    "watch": "node ./scripts/build.mjs --watch"
+    "watch": "node ./scripts/build.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.280",
