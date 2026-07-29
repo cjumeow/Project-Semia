@@ -103,13 +103,13 @@ function ContextWindowButton({
       aria-label={hasContent ? 'Regenerate context window' : 'Generate context window'}
       title={hasContent ? 'Regenerate context window' : 'Generate context window'}
     >
-      <SparklesIcon />
+      <PencilSparklesIcon />
       {hasContent ? 'Regenerate' : 'Generate'}
     </button>
   );
 }
 
-function SparklesIcon() {
+function PencilSparklesIcon() {
   return (
     <svg
       width="14"
@@ -122,11 +122,14 @@ function SparklesIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z" />
-      <path d="M20 3v4" />
-      <path d="M22 5h-4" />
-      <path d="M4 17v2" />
-      <path d="M5 18H3" />
+      <path d="M10 3H8" />
+      <path d="m15.007 5.008 3.987 3.986" />
+      <path d="M20 15v4" />
+      <path d="M21.174 6.813a2.82 2.82 0 0 0-3.986-3.987L3.842 16.175a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="M22 17h-4" />
+      <path d="M4 5v4" />
+      <path d="M6 7H2" />
+      <path d="M9 2v2" />
     </svg>
   );
 }
