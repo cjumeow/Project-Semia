@@ -3,7 +3,9 @@ dist/
 .DS_Store
 *.log
 .env
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .agents/
 skills-lock.json
 .VSCodeCounter
