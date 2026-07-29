@@ -28,20 +28,26 @@ alwaysApply: true
 
 並更新 Install 行：`semia-extension-vX.Y.Z.zip`。
 
-## Build 與打包
+## 發版由 CI 執行
 
-```bash
-npm run build
-cd apps/extension && zip -r ../../semia-extension-vX.Y.Z.zip manifest.json options.html dist/
-```
+`.github/workflows/release.yml` 監聽 `v*.*.*` tag，推 tag 後自動：
 
-- zip **不要** commit 進 git（除非使用者明確要求）
-- zip 根目錄須含 `manifest.json`、`options.html`、`dist/`
+1. 檢查 tag 與 `manifest.json` / `package.json` 版本一致（不一致直接失敗）
+2. `npm run verify`（typecheck → test → build）
+3. 打包 `semia-extension-vX.Y.Z.zip`
+4. 建 GitHub Release 並附上 zip
+
+**Release notes 來源**：annotated tag 的訊息。所以 tag 必須用 `-a`，
+否則 workflow 會退回 GitHub 自動產生的 commit 清單。
+
+- zip 由 CI 產生，**不要** commit 進 git
+- 本機不需要手動 build / zip / `gh release create`
 
 ## Git（在 `main` 上）
 
 1. 確認在 `main` 且與 `origin/main` 同步（必要時 pull/rebase）
-2. 單獨 commit version bump：
+2. 本機先跑 `npm run verify`，確認會過再推
+3. 單獨 commit version bump：
 
 ```bash
 git add apps/extension/manifest.json apps/extension/package.json README.md
@@ -49,18 +55,18 @@ git commit -m "chore(extension): bump version to X.Y.Z"
 git push origin main
 ```
 
-3. Tag 與 Release：
+4. 用 annotated tag 帶入 release notes：
 
 ```bash
-git tag vX.Y.Z
-git push origin vX.Y.Z
-gh release create vX.Y.Z semia-extension-vX.Y.Z.zip \
-  --title "vX.Y.Z" \
-  --notes "$(cat <<'EOF'
+git tag -a vX.Y.Z -m "$(cat <<'EOF'
 <精簡 release notes，見下方格式>
 EOF
 )"
+git push origin vX.Y.Z
 ```
+
+5. 用 `gh run watch` 追蹤 Release workflow，失敗就修完重推 tag
+   （需先 `git tag -d vX.Y.Z && git push origin :vX.Y.Z` 刪掉舊 tag）
 
 ## Release notes 風格（給自己看）
 
@@ -76,7 +82,7 @@ EOF
 
 ## 完成後
 
-- 回報：版本號、commit、tag、Release URL
+- 回報：版本號、commit、tag、workflow 結果、Release URL
 - 提醒：`chrome://extensions` reload + 核心 smoke test
 
 ## 與其他規則
