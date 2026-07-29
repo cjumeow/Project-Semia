@@ -1,5 +1,5 @@
 import panelCss from './sidebarPanel.css';
-import { getContextCueIndices } from './contextWindow';
+import { getContextCueIndices, getContextCuesByTimeRange } from './contextWindow';
 import { pauseVideo, playVideo, seekTo, findCueIndexByTime, getCurrentTime } from './playerSync';
 import { saveFragment } from './storage';
 import {
@@ -558,9 +558,9 @@ export function createCaptureSidebar(): CaptureSidebar {
     const transcript = state.transcript;
     const selectedText = extractSelectedText(tokensByCue, range);
     const bounds = selectionTimeBounds(transcript.segments, range);
-    const center = state.centerCueIndex;
-    const indices = getContextCueIndices(center, transcript.segments.length);
-    const contextCues = indices.map((i) => transcript.segments[i]!);
+    const centerTime = (bounds.start + bounds.end) / 2;
+    const { cues: contextCues, indices: contextCueIndices } =
+      getContextCuesByTimeRange(transcript.segments, centerTime, 15);
 
     const fragment: LanguageFragment = {
       id: createId(),
@@ -571,7 +571,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       selection: range,
       focusWord,
       contextCues,
-      contextCueIndices: [indices[0]!, indices[indices.length - 1]!],
+      contextCueIndices,
       start: bounds.start,
       end: bounds.end,
       capturedAt: new Date().toISOString(),

@@ -10,6 +10,9 @@ type SnippetDetailProps = {
   generating?: boolean;
   error?: string | null;
   onRegenerate?: () => void;
+  generatingContext?: boolean;
+  contextError?: string | null;
+  onGenerateContext?: () => void;
 };
 
 export function SnippetDetail({
@@ -18,6 +21,9 @@ export function SnippetDetail({
   generating,
   error,
   onRegenerate,
+  generatingContext,
+  contextError,
+  onGenerateContext,
 }: SnippetDetailProps) {
   const { markdown, saving, save } = useCorpusNote(snippet?.id);
 
@@ -65,7 +71,13 @@ export function SnippetDetail({
             {error}
           </p>
         ) : null}
-        <NoteCard note={snippet.note} generating={generating} />
+        <NoteCard
+          note={snippet.note}
+          generating={generating}
+          generatingContext={generatingContext}
+          contextError={contextError}
+          onGenerateContext={onGenerateContext}
+        />
         <MarkdownNote
           key={snippet.id}
           markdown={markdown}

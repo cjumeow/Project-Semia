@@ -1,5 +1,6 @@
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
+import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
 import { useSnippetNoteGeneration } from './hooks/useSnippetNoteGeneration';
 import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
@@ -22,6 +23,12 @@ export default function App() {
     selectedSnippet,
     refresh,
   );
+
+  const {
+    generating: generatingContext,
+    error: contextError,
+    generate: generateContext,
+  } = useContextWindowGeneration(selectedSnippet, refresh);
 
   const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
     useResizableWidth({
@@ -111,6 +118,11 @@ export default function App() {
           error={noteError}
           onRegenerate={() => {
             void regenerate();
+          }}
+          generatingContext={generatingContext}
+          contextError={contextError}
+          onGenerateContext={() => {
+            void generateContext();
           }}
         />
       </div>

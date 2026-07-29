@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SEMIA_BUILD_ID } from '../buildInfo';
 import type { VideoGroup } from '../types/corpus';
 
 type SemiaSidebarProps = {
@@ -74,6 +75,10 @@ export function SemiaSidebar({
           </nav>
         )}
       </div>
+
+      <footer className="shrink-0 border-t border-border px-3 py-2">
+        <p className="font-mono text-[10px] text-text-muted">{SEMIA_BUILD_ID}</p>
+      </footer>
     </aside>
   );
 }

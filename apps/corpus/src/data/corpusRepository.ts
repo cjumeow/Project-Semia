@@ -17,6 +17,7 @@ export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   getSnippetNotes(): Promise<SnippetNotesMap>;
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
+  generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
   subscribe(listener: () => void): () => void;
@@ -66,6 +67,23 @@ class ChromeCorpusRepository implements CorpusRepository {
 
     const message =
       response && !response.ok ? response.error : 'Failed to generate note.';
+    throw new Error(message);
+  }
+
+  async generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'GENERATE_CONTEXT_WINDOW',
+      fragment,
+    })) as OkResponse<{ note: SnippetNote }> | ErrResponse | undefined;
+
+    if (response?.ok && response.note) {
+      return response.note;
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to generate context window.';
     throw new Error(message);
   }
 
@@ -137,6 +155,10 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async generateSnippetNote(): Promise<SnippetNote> {
+    throw new Error('AI generation requires the Chrome extension.');
+  }
+
+  async generateContextWindow(): Promise<SnippetNote> {
     throw new Error('AI generation requires the Chrome extension.');
   }
 

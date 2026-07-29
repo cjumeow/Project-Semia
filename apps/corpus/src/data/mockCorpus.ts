@@ -34,6 +34,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'pivot',
       naturalTranslation: '調整策略 / 樞軸轉向',
+      dynamicContextBlock: '',
       backgroundNote:
         '在商業與產品開發情境中，並非指物理上的「旋轉」，而是指當原計畫或產品路線不如預期時，團隊迅速改變方向或商業模式的決策。',
       example:
@@ -51,6 +52,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'look forward to',
       naturalTranslation: '期待、盼望',
+      dynamicContextBlock: '',
       backgroundNote:
         '正式但友善的書面/口語表達，常用於信件結尾或表達對未來事件的正面期待。比 "can\'t wait" 更正式。',
       example: 'I look forward to hearing from you soon.',
@@ -67,6 +69,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'on the same page',
       naturalTranslation: '達成共識、想法一致',
+      dynamicContextBlock: '',
       backgroundNote:
         '比喻雙方對某議題有相同理解或目標。常見於商務會議、團隊協作場景，暗示先前可能存在誤解或資訊不對稱。',
       example:
@@ -84,6 +87,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'never gonna give you up',
       naturalTranslation: '絕不會放棄你',
+      dynamicContextBlock: '',
       backgroundNote:
         '口語縮寫 "gonna" = "going to"。這句在流行文化中因 Rickroll 迷因而廣為人知，語氣承諾且帶有懷舊感。',
       example: "I'm never gonna give you up, never gonna let you down.",
@@ -100,6 +104,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'let you down',
       naturalTranslation: '讓你失望',
+      dynamicContextBlock: '',
       backgroundNote:
         '常見片語動詞，表示未能達到對方的期望或承諾。可與 "disappoint" 互換，但口語感更強。',
       example: "I don't want to let you down, so I'll do my best.",
@@ -116,6 +121,7 @@ const MOCK_SNIPPETS: CorpusSnippet[] = [
     note: {
       originalSpeech: 'elephants',
       naturalTranslation: '大象',
+      dynamicContextBlock: '',
       backgroundNote:
         'YouTube 史上第一支上傳影片中的詞彙。在此語境下為動物園參觀的簡短描述，無特殊隱喻。',
       example: 'The elephants have really long trunks.',

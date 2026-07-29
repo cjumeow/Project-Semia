@@ -1,7 +1,9 @@
+import { generateContextWindow } from './ai/generateContextWindow';
+import { generateSnippetNote } from './ai/generateSnippetNote';
 import { ensureSnippetNote } from './ensureSnippetNote';
 import { listFragments, normalizeFragments } from './fragmentsStorage';
 import { openSemiaPage } from './openSemia';
-import { getSnippetNotes } from './snippetNotesStorage';
+import { getSnippetNote, getSnippetNotes, saveSnippetNote } from './snippetNotesStorage';
 import type { BackgroundMessage } from './types';
 import { saveTranscript, saveTranscriptError } from './storage';
 import { FRAGMENTS_STORAGE_KEY, SNIPPET_NOTES_STORAGE_KEY } from '@semia/shared';
@@ -80,13 +82,25 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendR
     }
 
     if (message.type === 'GENERATE_SNIPPET_NOTE') {
-      await ensureSnippetNote(message.fragment);
-      const notes = await getSnippetNotes();
-      const note = notes[message.fragment.id];
-      if (!note) {
-        sendResponse({ ok: false, error: 'Failed to generate note.' });
+      const note = await generateSnippetNote(message.fragment);
+      await saveSnippetNote(message.fragment.id, note);
+      sendResponse({ ok: true, note });
+      return;
+    }
+
+    if (message.type === 'GENERATE_CONTEXT_WINDOW') {
+      const existing = await getSnippetNote(message.fragment.id);
+      if (!existing?.generatedAt) {
+        sendResponse({
+          ok: false,
+          error: 'Generate the snippet note before building a context window.',
+        });
         return;
       }
+
+      const dynamicContextBlock = await generateContextWindow(message.fragment);
+      const note = { ...existing, dynamicContextBlock };
+      await saveSnippetNote(message.fragment.id, note);
       sendResponse({ ok: true, note });
       return;
     }
