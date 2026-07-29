@@ -25,4 +25,5 @@ export type BackgroundMessage =
   | { type: 'LIST_FRAGMENTS' }
   | { type: 'LIST_SNIPPET_NOTES' }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
+  | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
   | { type: 'FRAGMENTS_CHANGED' };

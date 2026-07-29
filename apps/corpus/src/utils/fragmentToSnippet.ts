@@ -1,6 +1,14 @@
 import type { LanguageFragment } from '@semia/shared';
 import type { CorpusSnippet, SnippetNote } from '../types/corpus';
 
+function normalizeSnippetNote(note: SnippetNote): SnippetNote {
+  return {
+    ...note,
+    dynamicContextBlock: note.dynamicContextBlock ?? '',
+    example: note.example ?? '',
+  };
+}
+
 /** Placeholder note until AI generation. */
 export function placeholderNote(fragment: LanguageFragment): SnippetNote {
   const context = fragment.contextCues
@@ -11,6 +19,7 @@ export function placeholderNote(fragment: LanguageFragment): SnippetNote {
   return {
     originalSpeech: fragment.selectedText,
     naturalTranslation: '—',
+    dynamicContextBlock: '',
     backgroundNote: context
       ? `Captured context: ${context}\n\n(Note not generated yet.)`
       : '(Note not generated yet.)',
@@ -24,6 +33,6 @@ export function fragmentToSnippet(
 ): CorpusSnippet {
   return {
     ...fragment,
-    note: savedNote ?? placeholderNote(fragment),
+    note: savedNote ? normalizeSnippetNote(savedNote) : placeholderNote(fragment),
   };
 }

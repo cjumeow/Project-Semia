@@ -8,7 +8,9 @@ export async function ensureSnippetNote(
   fragment: LanguageFragment,
 ): Promise<void> {
   const existing = await getSnippetNote(fragment.id);
-  if (existing?.generatedAt) return;
+  if (existing?.generatedAt) {
+    return;
+  }
 
   const pending = inFlight.get(fragment.id);
   if (pending) {
