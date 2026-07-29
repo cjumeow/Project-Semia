@@ -18,10 +18,10 @@ export function SemiaSidebar({
   return (
     <aside className="flex h-full flex-col bg-surface">
       <header className="shrink-0 border-b border-border px-3 py-3">
-        <h1 className="text-base font-semibold tracking-tight text-text">
+        <h1 className="text-xl font-semibold tracking-tight text-text">
           SEMIA
         </h1>
-        <p className="mt-0.5 text-[10px] text-text-muted">
+        <p className="mt-0.5 text-[13px] text-text-muted">
           Language snippets library
         </p>
       </header>

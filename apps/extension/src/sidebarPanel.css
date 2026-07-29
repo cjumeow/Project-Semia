@@ -198,8 +198,9 @@
 }
 
 .word.focus-word {
-  background: rgba(136, 192, 208, 0.35);
-  border-color: #88c0d0;
+  text-decoration: underline;
+  text-decoration-color: #88c0d0;
+  text-underline-offset: 2px;
 }
 
 .word.selection-start {
