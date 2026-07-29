@@ -1,5 +1,7 @@
 import type { CorpusSnippet } from '../types/corpus';
+import { useCorpusNote } from '../hooks/useCorpusNote';
 import { formatTimestamp } from '../utils/youtubeUrl';
+import { MarkdownNote } from './MarkdownNote';
 import { NoteCard } from './NoteCard';
 
 type SnippetDetailProps = {
@@ -17,6 +19,8 @@ export function SnippetDetail({
   error,
   onRegenerate,
 }: SnippetDetailProps) {
+  const { markdown, saving, save } = useCorpusNote(snippet?.id);
+
   if (!snippet) {
     return (
       <section
@@ -55,13 +59,19 @@ export function SnippetDetail({
           ) : null}
         </div>
       </header>
-      <div className="p-5">
+      <div className="flex flex-col gap-5 p-5">
         {error ? (
-          <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         ) : null}
         <NoteCard note={snippet.note} generating={generating} />
+        <MarkdownNote
+          key={snippet.id}
+          markdown={markdown}
+          saving={saving}
+          onSave={save}
+        />
       </div>
     </section>
   );

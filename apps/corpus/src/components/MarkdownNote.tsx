@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 type MarkdownNoteProps = {
   markdown: string;
+  saving?: boolean;
   onSave: (markdown: string) => Promise<void>;
 };
 
-export function MarkdownNote({ markdown, onSave }: MarkdownNoteProps) {
+export function MarkdownNote({ markdown, saving = false, onSave }: MarkdownNoteProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(markdown);
-  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      setDraft(markdown);
+    }
+  }, [markdown, editing]);
 
   const cancel = (): void => {
     setDraft(markdown);
@@ -18,28 +24,41 @@ export function MarkdownNote({ markdown, onSave }: MarkdownNoteProps) {
   };
 
   const save = async (): Promise<void> => {
-    setSaving(true);
-    try {
-      await onSave(draft);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
+    await onSave(draft);
+    setEditing(false);
   };
 
   if (editing) {
     return (
-      <section className="markdown-note">
+      <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            My Notes
+          </h3>
+        </div>
         <textarea
-          aria-label="Markdown note"
+          aria-label="My notes"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          rows={8}
+          className="w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2.5 font-mono text-sm leading-relaxed text-text outline-none focus:border-border-strong"
+          placeholder="Add your own notes in Markdown…"
         />
-        <div className="markdown-note__actions">
-          <button type="button" onClick={cancel} disabled={saving}>
+        <div className="mt-3 flex justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-border px-3 py-1.5 text-xs text-text-secondary hover:bg-canvas disabled:opacity-50"
+            onClick={cancel}
+            disabled={saving}
+          >
             Cancel
           </button>
-          <button type="button" onClick={() => void save()} disabled={saving}>
+          <button
+            type="button"
+            className="rounded-md border border-border bg-canvas px-3 py-1.5 text-xs font-medium text-text hover:bg-surface disabled:opacity-50"
+            onClick={() => void save()}
+            disabled={saving}
+          >
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -48,19 +67,30 @@ export function MarkdownNote({ markdown, onSave }: MarkdownNoteProps) {
   }
 
   return (
-    <section className="markdown-note">
-      <button type="button" onClick={() => setEditing(true)}>
-        Edit
-      </button>
+    <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          My Notes
+        </h3>
+        <button
+          type="button"
+          className="text-xs text-text-muted underline-offset-2 hover:text-text hover:underline"
+          onClick={() => setEditing(true)}
+        >
+          {markdown ? 'Edit' : 'Add'}
+        </button>
+      </div>
       {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        <div className="prose-note text-sm leading-relaxed text-text">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        </div>
       ) : (
         <button
           type="button"
-          className="empty-note"
+          className="w-full rounded-lg border border-dashed border-border px-3 py-6 text-left text-sm text-text-muted hover:border-border-strong hover:text-text-secondary"
           onClick={() => setEditing(true)}
         >
-          Add notes…
+          Add your own notes in Markdown…
         </button>
       )}
     </section>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
 import { isGeneratedNote } from '../types/corpus';
@@ -15,7 +15,6 @@ export function useSnippetNoteGeneration(
 ): UseSnippetNoteGenerationResult {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastRequestedId = useRef<string | null>(null);
 
   const regenerate = useCallback(async (): Promise<void> => {
     if (!snippet) return;
@@ -34,11 +33,8 @@ export function useSnippetNoteGeneration(
 
   useEffect(() => {
     if (!snippet || isGeneratedNote(snippet.note)) return;
-    if (lastRequestedId.current === snippet.id) return;
-
-    lastRequestedId.current = snippet.id;
     void regenerate();
-  }, [snippet, regenerate]);
+  }, [snippet?.id, regenerate]);
 
   return { generating, error, regenerate };
 }

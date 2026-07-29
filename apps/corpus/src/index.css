@@ -28,3 +28,73 @@ body {
   background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
 }
+
+@keyframes text-dots {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility animate-text-dots {
+  animation: text-dots 1.4s infinite;
+}
+
+.prose-note :where(p, ul, ol, blockquote, pre) {
+  margin: 0.5em 0;
+}
+
+.prose-note :where(p:first-child, ul:first-child, ol:first-child) {
+  margin-top: 0;
+}
+
+.prose-note :where(p:last-child, ul:last-child, ol:last-child) {
+  margin-bottom: 0;
+}
+
+.prose-note ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.prose-note ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.prose-note a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-note code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: var(--color-canvas);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+}
+
+.prose-note pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  padding: 0.75rem;
+}
+
+.prose-note pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-note blockquote {
+  border-left: 3px solid var(--color-border-strong);
+  padding-left: 0.75rem;
+  color: var(--color-text-secondary);
+}
