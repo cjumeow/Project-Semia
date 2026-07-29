@@ -1,27 +1,27 @@
-import { youtubeVideoId } from '@semia/shared';
+import { sourceKey } from '@semia/shared';
 import { useEffect, useMemo, useState } from 'react';
-import type { CorpusSelection, VideoGroup } from '../types/corpus';
-import { findSnippet, findVideoGroup } from '../utils/corpusGrouping';
+import type { CorpusSelection, SourceGroup } from '../types/corpus';
+import { findSnippet, findSourceGroup } from '../utils/corpusGrouping';
 
 type UseCorpusSelectionResult = {
   selection: CorpusSelection;
-  selectedGroup: VideoGroup | undefined;
+  selectedGroup: SourceGroup | undefined;
   selectedSnippet: ReturnType<typeof findSnippet>;
-  selectVideo: (videoId: string) => void;
+  selectSource: (sourceKeyValue: string) => void;
   selectSnippet: (snippetId: string) => void;
 };
 
 export function useCorpusSelection(
-  groups: VideoGroup[],
+  groups: SourceGroup[],
 ): UseCorpusSelectionResult {
   const [selection, setSelection] = useState<CorpusSelection>({
-    videoId: null,
+    sourceKey: null,
     snippetId: null,
   });
 
   useEffect(() => {
     if (groups.length === 0) {
-      setSelection({ videoId: null, snippetId: null });
+      setSelection({ sourceKey: null, snippetId: null });
       return;
     }
 
@@ -30,11 +30,11 @@ export function useCorpusSelection(
         return prev;
       }
 
-      if (prev.videoId) {
-        const group = findVideoGroup(groups, prev.videoId);
+      if (prev.sourceKey) {
+        const group = findSourceGroup(groups, prev.sourceKey);
         if (group) {
           return {
-            videoId: prev.videoId,
+            sourceKey: prev.sourceKey,
             snippetId: group.snippets[0]?.id ?? null,
           };
         }
@@ -42,7 +42,7 @@ export function useCorpusSelection(
 
       const first = groups[0]!;
       return {
-        videoId: first.meta.videoId,
+        sourceKey: first.meta.sourceKey,
         snippetId: first.snippets[0]?.id ?? null,
       };
     });
@@ -50,10 +50,10 @@ export function useCorpusSelection(
 
   const selectedGroup = useMemo(
     () =>
-      selection.videoId
-        ? findVideoGroup(groups, selection.videoId)
+      selection.sourceKey
+        ? findSourceGroup(groups, selection.sourceKey)
         : undefined,
-    [groups, selection.videoId],
+    [groups, selection.sourceKey],
   );
 
   const selectedSnippet = useMemo(
@@ -64,11 +64,11 @@ export function useCorpusSelection(
     [groups, selection.snippetId],
   );
 
-  const selectVideo = (videoId: string): void => {
-    const group = findVideoGroup(groups, videoId);
+  const selectSource = (sourceKeyValue: string): void => {
+    const group = findSourceGroup(groups, sourceKeyValue);
     const firstSnippet = group?.snippets[0];
     setSelection({
-      videoId,
+      sourceKey: sourceKeyValue,
       snippetId: firstSnippet?.id ?? null,
     });
   };
@@ -76,14 +76,14 @@ export function useCorpusSelection(
   const selectSnippet = (snippetId: string): void => {
     const snippet = findSnippet(groups, snippetId);
     if (!snippet) return;
-    setSelection({ videoId: youtubeVideoId(snippet), snippetId });
+    setSelection({ sourceKey: sourceKey(snippet), snippetId });
   };
 
   return {
     selection,
     selectedGroup,
     selectedSnippet,
-    selectVideo,
+    selectSource,
     selectSnippet,
   };
 }

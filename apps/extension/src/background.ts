@@ -3,13 +3,34 @@ import { generateSnippetNote } from './ai/generateSnippetNote';
 import { ensureSnippetNote } from './ensureSnippetNote';
 import { listFragments, normalizeFragments } from './fragmentsStorage';
 import { openSemiaPage } from './openSemia';
+import {
+  ensureWebCaptureForTab,
+  ensureWebCaptureForUrl,
+  requestWebCapturePermission,
+} from './webCaptureInjection';
 import { getSnippetNote, getSnippetNotes, saveSnippetNote } from './snippetNotesStorage';
 import type { BackgroundMessage } from './types';
 import { saveTranscript, saveTranscriptError } from './storage';
 import { FRAGMENTS_STORAGE_KEY, SNIPPET_NOTES_STORAGE_KEY } from '@semia/shared';
 
-chrome.action.onClicked.addListener(() => {
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id && tab.url) {
+    void (async () => {
+      const ready = await ensureWebCaptureForUrl(tab.url!);
+      if (!ready) {
+        await requestWebCapturePermission(tab.url!);
+      }
+      if (tab.id) {
+        await ensureWebCaptureForTab(tab.id, tab.url!);
+      }
+    })();
+  }
   openSemiaPage();
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete' || !tab.url) return;
+  void ensureWebCaptureForTab(tabId, tab.url);
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {

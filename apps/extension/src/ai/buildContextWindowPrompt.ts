@@ -1,4 +1,5 @@
 import type { LanguageFragment } from '@semia/shared';
+import { isYouTubeAnchor } from '@semia/shared';
 import {
   buildSnippetContextUserBlock,
   targetLanguageLabel,
@@ -9,13 +10,11 @@ export type ContextWindowPromptInput = {
   nativeLanguage: string;
 };
 
-export function buildContextWindowPrompt({
-  fragment,
-  nativeLanguage,
-}: ContextWindowPromptInput): { system: string; user: string } {
-  const targetLang = targetLanguageLabel(nativeLanguage);
-
-  const system = `You are an expert bilingual linguist and translator.
+function buildYouTubeContextSystemPrompt(
+  fragment: LanguageFragment,
+  targetLang: string,
+): string {
+  return `You are an expert bilingual linguist and translator.
 Your task is to reconstruct a clean, coherent, highly readable bilingual paragraph around a captured video snippet for language-learning review.
 
 <dynamic_context_block> (Dynamic & Coherent Context Window):
@@ -42,7 +41,46 @@ Return only:
 ---
 [Translation paragraph]</dynamic_context_block>
 </result>`;
+}
 
+function buildWebContextSystemPrompt(
+  fragment: LanguageFragment,
+  targetLang: string,
+): string {
+  return `You are an expert bilingual linguist and translator.
+Your task is to reconstruct a clean, coherent, highly readable bilingual paragraph around a captured web-page snippet for language-learning review.
+
+<dynamic_context_block> (Dynamic & Coherent Context Window):
+Use [PAGE CONTEXT] as source material.
+
+- Keep the paragraph focused on the topic around the [USER'S CAPTURED SELECTION].
+- Do not invent facts that are not supported by the provided context.
+- Format (Original-focused Bilingual Paragraph):
+  Reconstruct the relevant surrounding passage into one well-punctuated paragraph in ${fragment.languageCode}, then its natural translation in ${targetLang}.
+  Use this exact format inside the tag:
+
+  [Perfect, punctuated original-language paragraph]
+  ---
+  [Natural translation of this entire paragraph in ${targetLang}]
+
+Strict Output Format:
+Return only:
+
+<result>
+  <dynamic_context_block>[Original paragraph]
+---
+[Translation paragraph]</dynamic_context_block>
+</result>`;
+}
+
+export function buildContextWindowPrompt({
+  fragment,
+  nativeLanguage,
+}: ContextWindowPromptInput): { system: string; user: string } {
+  const targetLang = targetLanguageLabel(nativeLanguage);
+  const system = isYouTubeAnchor(fragment.anchor)
+    ? buildYouTubeContextSystemPrompt(fragment, targetLang)
+    : buildWebContextSystemPrompt(fragment, targetLang);
   const user = buildSnippetContextUserBlock(fragment);
 
   return { system, user };

@@ -2,5 +2,7 @@ export * from './contextText';
 export * from './migrateFragment';
 export * from './normalizeFragments';
 export * from './storageKeys';
+export * from './textFragmentUrl';
 export * from './types';
+export * from './webFragment';
 export * from './youtubeFragment';

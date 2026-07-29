@@ -1,5 +1,5 @@
-import type { CorpusSnippet, VideoGroup } from '../types/corpus';
-import { groupSnippetsByVideo } from '../utils/corpusGrouping';
+import type { CorpusSnippet, SourceGroup } from '../types/corpus';
+import { groupBySource } from '../utils/corpusGrouping';
 
 const WORD_REF = { cueIndex: 0, wordIndex: 0 } as const;
 
@@ -174,7 +174,7 @@ const VIDEO_META = {
 } as const;
 
 /** Pre-grouped mock corpus for UI development. */
-export const MOCK_VIDEO_GROUPS: VideoGroup[] = groupSnippetsByVideo(
+export const MOCK_VIDEO_GROUPS: SourceGroup[] = groupBySource(
   MOCK_SNIPPETS,
   { videoMeta: VIDEO_META },
 );

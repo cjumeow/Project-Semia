@@ -35,6 +35,12 @@ const buildOptionsList = [
   },
   {
     ...baseOptions,
+    entryPoints: ['src/webContentScript.ts'],
+    outfile: 'dist/webContentScript.js',
+    format: 'iife',
+  },
+  {
+    ...baseOptions,
     entryPoints: ['src/options.ts'],
     outfile: 'dist/options.js',
     format: 'iife',

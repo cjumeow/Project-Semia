@@ -1,9 +1,15 @@
-import { youtubeVideoId } from '@semia/shared';
+import { sourceKey, youtubeVideoId } from '@semia/shared';
 import { describe, expect, it } from 'vitest';
 import type { CorpusSnippet, VideoMeta } from '../types/corpus';
-import { findSnippet, findVideoGroup, groupSnippetsByVideo } from './corpusGrouping';
+import {
+  findSnippet,
+  findSourceGroup,
+  groupBySource,
+  webGroups,
+  youtubeGroups,
+} from './corpusGrouping';
 
-function makeSnippet(
+function makeYoutubeSnippet(
   overrides: {
     id: string;
     videoId: string;
@@ -44,75 +50,126 @@ function makeSnippet(
   };
 }
 
+function makeWebSnippet(
+  overrides: Pick<CorpusSnippet, 'id' | 'selectedText' | 'capturedAt'> & {
+    sourceUrl: string;
+    start: number;
+  },
+): CorpusSnippet {
+  return {
+    id: overrides.id,
+    selectedText: overrides.selectedText,
+    contextText: overrides.selectedText,
+    languageCode: 'en',
+    sourceUrl: overrides.sourceUrl,
+    sourceTitle: 'Example Article',
+    capturedAt: overrides.capturedAt,
+    anchor: {
+      kind: 'web',
+      textQuote: { exact: overrides.selectedText },
+      textPosition: { start: overrides.start, end: overrides.start + overrides.selectedText.length },
+    },
+    note: {
+      originalSpeech: overrides.selectedText,
+      naturalTranslation: '',
+      dynamicContextBlock: '',
+      backgroundNote: '',
+      example: '',
+    },
+  };
+}
+
 const snippets: CorpusSnippet[] = [
-  // Video "old" was captured first, but its snippets are out of playback order.
-  makeSnippet({
+  makeYoutubeSnippet({
     id: 's1',
     videoId: 'old',
     startSeconds: 90,
     capturedAt: '2026-07-01T10:00:00.000Z',
   }),
-  makeSnippet({
+  makeYoutubeSnippet({
     id: 's2',
     videoId: 'old',
     startSeconds: 30,
     capturedAt: '2026-07-01T09:00:00.000Z',
   }),
-  makeSnippet({
+  makeYoutubeSnippet({
     id: 's3',
     videoId: 'new',
     startSeconds: 10,
     capturedAt: '2026-07-20T08:00:00.000Z',
   }),
+  makeWebSnippet({
+    id: 'w1',
+    selectedText: 'pivot strategy',
+    sourceUrl: 'https://example.com/post',
+    start: 120,
+    capturedAt: '2026-07-21T08:00:00.000Z',
+  }),
 ];
 
-describe('groupSnippetsByVideo', () => {
-  it('groups snippets under their video', () => {
-    const groups = groupSnippetsByVideo(snippets);
+describe('groupBySource', () => {
+  it('groups snippets under their source URL', () => {
+    const groups = groupBySource(snippets);
 
-    expect(groups).toHaveLength(2);
-    expect(groups.map((g) => g.meta.videoId)).toEqual(['new', 'old']);
+    expect(groups).toHaveLength(3);
+    expect(youtubeGroups(groups)).toHaveLength(2);
+    expect(webGroups(groups)).toHaveLength(1);
   });
 
-  it('sorts videos by most recent capture first', () => {
-    const groups = groupSnippetsByVideo(snippets);
+  it('sorts sources by most recent capture first', () => {
+    const groups = groupBySource(snippets);
 
-    expect(groups[0]!.meta.videoId).toBe('new');
-    expect(groups[1]!.latestCapturedAt).toBe('2026-07-01T10:00:00.000Z');
+    expect(groups[0]!.meta.sourceKey).toBe('https://example.com/post');
+    expect(groups[0]!.meta.kind).toBe('web');
   });
 
-  it('sorts snippets inside a video by playback position', () => {
-    const groups = groupSnippetsByVideo(snippets);
-    const old = groups.find((g) => g.meta.videoId === 'old')!;
+  it('sorts youtube snippets inside a source by playback position', () => {
+    const groups = groupBySource(snippets);
+    const old = groups.find(
+      (group) => group.meta.kind === 'youtube' && group.meta.videoId === 'old',
+    )!;
 
-    expect(old.snippets.map((s) => s.id)).toEqual(['s2', 's1']);
+    expect(old.snippets.map((snippet) => snippet.id)).toEqual(['s2', 's1']);
   });
 
   it('falls back to a placeholder title when no metadata is known', () => {
-    const groups = groupSnippetsByVideo(snippets);
-    const meta = groups[0]!.meta;
+    const groups = groupBySource(snippets);
+    const youtube = youtubeGroups(groups).find(
+      (group) =>
+        group.meta.kind === 'youtube' && group.meta.videoId === 'new',
+    )!;
 
-    expect(meta.title).toBe('YouTube · new');
-    expect(meta.channel).toBe('Unknown channel');
+    expect(youtube.meta.kind).toBe('youtube');
+    if (youtube.meta.kind === 'youtube') {
+      expect(youtube.meta.title).toBe('YouTube · new');
+      expect(youtube.meta.channel).toBe('Unknown channel');
+    }
   });
 
   it('prefers supplied metadata over the placeholder', () => {
     const videoMeta: Record<string, VideoMeta> = {
       new: { videoId: 'new', title: 'Real Title', channel: 'Real Channel' },
     };
-    const groups = groupSnippetsByVideo(snippets, { videoMeta });
+    const groups = groupBySource(snippets, { videoMeta });
+    const youtube = youtubeGroups(groups).find(
+      (group) =>
+        group.meta.kind === 'youtube' && group.meta.videoId === 'new',
+    )!;
 
-    expect(groups[0]!.meta.title).toBe('Real Title');
+    expect(youtube.meta.kind).toBe('youtube');
+    if (youtube.meta.kind === 'youtube') {
+      expect(youtube.meta.title).toBe('Real Title');
+    }
   });
 
   it('returns nothing for an empty library', () => {
-    expect(groupSnippetsByVideo([])).toEqual([]);
+    expect(groupBySource([])).toEqual([]);
   });
 });
 
 describe('findSnippet', () => {
   it('finds a snippet across every group', () => {
-    const groups = groupSnippetsByVideo(snippets);
+    const groups = groupBySource(snippets);
     const found = findSnippet(groups, 's1');
 
     expect(found).toBeDefined();
@@ -121,11 +178,13 @@ describe('findSnippet', () => {
   });
 });
 
-describe('findVideoGroup', () => {
-  it('finds a group by video id', () => {
-    const groups = groupSnippetsByVideo(snippets);
+describe('findSourceGroup', () => {
+  it('finds a group by source key', () => {
+    const groups = groupBySource(snippets);
 
-    expect(findVideoGroup(groups, 'new')?.snippets).toHaveLength(1);
-    expect(findVideoGroup(groups, 'missing')).toBeUndefined();
+    expect(
+      findSourceGroup(groups, sourceKey(snippets[3]!))?.snippets,
+    ).toHaveLength(1);
+    expect(findSourceGroup(groups, 'missing')).toBeUndefined();
   });
 });

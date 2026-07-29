@@ -1,5 +1,6 @@
-import { youtubeStartSeconds } from '@semia/shared';
+import { isYouTubeAnchor } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
+import { snippetSeekSeconds } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
 
 type SelectionListProps = {
@@ -16,7 +17,7 @@ export function SelectionList({
   if (snippets.length === 0) {
     return (
       <p className="px-1 py-2 text-sm text-text-muted">
-        No captures for this video yet.
+        No captures for this source yet.
       </p>
     );
   }
@@ -29,6 +30,7 @@ export function SelectionList({
     >
       {snippets.map((snippet) => {
         const isActive = snippet.id === selectedSnippetId;
+        const seekSeconds = snippetSeekSeconds(snippet);
         return (
           <li key={snippet.id} role="presentation">
             <button
@@ -43,9 +45,15 @@ export function SelectionList({
               ].join(' ')}
               onClick={() => onSelectSnippet(snippet.id)}
             >
-              <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
-                {formatTimestamp(youtubeStartSeconds(snippet))}
-              </span>
+              {isYouTubeAnchor(snippet.anchor) && seekSeconds !== undefined ? (
+                <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
+                  {formatTimestamp(seekSeconds)}
+                </span>
+              ) : (
+                <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                  Web
+                </span>
+              )}
               <span className="truncate text-sm font-medium">
                 {snippet.selectedText}
               </span>

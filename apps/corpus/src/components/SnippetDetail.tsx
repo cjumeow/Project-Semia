@@ -1,6 +1,7 @@
-import { youtubeStartSeconds } from '@semia/shared';
+import { isYouTubeAnchor } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import { useCorpusNote } from '../hooks/useCorpusNote';
+import { snippetSeekSeconds } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
 import { MarkdownNote } from './MarkdownNote';
 import { NoteCard } from './NoteCard';
@@ -51,9 +52,11 @@ export function SnippetDetail({
           {snippet.selectedText}
         </h2>
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-md border border-border bg-canvas px-2 py-0.5 font-mono text-xs tabular-nums text-text-secondary">
-            {formatTimestamp(youtubeStartSeconds(snippet))}
-          </span>
+          {isYouTubeAnchor(snippet.anchor) ? (
+            <span className="rounded-md border border-border bg-canvas px-2 py-0.5 font-mono text-xs tabular-nums text-text-secondary">
+              {formatTimestamp(snippetSeekSeconds(snippet) ?? 0)}
+            </span>
+          ) : null}
           {onRegenerate ? (
             <button
               type="button"

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
-import type { VideoGroup } from '../types/corpus';
-import { groupSnippetsByVideo } from '../utils/corpusGrouping';
+import type { SourceGroup } from '../types/corpus';
+import { groupBySource } from '../utils/corpusGrouping';
 import { fragmentToSnippet } from '../utils/fragmentToSnippet';
 
 type UseCorpusDataResult = {
-  groups: VideoGroup[];
+  groups: SourceGroup[];
   loading: boolean;
   error: string | null;
   fragmentCount: number;
@@ -14,7 +14,7 @@ type UseCorpusDataResult = {
 };
 
 export function useCorpusData(): UseCorpusDataResult {
-  const [groups, setGroups] = useState<VideoGroup[]>([]);
+  const [groups, setGroups] = useState<SourceGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fragmentCount, setFragmentCount] = useState(0);
@@ -30,7 +30,7 @@ export function useCorpusData(): UseCorpusDataResult {
       const snippets = fragments.map((fragment) =>
         fragmentToSnippet(fragment, snippetNotes[fragment.id]),
       );
-      setGroups(groupSnippetsByVideo(snippets));
+      setGroups(groupBySource(snippets));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load captures.');

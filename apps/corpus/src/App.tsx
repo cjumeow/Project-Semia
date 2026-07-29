@@ -1,4 +1,3 @@
-import { youtubeStartSeconds } from '@semia/shared';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -7,7 +6,8 @@ import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
 import { SemiaSidebar } from './components/SemiaSidebar';
 import { SnippetDetail } from './components/SnippetDetail';
-import { VideoWorkspace } from './components/VideoWorkspace';
+import { SourceWorkspace } from './components/SourceWorkspace';
+import { snippetSeekSeconds } from './utils/corpusGrouping';
 
 export default function App() {
   const { groups, loading, error, fragmentCount, isLive, refresh } =
@@ -16,7 +16,7 @@ export default function App() {
     selection,
     selectedGroup,
     selectedSnippet,
-    selectVideo,
+    selectSource,
     selectSnippet,
   } = useCorpusSelection(groups);
 
@@ -59,8 +59,8 @@ export default function App() {
       >
         <SemiaSidebar
           groups={groups}
-          selectedVideoId={selection.videoId}
-          onSelectVideo={selectVideo}
+          selectedSourceKey={selection.sourceKey}
+          onSelectSource={selectSource}
         />
       </div>
 
@@ -89,8 +89,8 @@ export default function App() {
               <>
                 <p className="text-sm font-medium text-text">No captures yet</p>
                 <p className="mt-2 text-sm text-text-muted">
-                  Open a YouTube video, use LingoPanel to capture snippets,
-                  then return here to review them.
+                  Capture snippets from YouTube or any web page, then return here
+                  to review them.
                 </p>
                 <p className="mt-3 text-xs text-text-muted">
                   Storage check: {fragmentCount} capture
@@ -101,11 +101,11 @@ export default function App() {
           </div>
         </section>
       ) : (
-        <VideoWorkspace
+        <SourceWorkspace
           group={selectedGroup}
           selectedSnippetId={selection.snippetId}
           seekSeconds={
-            selectedSnippet ? youtubeStartSeconds(selectedSnippet) : undefined
+            selectedSnippet ? snippetSeekSeconds(selectedSnippet) : undefined
           }
           onSelectSnippet={selectSnippet}
         />
