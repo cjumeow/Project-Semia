@@ -4,20 +4,25 @@ import { parseSnippetNoteXml } from './parseSnippetNoteXml';
 
 const fragment: LanguageFragment = {
   id: 'frag-1',
-  videoId: 'abc123',
-  videoUrl: 'https://www.youtube.com/watch?v=abc123',
-  languageCode: 'en',
   selectedText: 'break a leg',
-  selection: {
-    start: { cueIndex: 4, wordIndex: 0 },
-    end: { cueIndex: 4, wordIndex: 2 },
-  },
-  focusWord: { cueIndex: 4, wordIndex: 0, text: 'break' },
-  contextCues: [],
-  contextCueIndices: [3, 5],
-  start: 20,
-  end: 22,
+  contextText: '',
+  languageCode: 'en',
+  sourceUrl: 'https://www.youtube.com/watch?v=abc123',
+  sourceTitle: 'YouTube · abc123',
   capturedAt: '2026-07-29T00:00:00.000Z',
+  anchor: {
+    kind: 'youtube',
+    videoId: 'abc123',
+    selection: {
+      start: { cueIndex: 4, wordIndex: 0 },
+      end: { cueIndex: 4, wordIndex: 2 },
+    },
+    focusWord: { cueIndex: 4, wordIndex: 0, text: 'break' },
+    contextCues: [],
+    contextCueIndices: [3, 5],
+    startSeconds: 20,
+    endSeconds: 22,
+  },
 };
 
 const validXml = `

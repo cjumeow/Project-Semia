@@ -14,6 +14,7 @@ import {
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import { translateSelectionText } from './translateSelection';
 import { TRANSLATION_RIPPLE_HTML } from './translationRipple';
+import { contextCuesToText } from '@semia/shared';
 import type {
   FocusRef,
   LanguageFragment,
@@ -564,17 +565,22 @@ export function createCaptureSidebar(): CaptureSidebar {
 
     const fragment: LanguageFragment = {
       id: createId(),
-      videoId: transcript.videoId,
-      videoUrl: transcript.videoUrl,
-      languageCode: transcript.languageCode,
       selectedText,
-      selection: range,
-      focusWord,
-      contextCues,
-      contextCueIndices,
-      start: bounds.start,
-      end: bounds.end,
+      contextText: contextCuesToText(contextCues),
+      languageCode: transcript.languageCode,
+      sourceUrl: transcript.videoUrl,
+      sourceTitle: `YouTube · ${transcript.videoId}`,
       capturedAt: new Date().toISOString(),
+      anchor: {
+        kind: 'youtube',
+        videoId: transcript.videoId,
+        selection: range,
+        focusWord,
+        contextCues,
+        contextCueIndices,
+        startSeconds: bounds.start,
+        endSeconds: bounds.end,
+      },
     };
 
     await saveFragment(fragment);

@@ -1,4 +1,10 @@
 import type { LanguageFragment } from '@semia/shared';
+import {
+  isYouTubeAnchor,
+  youtubeEndSeconds,
+  youtubeStartSeconds,
+  youtubeVideoId,
+} from '@semia/shared';
 
 export function targetLanguageLabel(code: string): string {
   const labels: Record<string, string> = {
@@ -12,7 +18,11 @@ export function targetLanguageLabel(code: string): string {
 }
 
 export function formatTimedContext(fragment: LanguageFragment): string {
-  return fragment.contextCues
+  if (!isYouTubeAnchor(fragment.anchor)) {
+    return fragment.contextText;
+  }
+
+  return fragment.anchor.contextCues
     .map((cue) => {
       const text = cue.text.trim();
       if (!text) return '';
@@ -23,28 +33,44 @@ export function formatTimedContext(fragment: LanguageFragment): string {
 }
 
 export function buildVideoMetadata(fragment: LanguageFragment): string {
+  if (!isYouTubeAnchor(fragment.anchor)) {
+    return [
+      `Source URL: ${fragment.sourceUrl}`,
+      `Title: ${fragment.sourceTitle}`,
+      `Source language: ${fragment.languageCode}`,
+      `Focus selection: ${fragment.selectedText}`,
+    ].join('\n');
+  }
+
   return [
-    `Video URL: ${fragment.videoUrl}`,
-    `Video ID: ${fragment.videoId}`,
+    `Video URL: ${fragment.sourceUrl}`,
+    `Video ID: ${youtubeVideoId(fragment)}`,
     `Source language: ${fragment.languageCode}`,
-    `Focus word: ${fragment.focusWord.text}`,
-    `Selection time: ${fragment.start.toFixed(1)}s – ${fragment.end.toFixed(1)}s`,
+    `Focus word: ${fragment.anchor.focusWord.text}`,
+    `Selection time: ${youtubeStartSeconds(fragment).toFixed(1)}s – ${youtubeEndSeconds(fragment).toFixed(1)}s`,
   ].join('\n');
 }
 
 export function formatBaselineCueWindow(fragment: LanguageFragment): string {
-  const cues = fragment.contextCues;
+  if (!isYouTubeAnchor(fragment.anchor)) {
+    return fragment.contextText || '(none)';
+  }
+
+  const cues = fragment.anchor.contextCues;
   if (cues.length === 0) return '(none)';
+
+  const startSeconds = youtubeStartSeconds(fragment);
+  const endSeconds = youtubeEndSeconds(fragment);
 
   let centerIndex = 0;
   for (let index = 0; index < cues.length; index++) {
     const cue = cues[index]!;
     const cueEnd = cue.start + cue.duration;
-    if (cueEnd > fragment.start && cue.start < fragment.end) {
+    if (cueEnd > startSeconds && cue.start < endSeconds) {
       centerIndex = index;
       break;
     }
-    if (cue.start <= fragment.start) {
+    if (cue.start <= startSeconds) {
       centerIndex = index;
     }
   }

@@ -4,21 +4,47 @@ import { groupSnippetsByVideo } from '../utils/corpusGrouping';
 const WORD_REF = { cueIndex: 0, wordIndex: 0 } as const;
 
 function snippet(
-  partial: Pick<CorpusSnippet, 'id' | 'videoId' | 'videoUrl' | 'selectedText' | 'start' | 'end' | 'capturedAt' | 'note'>,
+  partial: Pick<
+    CorpusSnippet,
+    'id' | 'selectedText' | 'capturedAt' | 'note'
+  > & {
+    videoId: string;
+    videoUrl: string;
+    start: number;
+    end: number;
+  },
 ): CorpusSnippet {
+  const contextCues = [
+    {
+      text: `…${partial.selectedText}…`,
+      start: partial.start,
+      duration: partial.end - partial.start,
+    },
+  ];
+  const contextText = contextCues.map((cue) => cue.text).join(' ');
+
   return {
+    id: partial.id,
+    selectedText: partial.selectedText,
+    contextText,
     languageCode: 'en',
-    selection: { start: WORD_REF, end: WORD_REF },
-    focusWord: { ...WORD_REF, text: partial.selectedText.split(' ')[0] ?? '' },
-    contextCues: [
-      {
-        text: `…${partial.selectedText}…`,
-        start: partial.start,
-        duration: partial.end - partial.start,
+    sourceUrl: partial.videoUrl,
+    sourceTitle: `YouTube · ${partial.videoId}`,
+    capturedAt: partial.capturedAt,
+    anchor: {
+      kind: 'youtube',
+      videoId: partial.videoId,
+      selection: { start: WORD_REF, end: WORD_REF },
+      focusWord: {
+        ...WORD_REF,
+        text: partial.selectedText.split(' ')[0] ?? '',
       },
-    ],
-    contextCueIndices: [0, 0] as [number, number],
-    ...partial,
+      contextCues,
+      contextCueIndices: [0, 0] as [number, number],
+      startSeconds: partial.start,
+      endSeconds: partial.end,
+    },
+    note: partial.note,
   };
 }
 

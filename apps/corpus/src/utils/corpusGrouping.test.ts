@@ -1,28 +1,39 @@
+import { youtubeVideoId } from '@semia/shared';
 import { describe, expect, it } from 'vitest';
 import type { CorpusSnippet, VideoMeta } from '../types/corpus';
 import { findSnippet, findVideoGroup, groupSnippetsByVideo } from './corpusGrouping';
 
 function makeSnippet(
-  overrides: Pick<CorpusSnippet, 'id' | 'videoId' | 'start' | 'capturedAt'>,
+  overrides: {
+    id: string;
+    videoId: string;
+    startSeconds: number;
+    capturedAt: string;
+  },
 ): CorpusSnippet {
-  const { id, videoId, start, capturedAt } = overrides;
+  const { id, videoId, startSeconds, capturedAt } = overrides;
 
   return {
     id,
-    videoId,
-    videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-    languageCode: 'en',
     selectedText: `text ${id}`,
-    selection: {
-      start: { cueIndex: 0, wordIndex: 0 },
-      end: { cueIndex: 0, wordIndex: 1 },
-    },
-    focusWord: { cueIndex: 0, wordIndex: 0, text: 'word' },
-    contextCues: [],
-    contextCueIndices: [0, 0],
-    start,
-    end: start + 2,
+    contextText: `text ${id}`,
+    languageCode: 'en',
+    sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    sourceTitle: `YouTube · ${videoId}`,
     capturedAt,
+    anchor: {
+      kind: 'youtube',
+      videoId,
+      selection: {
+        start: { cueIndex: 0, wordIndex: 0 },
+        end: { cueIndex: 0, wordIndex: 1 },
+      },
+      focusWord: { cueIndex: 0, wordIndex: 0, text: 'word' },
+      contextCues: [],
+      contextCueIndices: [0, 0],
+      startSeconds,
+      endSeconds: startSeconds + 2,
+    },
     note: {
       originalSpeech: `text ${id}`,
       naturalTranslation: '',
@@ -35,9 +46,24 @@ function makeSnippet(
 
 const snippets: CorpusSnippet[] = [
   // Video "old" was captured first, but its snippets are out of playback order.
-  makeSnippet({ id: 's1', videoId: 'old', start: 90, capturedAt: '2026-07-01T10:00:00.000Z' }),
-  makeSnippet({ id: 's2', videoId: 'old', start: 30, capturedAt: '2026-07-01T09:00:00.000Z' }),
-  makeSnippet({ id: 's3', videoId: 'new', start: 10, capturedAt: '2026-07-20T08:00:00.000Z' }),
+  makeSnippet({
+    id: 's1',
+    videoId: 'old',
+    startSeconds: 90,
+    capturedAt: '2026-07-01T10:00:00.000Z',
+  }),
+  makeSnippet({
+    id: 's2',
+    videoId: 'old',
+    startSeconds: 30,
+    capturedAt: '2026-07-01T09:00:00.000Z',
+  }),
+  makeSnippet({
+    id: 's3',
+    videoId: 'new',
+    startSeconds: 10,
+    capturedAt: '2026-07-20T08:00:00.000Z',
+  }),
 ];
 
 describe('groupSnippetsByVideo', () => {
@@ -87,8 +113,10 @@ describe('groupSnippetsByVideo', () => {
 describe('findSnippet', () => {
   it('finds a snippet across every group', () => {
     const groups = groupSnippetsByVideo(snippets);
+    const found = findSnippet(groups, 's1');
 
-    expect(findSnippet(groups, 's1')?.videoId).toBe('old');
+    expect(found).toBeDefined();
+    expect(youtubeVideoId(found!)).toBe('old');
     expect(findSnippet(groups, 'missing')).toBeUndefined();
   });
 });

@@ -1,3 +1,4 @@
+import { youtubeStartSeconds } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import { formatTimestamp } from '../utils/youtubeUrl';
 
@@ -43,7 +44,7 @@ export function SelectionList({
               onClick={() => onSelectSnippet(snippet.id)}
             >
               <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
-                {formatTimestamp(snippet.start)}
+                {formatTimestamp(youtubeStartSeconds(snippet))}
               </span>
               <span className="truncate text-sm font-medium">
                 {snippet.selectedText}

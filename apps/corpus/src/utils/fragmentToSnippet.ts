@@ -11,10 +11,7 @@ function normalizeSnippetNote(note: SnippetNote): SnippetNote {
 
 /** Placeholder note until AI generation. */
 export function placeholderNote(fragment: LanguageFragment): SnippetNote {
-  const context = fragment.contextCues
-    .map((cue) => cue.text.trim())
-    .filter(Boolean)
-    .join(' ');
+  const context = fragment.contextText.trim();
 
   return {
     originalSpeech: fragment.selectedText,
