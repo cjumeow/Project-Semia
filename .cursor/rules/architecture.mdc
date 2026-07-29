@@ -81,3 +81,4 @@ types/          →  UI 專用型別；domain 型別用 @semia/shared
 
 - 小改範圍、build 驗證 → `project-overview.mdc`
 - 分支 / PR / 發版 → `git-workflow.mdc`、`release-workflow.mdc`
+- 測什麼 / 何時寫測試 → `testing.mdc`
