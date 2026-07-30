@@ -1,0 +1,49 @@
+---
+description: 未經允許不得自行開 PR 或發版
+alwaysApply: true
+---
+
+# Publish Guard
+
+**沒有使用者明確允許，不要自行發 PR 或發版。**
+
+## 開 PR
+
+以下動作需使用者**明確**說「開 PR」「發 PR」「create PR」等之後才可執行：
+
+- `gh pr create`
+- push branch 的主要目的為建立 / 更新 PR
+- 代使用者提交 PR 描述、assign、merge 等 GitHub PR 操作
+
+實作完成、本地 commit、整理 branch 可以；**停在詢問是否開 PR**。
+
+**不要**為了省事跳過 PR、把分支上的功能直接 commit / push 到 `main`（見 `git-workflow.mdc`）。
+
+## 發版
+
+以下動作需使用者**明確**說「發版」「release」「push tag」「幫我 release」等之後才可執行：
+
+- version bump commit（`manifest.json` / `package.json` / `README.md`）
+- `git push` 到 `main`（為了發版）
+- `git tag` / `git push` tag
+- `gh release create` 或等同的 Release 發布
+
+可以做的準備工作（做完後詢問是否繼續）：
+
+- `npm run verify`
+- 本機 build / 整理 release notes 草稿
+- 列出將執行的 git / tag 指令
+
+## 常見誤判（不要做）
+
+| 使用者說的 | 不代表 |
+|-----------|--------|
+| 「用 v0.5.2」「bump 到 x.y.z」 | 可以 push / tag / release |
+| 「可以，照你說的做」 | 可以開 PR 或發版（可能只是同意實作方案） |
+| 「準備發版」 | 可以 push / tag（先準備，再問） |
+
+## 允許後怎麼做
+
+- 分支與 PR 流程 → `git-workflow.mdc`
+- 發 PR → user rule `creating-pull-requests`
+- 發版 → `release-workflow.mdc`

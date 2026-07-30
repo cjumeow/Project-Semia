@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Release Workflow
 
-使用者說「發版」「release」「bump version」「出新版」時，**由 Agent 在終端完成全流程**，不要只列步驟讓使用者自己做。
+**前置條件**：見 `publish-guard.mdc` — 使用者必須**明確允許發版**後才可 push / tag / release。
+
+使用者明確說「發版」「release」「push tag」「出新版」時，**由 Agent 在終端完成全流程**，不要只列步驟讓使用者自己做。
 
 ## 版本號
 
@@ -43,11 +45,13 @@ alwaysApply: true
 - zip 由 CI 產生，**不要** commit 進 git
 - 本機不需要手動 build / zip / `gh release create`
 
-## Git（在 `main` 上）
+## Git（在 `main` 上發版）
+
+**前置**：功能代碼已在 `main` 上（經 PR merge）。見 `git-workflow.mdc`。
 
 1. 確認在 `main` 且與 `origin/main` 同步（必要時 pull/rebase）
 2. 本機先跑 `npm run verify`，確認會過再推
-3. 單獨 commit version bump：
+3. 在 `main` 上單獨 commit version bump：
 
 ```bash
 git add apps/extension/manifest.json apps/extension/package.json README.md
@@ -87,5 +91,6 @@ git push origin vX.Y.Z
 
 ## 與其他規則
 
-- 發版屬於 **直接 push `main`**，不開 PR
-- 使用者若只說「準備發版內容」但未說 push，先完成 bump + build + zip，**詢問是否 push/tag/release**
+- **分支上的功能必須 PR merge**；version bump 可在 `main` → `git-workflow.mdc`
+- 使用者若只說「準備發版內容」、提到版本號、或只同意實作方案，**不可**自行 push / tag / release；先完成 verify（與可選的 bump 草稿），**詢問是否 push / tag**
+- 開 PR、發版亦需明確允許 → `publish-guard.mdc`
