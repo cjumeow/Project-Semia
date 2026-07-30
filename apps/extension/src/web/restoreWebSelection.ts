@@ -6,6 +6,13 @@ export type WebRestorePayload = {
   textQuote: WebAnchor['textQuote'];
 };
 
+/** Skip SPA retry once the page has enough text for offset lookup to succeed. */
+export const MIN_LOADED_PAGE_TEXT = 200;
+
+export function isPageTextLoaded(root: Element): boolean {
+  return flattenText(root).text.length >= MIN_LOADED_PAGE_TEXT;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -23,12 +30,16 @@ export function findFlatRangeWithQuote(
   if (!needle) return null;
 
   const pattern = needle.split(' ').map(escapeRegExp).join('\\s+');
-  const regex = new RegExp(pattern, 'g');
-  const candidates: Array<{ start: number; end: number }> = [];
+  let candidates: Array<{ start: number; end: number }> = [];
 
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(flat.text)) !== null) {
-    candidates.push({ start: match.index, end: match.index + match[0].length });
+  try {
+    const regex = new RegExp(pattern, 'g');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(flat.text)) !== null) {
+      candidates.push({ start: match.index, end: match.index + match[0].length });
+    }
+  } catch {
+    return null;
   }
 
   if (candidates.length === 0) return null;

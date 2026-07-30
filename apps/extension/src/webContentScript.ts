@@ -1,6 +1,7 @@
 import { saveFragment } from './storage';
 import { buildWebFragment } from './web/buildWebFragment';
 import {
+  isPageTextLoaded,
   restoreWebSelection,
   type WebRestorePayload,
 } from './web/restoreWebSelection';
@@ -216,6 +217,7 @@ async function tryRestorePendingSelection(): Promise<void> {
   const tryOnce = (): boolean => restoreWebSelection(document.body, payload);
 
   if (tryOnce()) return;
+  if (isPageTextLoaded(document.body)) return;
 
   let attempts = 0;
   const timer = window.setInterval(() => {
