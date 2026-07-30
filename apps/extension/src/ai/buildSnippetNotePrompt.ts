@@ -1,4 +1,5 @@
 import type { LanguageFragment } from '@semia/shared';
+import { isYouTubeAnchor } from '@semia/shared';
 import {
   buildSnippetContextUserBlock,
   targetLanguageLabel,
@@ -9,13 +10,11 @@ export type SnippetNotePromptInput = {
   nativeLanguage: string;
 };
 
-export function buildSnippetNotePrompt({
-  fragment,
-  nativeLanguage,
-}: SnippetNotePromptInput): { system: string; user: string } {
-  const targetLang = targetLanguageLabel(nativeLanguage);
-
-  const system = `You are an expert bilingual linguist, translator, and specialized tutor.
+function buildYouTubeSnippetSystemPrompt(
+  fragment: LanguageFragment,
+  targetLang: string,
+): string {
+  return `You are an expert bilingual linguist, translator, and specialized tutor.
 Your task is to analyze a captured language snippet from a video transcript, correct any speech-to-text (ASR) errors based on the context and metadata, and provide a high-quality translation and explanation in ${targetLang}.
 
 Please strictly follow these rules to generate your analysis:
@@ -46,7 +45,50 @@ Your response must only contain the following XML tags. All three inner tags are
   <natural_translation>[Your natural translation here]</natural_translation>
   <background_note>[Your contextual and jargon explanation here]</background_note>
 </result>`;
+}
 
+function buildWebSnippetSystemPrompt(
+  fragment: LanguageFragment,
+  targetLang: string,
+): string {
+  return `You are an expert bilingual linguist, translator, and specialized tutor.
+Your task is to analyze a captured language snippet from a web page and provide a high-quality translation and explanation in ${targetLang}.
+
+Please strictly follow these rules to generate your analysis:
+
+1. <original_speech>:
+   Output the [USER'S CAPTURED SELECTION] in its original language (${fragment.languageCode}).
+   - Preserve the exact wording from the page unless it is clearly broken by a line break or OCR artifact.
+   - Do NOT translate it here.
+
+2. <natural_translation>:
+   Translate the selection into natural, idiomatic ${targetLang}.
+   - Ensure the translation aligns with the tone and meaning of the surrounding page context.
+
+3. <background_note> (Context & Jargon Explanation):
+   Write this section in ${targetLang}. It must include:
+   - Part 1: A clear, contextual explanation of what the selection means within the surrounding page context.
+   - Part 2 (If applicable): Identify and explain any idioms, slang, domain jargon, or fixed collocations in the selection.
+   - If there are no noteworthy idioms, slang, jargon, or collocations, provide only Part 1.
+
+Strict Output Format:
+Your response must only contain the following XML tags. All three inner tags are REQUIRED and must not be empty. Do not output conversational fluff or markdown headers.
+
+<result>
+  <original_speech>[Original text here]</original_speech>
+  <natural_translation>[Your natural translation here]</natural_translation>
+  <background_note>[Your contextual and jargon explanation here]</background_note>
+</result>`;
+}
+
+export function buildSnippetNotePrompt({
+  fragment,
+  nativeLanguage,
+}: SnippetNotePromptInput): { system: string; user: string } {
+  const targetLang = targetLanguageLabel(nativeLanguage);
+  const system = isYouTubeAnchor(fragment.anchor)
+    ? buildYouTubeSnippetSystemPrompt(fragment, targetLang)
+    : buildWebSnippetSystemPrompt(fragment, targetLang);
   const user = buildSnippetContextUserBlock(fragment);
 
   return { system, user };

@@ -93,16 +93,23 @@ export function buildSnippetContextUserBlock(fragment: LanguageFragment): string
   const context = formatTimedContext(fragment);
   const baselineContext = formatBaselineCueWindow(fragment);
   const selection = fragment.selectedText.trim();
+  const sourceLabel = isYouTubeAnchor(fragment.anchor) ? 'video' : 'page';
+  const contextLabel = isYouTubeAnchor(fragment.anchor)
+    ? '[30-SECOND SURROUNDING CONTEXT]'
+    : '[PAGE CONTEXT]';
+  const baselineLabel = isYouTubeAnchor(fragment.anchor)
+    ? '[BASELINE CONTEXT WINDOW (~±3 CUES)]'
+    : '[BASELINE CONTEXT WINDOW]';
 
-  return `Here is the context of the video:
+  return `Here is the context of the ${sourceLabel}:
 ---
-[VIDEO METADATA]
+[${isYouTubeAnchor(fragment.anchor) ? 'VIDEO' : 'PAGE'} METADATA]
 ${metadata}
 
-[30-SECOND SURROUNDING CONTEXT]
+${contextLabel}
 ${context || '(none)'}
 
-[BASELINE CONTEXT WINDOW (~±3 CUES)]
+${baselineLabel}
 ${baselineContext || '(none)'}
 
 [USER'S CAPTURED SELECTION]

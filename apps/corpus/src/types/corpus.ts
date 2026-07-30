@@ -14,17 +14,39 @@ export type CorpusSnippet = LanguageFragment & {
   note: SnippetNote;
 };
 
-/** Snippets grouped under one video, ready for sidebar rendering. */
-export type VideoGroup = {
-  meta: VideoMeta;
+export type YouTubeSourceMeta = {
+  kind: 'youtube';
+  sourceKey: string;
+  sourceUrl: string;
+  videoId: string;
+  title: string;
+  channel: string;
+};
+
+export type WebSourceMeta = {
+  kind: 'web';
+  sourceKey: string;
+  sourceUrl: string;
+  title: string;
+  hostname: string;
+};
+
+export type SourceMeta = YouTubeSourceMeta | WebSourceMeta;
+
+/** Snippets grouped under one source, ready for sidebar rendering. */
+export type SourceGroup = {
+  meta: SourceMeta;
   snippets: CorpusSnippet[];
   /** ISO timestamp of the most recent capture in this group. */
   latestCapturedAt: string;
 };
 
+/** @deprecated Use SourceGroup */
+export type VideoGroup = SourceGroup;
+
 /** Top-level selection state for the three-column layout. */
 export type CorpusSelection = {
-  videoId: string | null;
+  sourceKey: string | null;
   snippetId: string | null;
 };
 

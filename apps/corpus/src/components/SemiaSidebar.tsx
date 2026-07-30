@@ -1,98 +1,270 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { SEMIA_BUILD_ID } from '../buildInfo';
-import type { VideoGroup } from '../types/corpus';
+import type { SourceGroup } from '../types/corpus';
+import { webGroups, youtubeGroups } from '../utils/corpusGrouping';
 
 type SemiaSidebarProps = {
-  groups: VideoGroup[];
-  selectedVideoId: string | null;
-  onSelectVideo: (videoId: string) => void;
+  groups: SourceGroup[];
+  selectedSourceKey: string | null;
+  onSelectSource: (sourceKey: string) => void;
 };
 
 export function SemiaSidebar({
   groups,
-  selectedVideoId,
-  onSelectVideo,
+  selectedSourceKey,
+  onSelectSource,
 }: SemiaSidebarProps) {
+  const [libraryExpanded, setLibraryExpanded] = useState(true);
   const [youtubeExpanded, setYoutubeExpanded] = useState(true);
+  const [webExpanded, setWebExpanded] = useState(true);
+
+  const youtube = youtubeGroups(groups);
+  const web = webGroups(groups);
+  const libraryCount = youtube.length + web.length;
 
   return (
     <aside className="flex h-full flex-col bg-surface">
-      <header className="shrink-0 border-b border-border px-3 py-3">
-        <h1 className="text-xl font-semibold tracking-tight text-text">
+      <header className="shrink-0 px-4 pb-3 pt-4">
+        <h1 className="text-lg font-semibold tracking-tight text-text">
           SEMIA
         </h1>
-        <p className="mt-0.5 text-[13px] text-text-muted">
+        <p className="mt-0.5 text-[12px] text-text-muted">
           Language snippets library
         </p>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <button
-          type="button"
-          className="flex w-full shrink-0 items-center gap-1.5 border-b border-border px-3 py-2 text-left transition-colors hover:bg-canvas"
-          onClick={() => setYoutubeExpanded((v) => !v)}
-          aria-expanded={youtubeExpanded}
-        >
-          <ChevronIcon expanded={youtubeExpanded} />
-          <YouTubeIcon />
-          <span className="text-xs font-medium text-text-secondary">
-            YouTube
-          </span>
-          <span className="ml-auto text-[10px] tabular-nums text-text-muted">
-            {groups.length}
-          </span>
-        </button>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3">
+        <SidebarRow
+          variant="section"
+          expanded={libraryExpanded}
+          onToggle={() => setLibraryExpanded((value) => !value)}
+          icon={<LibraryIcon />}
+          label="Library"
+          count={libraryCount}
+          ariaLabel="Library"
+        />
 
-        {youtubeExpanded && (
-          <nav
-            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1.5 py-1.5"
-            aria-label="YouTube videos"
-          >
-            {groups.map((group) => {
-              const isActive = group.meta.videoId === selectedVideoId;
-              return (
-                <button
-                  key={group.meta.videoId}
-                  type="button"
-                  title={group.meta.title}
-                  className={[
-                    'mb-0.5 flex w-full flex-col rounded-md px-2 py-1.5 text-left transition-colors',
-                    isActive
-                      ? 'bg-accent-soft text-accent'
-                      : 'text-text-secondary hover:bg-canvas hover:text-text',
-                  ].join(' ')}
-                  onClick={() => onSelectVideo(group.meta.videoId)}
-                >
-                  <span className="truncate text-xs font-medium leading-snug">
-                    {group.meta.title}
-                  </span>
-                  <span className="mt-0.5 text-[10px] tabular-nums text-text-muted">
-                    {group.snippets.length} snip
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
+        {libraryExpanded ? (
+          <div className="mt-0.5 space-y-0.5 pl-2">
+            <SidebarFolder
+              title="YouTube"
+              count={youtube.length}
+              expanded={youtubeExpanded}
+              onToggle={() => setYoutubeExpanded((value) => !value)}
+              icon={<YouTubeIcon />}
+              ariaLabel="YouTube videos"
+            >
+              {youtube.length === 0 ? (
+                <EmptyHint>No YouTube captures yet</EmptyHint>
+              ) : (
+                youtube.map((group) => (
+                  <SourceButton
+                    key={group.meta.sourceKey}
+                    title={group.meta.title}
+                    subtitle={`${group.snippets.length} snip`}
+                    isActive={group.meta.sourceKey === selectedSourceKey}
+                    onClick={() => onSelectSource(group.meta.sourceKey)}
+                  />
+                ))
+              )}
+            </SidebarFolder>
+
+            <SidebarFolder
+              title="Web"
+              count={web.length}
+              expanded={webExpanded}
+              onToggle={() => setWebExpanded((value) => !value)}
+              icon={<WebIcon />}
+              ariaLabel="Web pages"
+            >
+              {web.length === 0 ? (
+                <EmptyHint>No web captures yet</EmptyHint>
+              ) : (
+                web.map((group) => (
+                  <SourceButton
+                    key={group.meta.sourceKey}
+                    title={group.meta.title}
+                    subtitle={
+                      group.meta.kind === 'web'
+                        ? group.meta.hostname
+                        : group.meta.sourceUrl
+                    }
+                    isActive={group.meta.sourceKey === selectedSourceKey}
+                    onClick={() => onSelectSource(group.meta.sourceKey)}
+                  />
+                ))
+              )}
+            </SidebarFolder>
+          </div>
+        ) : null}
       </div>
 
-      <footer className="shrink-0 border-t border-border px-3 py-2">
+      <footer className="shrink-0 px-4 py-2.5">
         <p className="font-mono text-[10px] text-text-muted">{SEMIA_BUILD_ID}</p>
       </footer>
     </aside>
   );
 }
 
+const rowBase =
+  'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-[background-color,color,box-shadow] duration-150';
+
+const rowHover = 'hover:bg-black/[0.05] hover:shadow-sm';
+
+function SidebarRow({
+  variant,
+  expanded,
+  onToggle,
+  icon,
+  label,
+  count,
+  ariaLabel,
+}: {
+  variant: 'section' | 'folder';
+  expanded?: boolean;
+  onToggle: () => void;
+  icon?: ReactNode;
+  label: string;
+  count?: number;
+  ariaLabel?: string;
+}) {
+  const isSection = variant === 'section';
+  const isFolder = variant === 'folder';
+
+  return (
+    <button
+      type="button"
+      className={[
+        rowBase,
+        rowHover,
+        isFolder ? 'text-text-secondary' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onClick={onToggle}
+      aria-expanded={expanded}
+      aria-label={ariaLabel ?? label}
+    >
+      <ChevronIcon expanded={expanded ?? false} />
+      {icon ? <span className="shrink-0 opacity-80">{icon}</span> : null}
+      <span
+        className={[
+          'min-w-0 flex-1 truncate',
+          isSection
+            ? 'text-xs font-medium text-text-muted'
+            : isFolder
+              ? 'text-xs font-medium text-text-secondary'
+              : 'text-xs font-medium',
+        ].join(' ')}
+      >
+        {label}
+      </span>
+      {count !== undefined ? (
+        <span className="shrink-0 text-[10px] tabular-nums text-text-muted">
+          {count}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function SidebarFolder({
+  title,
+  count,
+  expanded,
+  onToggle,
+  icon,
+  ariaLabel,
+  children,
+}: {
+  title: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  icon: ReactNode;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <SidebarRow
+        variant="folder"
+        expanded={expanded}
+        onToggle={onToggle}
+        icon={icon}
+        label={title}
+        count={count}
+        ariaLabel={ariaLabel}
+      />
+
+      {expanded ? (
+        <nav
+          className="mt-0.5 space-y-0.5 pl-3"
+          aria-label={ariaLabel}
+        >
+          {children}
+        </nav>
+      ) : null}
+    </div>
+  );
+}
+
+function SourceButton({
+  title,
+  subtitle,
+  isActive,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      className={[
+        rowBase,
+        'my-0.5 flex-col items-stretch gap-0 py-2',
+        rowHover,
+        isActive
+          ? 'bg-accent-soft text-accent shadow-sm ring-1 ring-accent/20'
+          : 'text-text-secondary hover:text-text',
+      ].join(' ')}
+      onClick={onClick}
+    >
+      <span className="truncate text-xs font-medium leading-snug">{title}</span>
+      <span
+        className={[
+          'mt-0.5 truncate text-[10px] tabular-nums',
+          isActive ? 'text-accent/70' : 'text-text-muted',
+        ].join(' ')}
+      >
+        {subtitle}
+      </span>
+    </button>
+  );
+}
+
+function EmptyHint({ children }: { children: ReactNode }) {
+  return (
+    <p className="px-2.5 py-2 text-[11px] leading-snug text-text-muted">
+      {children}
+    </p>
+  );
+}
+
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
-      width="12"
-      height="12"
+      width="10"
+      height="10"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
-      className={`shrink-0 text-text-muted transition-transform ${expanded ? 'rotate-90' : ''}`}
+      strokeWidth="2.5"
+      className={`shrink-0 text-text-muted transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
       aria-hidden
     >
       <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -100,17 +272,61 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
+function LibraryIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      className="shrink-0 text-text-secondary"
+      aria-hidden
+    >
+      <path
+        d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function YouTubeIcon() {
   return (
     <svg
-      width="12"
-      height="12"
+      width="13"
+      height="13"
       viewBox="0 0 24 24"
       fill="currentColor"
       className="shrink-0 text-red-500"
       aria-hidden
     >
       <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.7 31.7 0 0 0 0 12a31.7 31.7 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 24 12a31.7 31.7 0 0 0-.5-5.8zM9.7 15.5V8.5L15.8 12l-6.1 3.5z" />
+    </svg>
+  );
+}
+
+function WebIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="shrink-0 text-sky-600"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
     </svg>
   );
 }
