@@ -18,6 +18,7 @@ export interface CorpusRepository {
   getSnippetNotes(): Promise<SnippetNotesMap>;
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
   generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
+  openWebCapture(fragment: LanguageFragment): Promise<void>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
   subscribe(listener: () => void): () => void;
@@ -85,6 +86,17 @@ class ChromeCorpusRepository implements CorpusRepository {
         ? response.error
         : 'Failed to generate context window.';
     throw new Error(message);
+  }
+
+  async openWebCapture(fragment: LanguageFragment): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'OPEN_WEB_CAPTURE',
+      fragment,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to open web capture.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {
@@ -160,6 +172,14 @@ class MockCorpusRepository implements CorpusRepository {
 
   async generateContextWindow(): Promise<SnippetNote> {
     throw new Error('AI generation requires the Chrome extension.');
+  }
+
+  async openWebCapture(fragment: LanguageFragment): Promise<void> {
+    if (fragment.anchor.kind === 'web') {
+      window.open(fragment.sourceUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    throw new Error('Only web captures can be opened on the original page.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {

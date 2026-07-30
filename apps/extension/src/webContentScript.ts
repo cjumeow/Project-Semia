@@ -1,5 +1,9 @@
 import { saveFragment } from './storage';
 import { buildWebFragment } from './web/buildWebFragment';
+import {
+  restoreWebSelection,
+  type WebRestorePayload,
+} from './web/restoreWebSelection';
 
 const HOST_ID = 'semia-web-capture-host';
 const BOOT_FLAG = '__semiaWebCaptureBooted';
@@ -194,4 +198,33 @@ export function bootWebCapture(): void {
   console.info('[Semia] Web capture ready — select text to capture.');
 }
 
+const RESTORE_RETRY_MS = 500;
+const RESTORE_MAX_ATTEMPTS = 20;
+
+type PendingRestoreResponse =
+  | { ok: true; payload: WebRestorePayload | null }
+  | { ok: false; error?: string };
+
+async function tryRestorePendingSelection(): Promise<void> {
+  const response = (await chrome.runtime.sendMessage({
+    type: 'TAKE_PENDING_WEB_RESTORE',
+  })) as PendingRestoreResponse | undefined;
+
+  if (!response?.ok || !response.payload) return;
+
+  const payload = response.payload;
+  const tryOnce = (): boolean => restoreWebSelection(document.body, payload);
+
+  if (tryOnce()) return;
+
+  let attempts = 0;
+  const timer = window.setInterval(() => {
+    attempts += 1;
+    if (tryOnce() || attempts >= RESTORE_MAX_ATTEMPTS) {
+      window.clearInterval(timer);
+    }
+  }, RESTORE_RETRY_MS);
+}
+
 bootWebCapture();
+void tryRestorePendingSelection();
