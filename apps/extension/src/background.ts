@@ -1,5 +1,6 @@
 import { generateContextWindow } from './ai/generateContextWindow';
 import { generateSnippetNote } from './ai/generateSnippetNote';
+import { deleteFragment, deleteSource } from './deleteCaptures';
 import { ensureSnippetNote } from './ensureSnippetNote';
 import { listFragments, normalizeFragments } from './fragmentsStorage';
 import { openSemiaPage } from './openSemia';
@@ -111,6 +112,18 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, sender, sendRe
 
     if (message.type === 'OPEN_WEB_CAPTURE') {
       await openWebCapture(message.fragment);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'DELETE_FRAGMENT') {
+      await deleteFragment(message.fragmentId);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'DELETE_SOURCE') {
+      await deleteSource(message.sourceUrl);
       sendResponse({ ok: true });
       return;
     }

@@ -1,3 +1,4 @@
+import { useCallback, useEffect } from 'react';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -7,7 +8,9 @@ import { ResizeHandle } from './components/ResizeHandle';
 import { SemiaSidebar } from './components/SemiaSidebar';
 import { SnippetDetail } from './components/SnippetDetail';
 import { SourceWorkspace } from './components/SourceWorkspace';
+import { corpusRepository } from './data/corpusRepository';
 import { snippetSeekSeconds } from './utils/corpusGrouping';
+import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
   const { groups, loading, error, fragmentCount, isLive, refresh } =
@@ -50,6 +53,43 @@ export default function App() {
     });
 
   const showEmpty = !loading && !error && groups.length === 0;
+
+  const handleDeleteSnippet = useCallback(async (): Promise<void> => {
+    if (!selectedSnippet || !isLive) return;
+    await corpusRepository.deleteFragment(selectedSnippet.id);
+    await refresh();
+  }, [isLive, refresh, selectedSnippet]);
+
+  const handleDeleteSource = useCallback(async (): Promise<void> => {
+    if (!selectedGroup || !isLive) return;
+
+    const label =
+      selectedGroup.meta.kind === 'youtube' ? 'YouTube video' : 'web page';
+    const confirmed = window.confirm(
+      `Delete this ${label} and all ${selectedGroup.snippets.length} snippet${
+        selectedGroup.snippets.length === 1 ? '' : 's'
+      }? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    await corpusRepository.deleteSource(selectedGroup.meta.sourceUrl);
+    await refresh();
+  }, [isLive, refresh, selectedGroup]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Backspace') return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableTarget(event.target)) return;
+      if (!selectedSnippet || !isLive || loading || error) return;
+
+      event.preventDefault();
+      void handleDeleteSnippet();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [error, handleDeleteSnippet, isLive, loading, selectedSnippet]);
 
   return (
     <main className="flex h-screen overflow-hidden bg-canvas">
@@ -108,6 +148,7 @@ export default function App() {
             selectedSnippet ? snippetSeekSeconds(selectedSnippet) : undefined
           }
           onSelectSnippet={selectSnippet}
+          onDeleteSource={isLive ? () => void handleDeleteSource() : undefined}
         />
       )}
 

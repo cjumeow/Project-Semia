@@ -26,3 +26,23 @@ export async function saveSnippetNote(
     [SNIPPET_NOTES_STORAGE_KEY]: notes,
   });
 }
+
+export async function deleteSnippetNotes(fragmentIds: string[]): Promise<void> {
+  if (fragmentIds.length === 0) return;
+
+  const notes = await getSnippetNotes();
+  let changed = false;
+
+  for (const fragmentId of fragmentIds) {
+    if (notes[fragmentId]) {
+      delete notes[fragmentId];
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    await chrome.storage.local.set({
+      [SNIPPET_NOTES_STORAGE_KEY]: notes,
+    });
+  }
+}

@@ -27,5 +27,7 @@ export type BackgroundMessage =
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
   | { type: 'OPEN_WEB_CAPTURE'; fragment: LanguageFragment }
+  | { type: 'DELETE_FRAGMENT'; fragmentId: string }
+  | { type: 'DELETE_SOURCE'; sourceUrl: string }
   | { type: 'TAKE_PENDING_WEB_RESTORE' }
   | { type: 'FRAGMENTS_CHANGED' };

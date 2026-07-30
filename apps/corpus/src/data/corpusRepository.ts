@@ -19,6 +19,8 @@ export interface CorpusRepository {
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
   generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
+  deleteFragment(fragmentId: string): Promise<void>;
+  deleteSource(sourceUrl: string): Promise<void>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
   subscribe(listener: () => void): () => void;
@@ -97,6 +99,28 @@ class ChromeCorpusRepository implements CorpusRepository {
     if (response?.ok) return;
 
     throw new Error(response?.error ?? 'Failed to open web capture.');
+  }
+
+  async deleteFragment(fragmentId: string): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'DELETE_FRAGMENT',
+      fragmentId,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to delete snippet.');
+  }
+
+  async deleteSource(sourceUrl: string): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'DELETE_SOURCE',
+      sourceUrl,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to delete source.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {
@@ -180,6 +204,14 @@ class MockCorpusRepository implements CorpusRepository {
       return;
     }
     throw new Error('Only web captures can be opened on the original page.');
+  }
+
+  async deleteFragment(): Promise<void> {
+    throw new Error('Delete requires the Chrome extension.');
+  }
+
+  async deleteSource(): Promise<void> {
+    throw new Error('Delete requires the Chrome extension.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {
