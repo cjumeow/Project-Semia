@@ -1,152 +1,197 @@
 import { saveFragment } from './storage';
 import { buildWebFragment } from './web/buildWebFragment';
 
-const TOOLBAR_ID = 'semia-web-capture-toolbar';
+const HOST_ID = 'semia-web-capture-host';
+const BOOT_FLAG = '__semiaWebCaptureBooted';
 
-function ensureStyles(): void {
-  if (document.getElementById('semia-web-capture-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'semia-web-capture-styles';
-  style.textContent = `
-    #${TOOLBAR_ID} {
-      position: fixed;
-      z-index: 2147483646;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      border: 1px solid rgba(0,0,0,0.12);
-      background: #fff;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-      font: 13px/1.2 system-ui, -apple-system, sans-serif;
-      color: #111;
-    }
-    #${TOOLBAR_ID} button {
-      border: none;
-      border-radius: 8px;
-      padding: 6px 10px;
-      background: #111827;
-      color: #fff;
-      cursor: pointer;
-      font: inherit;
-    }
-    #${TOOLBAR_ID} button:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-    #${TOOLBAR_ID} .semia-web-status {
-      color: #4b5563;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-  `;
-  document.documentElement.appendChild(style);
+type Toolbar = {
+  host: HTMLElement;
+  status: HTMLElement;
+  button: HTMLButtonElement;
+};
+
+/**
+ * Styles are applied through CSSOM rather than a <style> element because page
+ * CSP can block content-script style blocks, leaving the toolbar invisible.
+ */
+function applyStyles(el: HTMLElement, styles: Record<string, string>): void {
+  for (const [property, value] of Object.entries(styles)) {
+    el.style.setProperty(property, value, 'important');
+  }
 }
 
-function hideToolbar(): void {
-  document.getElementById(TOOLBAR_ID)?.remove();
+function removeToolbar(): void {
+  document.getElementById(HOST_ID)?.remove();
 }
 
-function showToolbar(range: Range): void {
-  ensureStyles();
-  hideToolbar();
+function createToolbar(): Toolbar {
+  const host = document.createElement('div');
+  host.id = HOST_ID;
+  applyStyles(host, {
+    position: 'fixed',
+    top: '0px',
+    left: '0px',
+    'z-index': '2147483647',
+    margin: '0',
+    padding: '0',
+    border: '0',
+    background: 'transparent',
+  });
 
-  const toolbar = document.createElement('div');
-  toolbar.id = TOOLBAR_ID;
+  const shadow = host.attachShadow({ mode: 'open' });
+
+  const panel = document.createElement('div');
+  applyStyles(panel, {
+    display: 'flex',
+    'align-items': 'center',
+    gap: '8px',
+    padding: '6px 8px',
+    'border-radius': '10px',
+    border: '1px solid rgba(0,0,0,0.12)',
+    background: '#ffffff',
+    'box-shadow': '0 8px 24px rgba(0,0,0,0.18)',
+    font: '13px/1.2 system-ui, -apple-system, sans-serif',
+    color: '#111827',
+    'white-space': 'nowrap',
+  });
 
   const status = document.createElement('span');
-  status.className = 'semia-web-status';
-  status.textContent = 'Capture selection to SEMIA';
+  status.textContent = 'Capture to SEMIA';
+  applyStyles(status, {
+    color: '#4b5563',
+    'font-size': '12px',
+    font: '12px/1.2 system-ui, -apple-system, sans-serif',
+  });
 
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = 'Capture';
+  applyStyles(button, {
+    border: '0',
+    'border-radius': '8px',
+    padding: '6px 10px',
+    background: '#111827',
+    color: '#ffffff',
+    cursor: 'pointer',
+    font: '13px/1.2 system-ui, -apple-system, sans-serif',
+  });
 
+  panel.append(status, button);
+  shadow.append(panel);
+  document.body.appendChild(host);
+
+  return { host, status, button };
+}
+
+function positionToolbar(host: HTMLElement, rect: DOMRect): void {
+  const width = host.offsetWidth || 220;
+  const height = host.offsetHeight || 36;
+  const top = rect.top > height + 12 ? rect.top - height - 8 : rect.bottom + 8;
+  const left = Math.min(
+    Math.max(8, rect.left),
+    Math.max(8, window.innerWidth - width - 8),
+  );
+
+  applyStyles(host, { top: `${top}px`, left: `${left}px` });
+}
+
+function showToolbar(range: Range): void {
+  removeToolbar();
+
+  const savedRange = range.cloneRange();
+  const { host, status, button } = createToolbar();
+
+  // Keep the page selection intact when pressing the button.
   button.addEventListener('mousedown', (event) => {
     event.preventDefault();
     event.stopPropagation();
   });
 
-  button.addEventListener('click', async () => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void capture();
+  });
+
+  async function capture(): Promise<void> {
     button.disabled = true;
+    applyStyles(button, { opacity: '0.6', cursor: 'default' });
     status.textContent = 'Saving…';
+
     try {
-      const fragment = buildWebFragment(range);
+      const fragment = buildWebFragment(savedRange);
       if (!fragment) {
         status.textContent = 'Could not capture selection';
         button.disabled = false;
+        applyStyles(button, { opacity: '1', cursor: 'pointer' });
         return;
       }
+
       await saveFragment(fragment);
       status.textContent = 'Saved to SEMIA';
-      window.setTimeout(hideToolbar, 900);
-    } catch {
+      window.setTimeout(removeToolbar, 1000);
+    } catch (error) {
+      console.error('[Semia] Failed to save web capture:', error);
       status.textContent = 'Save failed';
       button.disabled = false;
+      applyStyles(button, { opacity: '1', cursor: 'pointer' });
     }
-  });
+  }
 
-  toolbar.append(status, button);
-  document.documentElement.appendChild(toolbar);
-
-  const rect = range.getBoundingClientRect();
-  const top = Math.max(8, rect.top - toolbar.offsetHeight - 8);
-  const left = Math.min(
-    window.innerWidth - toolbar.offsetWidth - 8,
-    Math.max(8, rect.left),
-  );
-  toolbar.style.top = `${top}px`;
-  toolbar.style.left = `${left}px`;
+  positionToolbar(host, range.getBoundingClientRect());
 }
 
-function handleSelectionChange(): void {
+function isInsideToolbar(node: EventTarget | null): boolean {
+  const host = document.getElementById(HOST_ID);
+  if (!host || !(node instanceof Node)) return false;
+  return host === node || host.contains(node);
+}
+
+function syncToolbarToSelection(): void {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-    hideToolbar();
+    removeToolbar();
     return;
   }
 
   const range = selection.getRangeAt(0);
-  const text = range.toString().trim();
-  if (!text) {
-    hideToolbar();
+  if (!range.toString().trim()) {
+    removeToolbar();
     return;
   }
 
   showToolbar(range);
 }
 
-function installKeyboardShortcut(): void {
-  document.addEventListener('keydown', (event) => {
-    if (!event.altKey || event.key.toLowerCase() !== 'z') return;
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
-    event.preventDefault();
-    const toolbar = document.getElementById(TOOLBAR_ID);
-    const button = toolbar?.querySelector('button');
-    button?.click();
-  });
-}
-
-function installDismissHandlers(): void {
-  document.addEventListener('mousedown', (event) => {
-    const toolbar = document.getElementById(TOOLBAR_ID);
-    if (!toolbar) return;
-    if (event.target instanceof Node && toolbar.contains(event.target)) return;
-    hideToolbar();
-  });
-
-  document.addEventListener('scroll', hideToolbar, true);
-}
-
 export function bootWebCapture(): void {
   if (window.location.hostname.includes('youtube.com')) return;
-  document.addEventListener('mouseup', () => {
-    window.setTimeout(handleSelectionChange, 0);
+
+  const scope = window as unknown as Record<string, boolean>;
+  if (scope[BOOT_FLAG]) return;
+  scope[BOOT_FLAG] = true;
+
+  document.addEventListener('mouseup', (event) => {
+    if (isInsideToolbar(event.target)) return;
+    window.setTimeout(syncToolbarToSelection, 0);
   });
-  installKeyboardShortcut();
-  installDismissHandlers();
+
+  document.addEventListener('keyup', (event) => {
+    if (!event.shiftKey && event.key !== 'Shift') return;
+    window.setTimeout(syncToolbarToSelection, 0);
+  });
+
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (isInsideToolbar(event.target)) return;
+      removeToolbar();
+    },
+    true,
+  );
+
+  window.addEventListener('scroll', removeToolbar, { passive: true });
+
+  console.info('[Semia] Web capture ready — select text to capture.');
 }
 
 bootWebCapture();

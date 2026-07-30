@@ -2,33 +2,61 @@ import type { FlatText } from './flattenText';
 
 const CONTEXT_RADIUS = 1500;
 
-const SENTENCE_END = /[.!?。！？]\s+/;
+const SENTENCE_END_SOURCE = '[.!?。！？]\\s+';
 
-function trimToSentenceStart(text: string, atStart: boolean): string {
-  if (atStart) return text;
-  const match = text.match(SENTENCE_END);
-  if (!match || match.index === undefined) return text;
-  return text.slice(match.index + match[0].length);
+type Boundary = { index: number; length: number };
+
+function firstSentenceEnd(text: string): Boundary | null {
+  const match = new RegExp(SENTENCE_END_SOURCE).exec(text);
+  return match ? { index: match.index, length: match[0].length } : null;
 }
 
-function trimToSentenceEnd(text: string, atEnd: boolean): string {
-  if (atEnd) return text;
-  const matches = [...text.matchAll(SENTENCE_END)];
-  if (matches.length === 0) return text;
-  const last = matches[matches.length - 1]!;
-  return text.slice(0, last.index! + last[0].length);
+function lastSentenceEnd(text: string): Boundary | null {
+  const pattern = new RegExp(SENTENCE_END_SOURCE, 'g');
+  let last: Boundary | null = null;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    last = { index: match.index, length: match[0].length };
+  }
+
+  return last;
 }
 
-/** Extract surrounding article text around a flat-text selection. */
+/**
+ * Extract surrounding article text around a flat-text selection, snapped to
+ * sentence boundaries. Boundaries are only applied when they keep the selection
+ * itself inside the returned context.
+ */
 export function extractContext(
   flat: FlatText,
   start: number,
   end: number,
 ): string {
-  const rawStart = Math.max(0, start - CONTEXT_RADIUS);
-  const rawEnd = Math.min(flat.text.length, end + CONTEXT_RADIUS);
-  let context = flat.text.slice(rawStart, rawEnd);
-  context = trimToSentenceStart(context, rawStart === 0);
-  context = trimToSentenceEnd(context, rawEnd === flat.text.length);
-  return context.trim();
+  const windowStart = Math.max(0, start - CONTEXT_RADIUS);
+  const windowEnd = Math.min(flat.text.length, end + CONTEXT_RADIUS);
+  const slice = flat.text.slice(windowStart, windowEnd);
+
+  const selectionStart = start - windowStart;
+  const selectionEnd = end - windowStart;
+
+  let from = 0;
+  if (windowStart > 0) {
+    const boundary = firstSentenceEnd(slice);
+    if (boundary) {
+      const cut = boundary.index + boundary.length;
+      if (cut <= selectionStart) from = cut;
+    }
+  }
+
+  let to = slice.length;
+  if (windowEnd < flat.text.length) {
+    const boundary = lastSentenceEnd(slice);
+    if (boundary) {
+      const cut = boundary.index + boundary.length;
+      if (cut >= selectionEnd) to = cut;
+    }
+  }
+
+  return slice.slice(from, to).trim();
 }

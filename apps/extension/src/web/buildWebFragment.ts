@@ -2,7 +2,7 @@ import type { LanguageFragment } from '@semia/shared';
 import { getArticleRoot } from './articleRoot';
 import { buildWebAnchor } from './buildWebAnchor';
 import { extractContext } from './extractContext';
-import { flattenText } from './flattenText';
+import { findFlatRange, flattenText, type FlatText } from './flattenText';
 
 function createId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -23,18 +23,35 @@ function pageTitle(doc: Document = document): string {
   return doc.title.trim() || doc.location.hostname;
 }
 
-export function buildWebFragment(range: Range): LanguageFragment | null {
-  const root = getArticleRoot();
-  const flat = flattenText(root);
-  const anchor = buildWebAnchor(flat, range);
-  if (!anchor) return null;
+type LocatedSelection = {
+  flat: FlatText;
+  offsets: { start: number; end: number } | null;
+};
 
-  const selectedText = anchor.textQuote.exact;
-  const contextText = extractContext(
-    flat,
-    anchor.textPosition.start,
-    anchor.textPosition.end,
-  );
+/**
+ * Readability rebuilds the article into a detached tree, so a selection made in
+ * the live page is not always present there. Fall back to the live body.
+ */
+function locateSelection(selectedText: string): LocatedSelection {
+  const articleFlat = flattenText(getArticleRoot());
+  const articleOffsets = findFlatRange(articleFlat, selectedText);
+  if (articleOffsets) {
+    return { flat: articleFlat, offsets: articleOffsets };
+  }
+
+  const bodyFlat = flattenText(document.body);
+  return { flat: bodyFlat, offsets: findFlatRange(bodyFlat, selectedText) };
+}
+
+export function buildWebFragment(range: Range): LanguageFragment | null {
+  const selectedText = range.toString().replace(/\s+/g, ' ').trim();
+  if (!selectedText) return null;
+
+  const { flat, offsets } = locateSelection(selectedText);
+  const anchor = buildWebAnchor(flat, selectedText, offsets);
+  const contextText = offsets
+    ? extractContext(flat, offsets.start, offsets.end)
+    : selectedText;
 
   return {
     id: createId(),

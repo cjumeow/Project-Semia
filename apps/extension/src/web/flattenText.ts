@@ -13,6 +13,7 @@ const BLOCK_TAGS = new Set([
   'ARTICLE',
   'ASIDE',
   'BLOCKQUOTE',
+  'BODY',
   'DD',
   'DIV',
   'DL',
@@ -47,52 +48,61 @@ const BLOCK_TAGS = new Set([
 const SKIP_ANCESTOR_SELECTOR =
   'script, style, noscript, svg, template, [hidden], [aria-hidden="true"]';
 
-function isHiddenTextNode(node: Text): boolean {
-  const parent = node.parentElement;
-  if (!parent) return true;
-  if (parent.closest(SKIP_ANCESTOR_SELECTOR)) return true;
+function isHiddenElement(element: Element, cache: Map<Element, boolean>): boolean {
+  const cached = cache.get(element);
+  if (cached !== undefined) return cached;
 
-  let element: Element | null = parent;
-  while (element) {
+  let hidden = false;
+  if (element.matches(SKIP_ANCESTOR_SELECTOR)) {
+    hidden = true;
+  } else {
     const style = window.getComputedStyle(element);
     if (style.display === 'none' || style.visibility === 'hidden') {
-      return true;
+      hidden = true;
+    } else {
+      const parent = element.parentElement;
+      hidden = parent ? isHiddenElement(parent, cache) : false;
     }
-    element = element.parentElement;
   }
 
-  return false;
+  cache.set(element, hidden);
+  return hidden;
 }
 
-function isBlockElement(element: Element | null): boolean {
-  if (!element) return false;
+function isBlockElement(element: Element): boolean {
   if (BLOCK_TAGS.has(element.tagName)) return true;
-  const style = window.getComputedStyle(element);
-  return style.display === 'block' || style.display === 'list-item';
+  const display = window.getComputedStyle(element).display;
+  return display === 'block' || display === 'list-item' || display === 'flex';
 }
 
-function needsLeadingBreak(
-  chunks: FlatTextChunk[],
-  text: string,
-  node: Text,
-): boolean {
-  if (chunks.length === 0 || text.endsWith('\n')) return false;
-  let element: Element | null = node.parentElement;
+function nearestBlockAncestor(node: Text): Element | null {
+  let element = node.parentElement;
   while (element) {
-    if (isBlockElement(element)) return true;
+    if (isBlockElement(element)) return element;
     element = element.parentElement;
   }
-  return false;
+  return null;
 }
 
-/** Flatten visible text under a root element into one searchable string. */
+/**
+ * Flatten visible text under a root into one searchable string.
+ *
+ * Inline markup stays on one line so that a selection spanning `<em>` or `<a>`
+ * still matches the source text; only block boundaries introduce a newline.
+ */
 export function flattenText(root: Element): FlatText {
   const chunks: FlatTextChunk[] = [];
+  const hiddenCache = new Map<Element, boolean>();
   let text = '';
+  let previousBlock: Element | null = null;
+  let sawFirstChunk = false;
+  let pendingSpace = false;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      return isHiddenTextNode(node as Text)
+      const parent = (node as Text).parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      return isHiddenElement(parent, hiddenCache)
         ? NodeFilter.FILTER_REJECT
         : NodeFilter.FILTER_ACCEPT;
     },
@@ -101,21 +111,31 @@ export function flattenText(root: Element): FlatText {
   let current = walker.nextNode() as Text | null;
   while (current) {
     const raw = current.data.replace(/\s+/g, ' ');
-    if (!raw.trim()) {
+    const content = raw.trim();
+
+    if (!content) {
+      // A whitespace-only node still separates the words around it.
+      if (raw) pendingSpace = true;
       current = walker.nextNode() as Text | null;
       continue;
     }
 
-    if (needsLeadingBreak(chunks, text, current)) {
-      text += '\n';
+    const block = nearestBlockAncestor(current);
+
+    if (sawFirstChunk) {
+      if (block !== previousBlock) {
+        if (!text.endsWith('\n')) text += '\n';
+      } else if ((pendingSpace || raw.startsWith(' ')) && !/\s$/.test(text)) {
+        text += ' ';
+      }
     }
 
-    const normalized = raw.trim();
     chunks.push({ node: current, start: text.length });
-    text += normalized;
-    if (isBlockElement(current.parentElement)) {
-      text += '\n';
-    }
+    text += content;
+
+    pendingSpace = raw.endsWith(' ');
+    previousBlock = block;
+    sawFirstChunk = true;
 
     current = walker.nextNode() as Text | null;
   }
@@ -123,15 +143,24 @@ export function flattenText(root: Element): FlatText {
   return { text: text.trim(), chunks };
 }
 
-export function rangeToFlatOffsets(
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Locate a selection inside flattened text, tolerating whitespace differences
+ * between `Range.toString()` and the flattened block separators.
+ */
+export function findFlatRange(
   flat: FlatText,
-  range: Range,
+  selectedText: string,
 ): { start: number; end: number } | null {
-  const selected = range.toString().replace(/\s+/g, ' ').trim();
-  if (!selected) return null;
+  const needle = selectedText.replace(/\s+/g, ' ').trim();
+  if (!needle) return null;
 
-  const start = flat.text.indexOf(selected);
-  if (start < 0) return null;
+  const pattern = needle.split(' ').map(escapeRegExp).join('\\s+');
+  const match = new RegExp(pattern).exec(flat.text);
+  if (!match) return null;
 
-  return { start, end: start + selected.length };
+  return { start: match.index, end: match.index + match[0].length };
 }
