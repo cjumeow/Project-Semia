@@ -8,6 +8,7 @@ Master languages through seamless immersion and semantic understanding.
 
 | Version | Date | Summary |
 |---------|------|---------|
+| [v0.5.1](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.1) | 2026-07-31 | Web jump-back with native selection, delete source/snippets (Backspace), restore CPU fix |
 | [v0.5.0](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.0) | 2026-07-30 | Web page capture, Library sidebar, Text Fragment jump-back, source-aware AI prompts |
 | [v0.4.3](https://github.com/cjumeow/Project-Semia/releases/tag/v0.4.3) | 2026-07-29 | Underlined focus word, larger SEMIA header, unit tests and automated release |
 | [v0.4.2](https://github.com/cjumeow/Project-Semia/releases/tag/v0.4.2) | 2026-07-29 | 30s capture context, XML AI notes, manual Context Window generate |
@@ -17,4 +18,4 @@ Master languages through seamless immersion and semantic understanding.
 | [v0.2.0](https://github.com/cjumeow/Project-Semia/releases/tag/v0.2.0) | 2026-07-25 | Caption overlay capture, Alt+S quick capture, cue navigation |
 | [v0.1.0](https://github.com/cjumeow/Project-Semia/releases/tag/v0.1.0) | 2026-07-24 | First installable build — YouTube transcript capture |
 
-Install: download `semia-extension-v0.5.0.zip` from the release page (not Source code).
+Install: download `semia-extension-v0.5.1.zip` from the release page (not Source code).
