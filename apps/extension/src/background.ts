@@ -1,11 +1,16 @@
 import { generateContextWindow } from './ai/generateContextWindow';
 import { generateSnippetNote } from './ai/generateSnippetNote';
+import { deleteFragment, deleteSource } from './deleteCaptures';
 import { ensureSnippetNote } from './ensureSnippetNote';
 import { listFragments, normalizeFragments } from './fragmentsStorage';
 import { openSemiaPage } from './openSemia';
 import { getSnippetNote, getSnippetNotes, saveSnippetNote } from './snippetNotesStorage';
 import type { BackgroundMessage } from './types';
 import { saveTranscript, saveTranscriptError } from './storage';
+import {
+  openWebCapture,
+  takePendingWebRestore,
+} from './pendingWebRestore';
 import { FRAGMENTS_STORAGE_KEY, SNIPPET_NOTES_STORAGE_KEY } from '@semia/shared';
 
 chrome.action.onClicked.addListener(() => {
@@ -49,7 +54,7 @@ async function queueNotesForNewFragments(
 }
 
 // Service worker entry.
-chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: BackgroundMessage, sender, sendResponse) => {
   (async () => {
     if (message.type === 'SAVE_TRANSCRIPT') {
       await saveTranscript(message.transcript);
@@ -102,6 +107,34 @@ chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendR
       const note = { ...existing, dynamicContextBlock };
       await saveSnippetNote(message.fragment.id, note);
       sendResponse({ ok: true, note });
+      return;
+    }
+
+    if (message.type === 'OPEN_WEB_CAPTURE') {
+      await openWebCapture(message.fragment);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'DELETE_FRAGMENT') {
+      await deleteFragment(message.fragmentId);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'DELETE_SOURCE') {
+      await deleteSource(message.sourceUrl);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'TAKE_PENDING_WEB_RESTORE') {
+      const tabId = sender.tab?.id;
+      if (!tabId) {
+        sendResponse({ ok: true, payload: null });
+        return;
+      }
+      sendResponse({ ok: true, payload: takePendingWebRestore(tabId) });
       return;
     }
 

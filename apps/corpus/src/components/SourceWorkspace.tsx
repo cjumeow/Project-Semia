@@ -8,6 +8,7 @@ type SourceWorkspaceProps = {
   selectedSnippetId: string | null;
   seekSeconds: number | undefined;
   onSelectSnippet: (snippetId: string) => void;
+  onDeleteSource?: () => void;
 };
 
 export function SourceWorkspace({
@@ -15,6 +16,7 @@ export function SourceWorkspace({
   selectedSnippetId,
   seekSeconds,
   onSelectSnippet,
+  onDeleteSource,
 }: SourceWorkspaceProps) {
   if (!group) {
     return (
@@ -33,14 +35,29 @@ export function SourceWorkspace({
   return (
     <section className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
       <header className="shrink-0 border-b border-border bg-surface px-5 py-4">
-        <h2 className="line-clamp-2 text-sm font-semibold leading-snug text-text">
-          {group.meta.title}
-        </h2>
-        <p className="mt-1 text-xs text-text-muted">
-          {group.meta.kind === 'youtube'
-            ? group.meta.channel
-            : group.meta.hostname}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="line-clamp-2 text-sm font-semibold leading-snug text-text">
+              {group.meta.title}
+            </h2>
+            <p className="mt-1 text-xs text-text-muted">
+              {group.meta.kind === 'youtube'
+                ? group.meta.channel
+                : group.meta.hostname}
+            </p>
+          </div>
+          {onDeleteSource ? (
+            <button
+              type="button"
+              className="shrink-0 rounded-md border border-border px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+              onClick={onDeleteSource}
+              aria-label={`Delete all snippets from ${group.meta.title}`}
+              title="Delete source and all snippets"
+            >
+              Delete source
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <div className="shrink-0 px-4 pb-4 pt-5">
