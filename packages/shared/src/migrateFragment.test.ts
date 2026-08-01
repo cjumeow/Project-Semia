@@ -32,6 +32,7 @@ const migratedFixture = {
   sourceUrl: 'https://www.youtube.com/watch?v=abc123',
   sourceTitle: 'YouTube · abc123',
   capturedAt: '2026-07-29T00:00:00.000Z',
+  triageStatus: 'pending' as const,
   anchor: {
     kind: 'youtube' as const,
     videoId: 'abc123',
@@ -93,5 +94,21 @@ describe('migrateFragment', () => {
       'legacy-1',
       'legacy-2',
     ]);
+  });
+
+  it('defaults missing triageStatus to pending', () => {
+    const { triageStatus: _, ...withoutStatus } = migratedFixture;
+    const migrated = migrateFragment(withoutStatus);
+
+    expect(migrated?.triageStatus).toBe('pending');
+  });
+
+  it('preserves stored triageStatus when present', () => {
+    const migrated = migrateFragment({
+      ...migratedFixture,
+      triageStatus: 'review',
+    });
+
+    expect(migrated?.triageStatus).toBe('review');
   });
 });
