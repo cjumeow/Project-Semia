@@ -100,3 +100,28 @@ export function WebIcon({
 
 /** @deprecated Use WebIcon */
 export const WebPageIcon = WebIcon;
+
+/** Lucide book-open-check — Review Queue / spaced review. */
+export function ReviewQueueIcon({
+  className = 'shrink-0 text-text-secondary',
+  size = 14,
+}: NavIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 5v16" />
+      <path d="m16 12 2 2 4-4" />
+      <path d="M22 6V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 0 4 2 5 5 0 0 0 4-2h4.001A2 2 0 0 0 22 17v-1.344" />
+    </svg>
+  );
+}

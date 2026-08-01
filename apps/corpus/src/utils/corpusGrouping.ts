@@ -1,9 +1,12 @@
 import {
   allPendingSnippets,
+  dueReviewFragments,
   sourceKey,
+  STAGE_LABELS,
   youtubeStartSeconds,
   resolveYoutubeChannel,
   resolveYoutubeTitle,
+  type ReviewStage,
   type SnippetTriageStatus,
 } from '@semia/shared';
 import type { CorpusSnippet, SourceGroup, VideoMeta } from '../types/corpus';
@@ -168,6 +171,32 @@ export function libraryGroups(groups: SourceGroup[]): SourceGroup[] {
 /** Flat pending queue sorted for the inbox middle column. */
 export function pendingSnippets(snippets: CorpusSnippet[]): CorpusSnippet[] {
   return allPendingSnippets(snippets) as CorpusSnippet[];
+}
+
+/** Due review snippets for the Review Queue focus session. */
+export function dueReviewSnippets(
+  snippets: CorpusSnippet[],
+  now: string = new Date().toISOString(),
+): CorpusSnippet[] {
+  return dueReviewFragments(snippets, now) as CorpusSnippet[];
+}
+
+export function reviewScheduleMeta(
+  snippet: CorpusSnippet,
+  now: string = new Date().toISOString(),
+): { stageLabel: string; overdueDays: number | null } {
+  const stage = (snippet.reviewStage ?? 0) as ReviewStage;
+  const overdueDays =
+    snippet.dueAt && snippet.dueAt < now
+      ? Math.floor(
+          (Date.parse(now) - Date.parse(snippet.dueAt)) / (24 * 60 * 60 * 1000),
+        )
+      : null;
+
+  return {
+    stageLabel: STAGE_LABELS[stage],
+    overdueDays,
+  };
 }
 
 export function pendingCountForSourceGroup(group: SourceGroup): number {
