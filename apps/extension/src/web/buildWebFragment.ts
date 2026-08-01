@@ -99,6 +99,7 @@ export function buildWebFragment(range: Range): WebCaptureResult {
       sourceUrl: window.location.href,
       sourceTitle: pageTitle(),
       capturedAt: new Date().toISOString(),
+      triageStatus: 'pending',
       anchor,
     },
   };

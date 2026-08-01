@@ -7,6 +7,7 @@ import {
   appendFragment,
   listFragments,
   normalizeFragments,
+  setSnippetTriageStatus as persistSnippetTriageStatus,
 } from '../fragmentsStorage';
 import { openWebCapture } from '../pendingWebRestore';
 import {
@@ -25,7 +26,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
   | Extract<BackgroundMessage, { type: 'OPEN_WEB_CAPTURE' }>
   | Extract<BackgroundMessage, { type: 'DELETE_FRAGMENT' }>
-  | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>;
+  | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>
+  | Extract<BackgroundMessage, { type: 'SET_SNIPPET_TRIAGE_STATUS' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -39,7 +41,8 @@ export function isFragmentMessage(
     message.type === 'GENERATE_CONTEXT_WINDOW' ||
     message.type === 'OPEN_WEB_CAPTURE' ||
     message.type === 'DELETE_FRAGMENT' ||
-    message.type === 'DELETE_SOURCE'
+    message.type === 'DELETE_SOURCE' ||
+    message.type === 'SET_SNIPPET_TRIAGE_STATUS'
   );
 }
 
@@ -92,6 +95,10 @@ export async function handleFragmentMessage(
 
     case 'DELETE_SOURCE':
       await deleteSource(message.sourceUrl);
+      return { ok: true };
+
+    case 'SET_SNIPPET_TRIAGE_STATUS':
+      await persistSnippetTriageStatus(message.fragmentId, message.status);
       return { ok: true };
   }
 }

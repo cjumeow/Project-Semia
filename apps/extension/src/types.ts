@@ -1,4 +1,4 @@
-import type { LanguageFragment, StoredTranscript } from '@semia/shared';
+import type { LanguageFragment, SnippetTriageStatus, StoredTranscript } from '@semia/shared';
 
 export type {
   FocusRef,
@@ -32,5 +32,10 @@ export type BackgroundMessage =
   | { type: 'OPEN_WEB_CAPTURE'; fragment: LanguageFragment }
   | { type: 'DELETE_FRAGMENT'; fragmentId: string }
   | { type: 'DELETE_SOURCE'; sourceUrl: string }
+  | {
+      type: 'SET_SNIPPET_TRIAGE_STATUS';
+      fragmentId: string;
+      status: Exclude<SnippetTriageStatus, 'pending'>;
+    }
   | { type: 'TAKE_PENDING_WEB_RESTORE' }
   | { type: 'WEB_RESTORE_RESULT'; fragmentId: string; ok: boolean };
