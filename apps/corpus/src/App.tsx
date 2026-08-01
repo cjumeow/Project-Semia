@@ -92,9 +92,9 @@ export default function App() {
   }, [error, handleDeleteSnippet, isLive, loading, selectedSnippet]);
 
   return (
-    <main className="flex h-screen overflow-hidden bg-canvas">
+    <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
-        className="flex h-full shrink-0 flex-col border-r border-border"
+        className="flex h-full shrink-0 flex-col border-r border-border bg-shelf"
         style={{ width: sidebarWidth }}
       >
         <SemiaSidebar
@@ -154,7 +154,7 @@ export default function App() {
 
       <ResizeHandle onResizeStart={onDetailResizeStart} />
 
-      <div className="flex h-full shrink-0 border-l border-border">
+      <div className="flex h-full shrink-0 border-l border-border bg-surface shadow-[inset_1px_0_0_rgba(28,25,23,0.04)]">
         <SnippetDetail
           snippet={selectedSnippet}
           width={detailWidth}

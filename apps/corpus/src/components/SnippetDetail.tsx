@@ -59,7 +59,7 @@ export function SnippetDetail({
       style={{ width }}
     >
       <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface/95 px-5 py-4 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold leading-snug tracking-tight text-text">
+        <h2 className="font-reading min-w-0 text-xl font-semibold leading-snug tracking-tight text-text">
           {snippet.selectedText}
         </h2>
         <div className="flex shrink-0 flex-col items-end gap-2">

@@ -75,7 +75,7 @@ export function webLocateFailureLabel(anchor: WebAnchor): string | undefined {
 
 export function webJumpBackUncertainLabel(): string {
   return (
-    'Jump-back may not highlight this selection. Open the page to try — ' +
-    'if restore fails, a note will appear here.'
+    'This selection may not highlight on the page. ' +
+    'If restore fails, a note will appear in snippet detail.'
   );
 }

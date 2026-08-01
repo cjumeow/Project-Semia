@@ -19,7 +19,7 @@ export function VideoPreview({
   const thumbnailUrl = buildYouTubeThumbnailUrl(videoId);
 
   return (
-    <div className="mx-auto aspect-video w-[85%] overflow-hidden rounded-xl border border-border bg-black shadow-sm">
+    <div className="mx-auto aspect-video w-[85%] overflow-hidden rounded-xl border border-border bg-black shadow-[0_4px_16px_rgba(28,25,23,0.12)]">
       <a
         href={watchUrl}
         target="_blank"

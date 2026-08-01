@@ -38,7 +38,7 @@ export function NoteCard({
   const contextReady = Boolean(note.dynamicContextBlock?.trim());
 
   return (
-    <article className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+    <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
       {generating ? (
         <p className="mb-4 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
@@ -97,7 +97,7 @@ function ContextWindowButton({
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-border-strong hover:bg-surface hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
       onClick={onClick}
       disabled={disabled}
       aria-label={hasContent ? 'Regenerate context window' : 'Generate context window'}
@@ -184,7 +184,7 @@ function NoteField({
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
-        <dt className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <dt className="semia-section-label">
           {label}
         </dt>
         {headerAction}
@@ -192,6 +192,9 @@ function NoteField({
       <dd
         className={[
           'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed',
+          multiline || label === 'Original Speech' || label === 'Natural Translation'
+            ? 'font-reading'
+            : '',
           multiline ? 'whitespace-pre-line' : '',
           !loading && isPlaceholder ? 'text-text-muted' : 'text-text',
         ].join(' ')}

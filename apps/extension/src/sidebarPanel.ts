@@ -298,7 +298,7 @@ export function createCaptureSidebar(): CaptureSidebar {
                 .join('');
 
               return `
-                <div class="cue" data-cue-index="${cueIndex}">
+                <div class="cue${cueIndex === activeCueIndex ? ' cue-active' : ''}" data-cue-index="${cueIndex}">
                   <button type="button" class="cue-time${cueIndex === activeCueIndex ? ' cue-time-active' : ''}" data-action="seek-cue" data-cue-index="${cueIndex}" aria-label="Jump to ${formatTime(seg.start)}">${formatTime(seg.start)}</button>
                   <div class="words">${tokenHtml}</div>
                 </div>
@@ -332,7 +332,7 @@ export function createCaptureSidebar(): CaptureSidebar {
         </div>
         <div class="footer">
           <button type="button" class="btn" data-action="back">Back to video</button>
-          <button type="button" class="btn primary" data-action="capture" ${state.selection.phase !== 'complete' || state.captureSuccess ? 'disabled' : ''}>Capture It!</button>
+          <button type="button" class="btn primary" data-action="capture" ${state.selection.phase !== 'complete' || state.captureSuccess ? 'disabled' : ''}>Capture</button>
         </div>
       </div>
     `;

@@ -32,8 +32,8 @@ export function MarkdownNote({ markdown, saving = false, onSave }: MarkdownNoteP
     return (
       <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-            My Notes
+          <h3 className="semia-section-label">
+            My notes
           </h3>
         </div>
         <textarea
@@ -70,7 +70,7 @@ export function MarkdownNote({ markdown, saving = false, onSave }: MarkdownNoteP
     <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-          My Notes
+          My notes
         </h3>
         <button
           type="button"
@@ -81,7 +81,7 @@ export function MarkdownNote({ markdown, saving = false, onSave }: MarkdownNoteP
         </button>
       </div>
       {markdown ? (
-        <div className="prose-note text-sm leading-relaxed text-text">
+        <div className="prose-note font-reading text-sm leading-relaxed text-text">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
         </div>
       ) : (

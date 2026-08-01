@@ -1,3 +1,4 @@
+import toolbarCss from './webCaptureToolbar.css';
 import { submitFragment } from './submitCapture';
 import { buildWebFragment } from './web/buildWebFragment';
 import { runWebRestoreWithRetry } from './web/runWebRestoreWithRetry';
@@ -16,8 +17,8 @@ type Toolbar = {
 };
 
 /**
- * Styles are applied through CSSOM rather than a <style> element because page
- * CSP can block content-script style blocks, leaving the toolbar invisible.
+ * Host positioning uses CSSOM because it updates every frame-adjacent scroll;
+ * panel chrome uses shadow styles (same pattern as LingoPanel).
  */
 function applyStyles(el: HTMLElement, styles: Record<string, string>): void {
   for (const [property, value] of Object.entries(styles)) {
@@ -27,6 +28,23 @@ function applyStyles(el: HTMLElement, styles: Record<string, string>): void {
 
 function removeToolbar(): void {
   document.getElementById(HOST_ID)?.remove();
+}
+
+function setStatus(
+  status: HTMLElement,
+  text: string,
+  tone: 'default' | 'success' | 'error' = 'default',
+): void {
+  status.textContent = text;
+  status.classList.remove(
+    'semia-capture-status-success',
+    'semia-capture-status-error',
+  );
+  if (tone === 'success') {
+    status.classList.add('semia-capture-status-success');
+  } else if (tone === 'error') {
+    status.classList.add('semia-capture-status-error');
+  }
 }
 
 function createToolbar(): Toolbar {
@@ -45,41 +63,21 @@ function createToolbar(): Toolbar {
 
   const shadow = host.attachShadow({ mode: 'open' });
 
+  const style = document.createElement('style');
+  style.textContent = toolbarCss;
+  shadow.appendChild(style);
+
   const panel = document.createElement('div');
-  applyStyles(panel, {
-    display: 'flex',
-    'align-items': 'center',
-    gap: '8px',
-    padding: '6px 8px',
-    'border-radius': '10px',
-    border: '1px solid rgba(0,0,0,0.12)',
-    background: '#ffffff',
-    'box-shadow': '0 8px 24px rgba(0,0,0,0.18)',
-    font: '13px/1.2 system-ui, -apple-system, sans-serif',
-    color: '#111827',
-    'white-space': 'nowrap',
-  });
+  panel.className = 'semia-capture-toolbar';
 
   const status = document.createElement('span');
+  status.className = 'semia-capture-status';
   status.textContent = 'Capture to SEMIA';
-  applyStyles(status, {
-    color: '#4b5563',
-    'font-size': '12px',
-    font: '12px/1.2 system-ui, -apple-system, sans-serif',
-  });
 
   const button = document.createElement('button');
   button.type = 'button';
+  button.className = 'semia-capture-btn';
   button.textContent = 'Capture';
-  applyStyles(button, {
-    border: '0',
-    'border-radius': '8px',
-    padding: '6px 10px',
-    background: '#111827',
-    color: '#ffffff',
-    cursor: 'pointer',
-    font: '13px/1.2 system-ui, -apple-system, sans-serif',
-  });
 
   panel.append(status, button);
   shadow.append(panel);
@@ -120,34 +118,36 @@ function showToolbar(range: Range): void {
 
   async function capture(): Promise<void> {
     button.disabled = true;
-    applyStyles(button, { opacity: '0.6', cursor: 'default' });
-    status.textContent = 'Saving…';
+    setStatus(status, 'Saving…');
 
     try {
       const result = buildWebFragment(savedRange);
       if (!result.ok) {
-        status.textContent =
+        setStatus(
+          status,
           result.reason === 'locate-failed'
-            ? 'Could not locate selection on this page'
-            : 'Could not capture selection';
+            ? 'Could not locate selection'
+            : 'Could not capture',
+          'error',
+        );
         button.disabled = false;
-        applyStyles(button, { opacity: '1', cursor: 'pointer' });
         return;
       }
 
       await submitFragment(result.fragment);
-      status.textContent = 'Saved to SEMIA';
+      setStatus(status, 'Saved to SEMIA', 'success');
       window.setTimeout(removeToolbar, 1000);
     } catch (error) {
       console.error('[Semia] Failed to save web capture:', error);
       const message = String(
         error instanceof Error ? error.message : (error ?? ''),
       );
-      status.textContent = /quota/i.test(message)
-        ? 'Storage full — see console'
-        : 'Save failed';
+      setStatus(
+        status,
+        /quota/i.test(message) ? 'Storage full' : 'Save failed',
+        'error',
+      );
       button.disabled = false;
-      applyStyles(button, { opacity: '1', cursor: 'pointer' });
     }
   }
   positionToolbar(host, range.getBoundingClientRect());

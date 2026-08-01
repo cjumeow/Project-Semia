@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:host {
+  all: initial;
+  --semia-canvas: #f3efe6;
+  --semia-surface: #fffcf7;
+  --semia-border: #ddd6cc;
+  --semia-text: #1c1917;
+  --semia-text-muted: #78716c;
+  --semia-accent: #2f5233;
+  --semia-accent-soft: #e4ede6;
+  --semia-font-display: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --semia-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.semia-capture-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--semia-border);
+  background: var(--semia-surface);
+  box-shadow: 0 4px 20px rgba(28, 25, 23, 0.12);
+  font-family: var(--semia-font-display);
+  color: var(--semia-text);
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+}
+
+.semia-capture-status {
+  font-family: var(--semia-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--semia-text-muted);
+}
+
+.semia-capture-status-success {
+  color: var(--semia-accent);
+}
+
+.semia-capture-status-error {
+  color: #b45309;
+}
+
+.semia-capture-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(47, 82, 51, 0.3);
+  background: var(--semia-accent-soft);
+  color: var(--semia-accent);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--semia-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.semia-capture-btn:hover:not(:disabled) {
+  border-color: rgba(47, 82, 51, 0.5);
+  background: #d8e8dc;
+}
+
+.semia-capture-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

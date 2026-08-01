@@ -1,4 +1,5 @@
 import type { SourceGroup } from '../types/corpus';
+import { SemiaButton } from './SemiaButton';
 import { SelectionList } from './SelectionList';
 import { VideoPreview } from './VideoPreview';
 import { WebPreview, webPreviewPropsForSnippet } from './WebPreview';
@@ -34,10 +35,10 @@ export function SourceWorkspace({
 
   return (
     <section className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
-      <header className="shrink-0 border-b border-border bg-surface px-5 py-4">
+      <header className="shrink-0 border-b border-border bg-surface/80 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="line-clamp-2 text-sm font-semibold leading-snug text-text">
+            <h2 className="font-display line-clamp-2 text-base font-semibold leading-snug text-text">
               {group.meta.title}
             </h2>
             <p className="mt-1 text-xs text-text-muted">
@@ -47,15 +48,16 @@ export function SourceWorkspace({
             </p>
           </div>
           {onDeleteSource ? (
-            <button
-              type="button"
-              className="shrink-0 rounded-md border border-border px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+            <SemiaButton
+              variant="danger"
+              icon={<TrashIcon />}
+              className="shrink-0"
               onClick={onDeleteSource}
               aria-label={`Delete all snippets from ${group.meta.title}`}
               title="Delete source and all snippets"
             >
               Delete source
-            </button>
+            </SemiaButton>
           ) : null}
         </div>
       </header>
@@ -77,7 +79,7 @@ export function SourceWorkspace({
       </div>
 
       <div className="min-h-0 flex-1 px-5 pb-6">
-        <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <h3 className="semia-section-label mb-2">
           Selections
         </h3>
         <SelectionList
@@ -87,6 +89,28 @@ export function SourceWorkspace({
         />
       </div>
     </section>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" x2="10" y1="11" y2="17" />
+      <line x1="14" x2="14" y1="11" y2="17" />
+    </svg>
   );
 }
 

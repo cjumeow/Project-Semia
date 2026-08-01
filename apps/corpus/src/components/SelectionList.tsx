@@ -38,10 +38,10 @@ export function SelectionList({
               role="option"
               aria-selected={isActive}
               className={[
-                'flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
+                'flex w-full items-center gap-3 rounded-md border-l-[3px] border-transparent py-2.5 pl-[calc(0.75rem-3px)] pr-3 text-left transition-colors',
                 isActive
-                  ? 'border-accent/30 bg-accent-soft text-text'
-                  : 'border-transparent bg-canvas text-text-secondary hover:border-border hover:bg-surface',
+                  ? 'semia-margin-active text-text'
+                  : 'border-transparent bg-transparent text-text-secondary hover:bg-surface/60 hover:text-text',
               ].join(' ')}
               onClick={() => onSelectSnippet(snippet.id)}
             >

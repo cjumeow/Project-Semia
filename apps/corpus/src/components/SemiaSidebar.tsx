@@ -2,6 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { SEMIA_BUILD_ID } from '../buildInfo';
 import type { SourceGroup } from '../types/corpus';
 import { webGroups, youtubeGroups } from '../utils/corpusGrouping';
+import {
+  LibraryIcon,
+  WebIcon,
+  YouTubeIcon,
+} from './SemiaNavIcons';
 
 type SemiaSidebarProps = {
   groups: SourceGroup[];
@@ -23,13 +28,13 @@ export function SemiaSidebar({
   const libraryCount = youtube.length + web.length;
 
   return (
-    <aside className="flex h-full flex-col bg-surface">
-      <header className="shrink-0 px-4 pb-3 pt-4">
-        <h1 className="text-lg font-semibold tracking-tight text-text">
+    <aside className="flex h-full flex-col bg-shelf">
+      <header className="shrink-0 border-b border-border/80 px-4 pb-4 pt-5">
+        <h1 className="font-display text-[1.35rem] font-semibold tracking-tight text-text">
           SEMIA
         </h1>
-        <p className="mt-0.5 text-[12px] text-text-muted">
-          Language snippets library
+        <p className="mt-1 text-xs text-text-muted">
+          Snippets from your immersion
         </p>
       </header>
 
@@ -111,9 +116,9 @@ export function SemiaSidebar({
 }
 
 const rowBase =
-  'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-[background-color,color,box-shadow] duration-150';
+  'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-[background-color,color,box-shadow,border-color] duration-150';
 
-const rowHover = 'hover:bg-black/[0.05] hover:shadow-sm';
+const rowHover = 'hover:bg-black/[0.04]';
 
 function SidebarRow({
   variant,
@@ -150,7 +155,7 @@ function SidebarRow({
       aria-label={ariaLabel ?? label}
     >
       <ChevronIcon expanded={expanded ?? false} />
-      {icon ? <span className="shrink-0 opacity-80">{icon}</span> : null}
+      {icon ? <span className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span> : null}
       <span
         className={[
           'min-w-0 flex-1 truncate',
@@ -230,10 +235,10 @@ function SourceButton({
       title={title}
       className={[
         rowBase,
-        'my-0.5 flex-col items-stretch gap-0 py-2',
         rowHover,
+        'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
         isActive
-          ? 'bg-accent-soft text-accent shadow-sm ring-1 ring-accent/20'
+          ? 'semia-margin-active text-accent shadow-sm'
           : 'text-text-secondary hover:text-text',
       ].join(' ')}
       onClick={onClick}
@@ -272,65 +277,6 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
       aria-hidden
     >
       <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function LibraryIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      className="shrink-0 text-text-secondary"
-      aria-hidden
-    >
-      <path
-        d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function YouTubeIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="shrink-0 text-red-500"
-      aria-hidden
-    >
-      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.7 31.7 0 0 0 0 12a31.7 31.7 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 24 12a31.7 31.7 0 0 0-.5-5.8zM9.7 15.5V8.5L15.8 12l-6.1 3.5z" />
-    </svg>
-  );
-}
-
-function WebIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="shrink-0 text-sky-600"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
     </svg>
   );
 }
