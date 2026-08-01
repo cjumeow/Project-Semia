@@ -3,6 +3,7 @@ import { corpusRepository } from '../data/corpusRepository';
 import type { SourceGroup } from '../types/corpus';
 import { groupBySource } from '../utils/corpusGrouping';
 import { fragmentToSnippet } from '../utils/fragmentToSnippet';
+import { videoMetaFromTranscripts } from '../utils/videoMetaFromTranscripts';
 
 type UseCorpusDataResult = {
   groups: SourceGroup[];
@@ -22,15 +23,20 @@ export function useCorpusData(): UseCorpusDataResult {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const [fragments, snippetNotes] = await Promise.all([
+      const [fragments, snippetNotes, transcripts] = await Promise.all([
         corpusRepository.listFragments(),
         corpusRepository.getSnippetNotes(),
+        corpusRepository.listTranscripts(),
       ]);
       setFragmentCount(fragments.length);
       const snippets = fragments.map((fragment) =>
         fragmentToSnippet(fragment, snippetNotes[fragment.id]),
       );
-      setGroups(groupBySource(snippets));
+      setGroups(
+        groupBySource(snippets, {
+          videoMeta: videoMetaFromTranscripts(transcripts),
+        }),
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load captures.');

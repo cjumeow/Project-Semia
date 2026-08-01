@@ -1,12 +1,5 @@
-import type {
-  LanguageFragment,
-  StoredTranscript,
-  StoredTranscriptError,
-} from './types';
-import {
-  FRAGMENTS_STORAGE_KEY,
-  TRANSCRIPTS_STORAGE_KEY,
-} from '@semia/shared';
+import type { StoredTranscript, StoredTranscriptError } from './types';
+import { TRANSCRIPTS_STORAGE_KEY } from '@semia/shared';
 
 export {
   FRAGMENTS_STORAGE_KEY,
@@ -23,7 +16,13 @@ export async function saveTranscript(transcript: StoredTranscript): Promise<void
     string,
     StoredTranscript
   >;
-  map[transcript.videoId] = transcript;
+  const existing = map[transcript.videoId];
+  map[transcript.videoId] = {
+    ...existing,
+    ...transcript,
+    title: transcript.title ?? existing?.title,
+    channel: transcript.channel ?? existing?.channel,
+  };
   await chrome.storage.local.set({ [TRANSCRIPTS_STORAGE_KEY]: map });
 }
 
@@ -41,14 +40,13 @@ export async function getTranscript(
   return map[videoId] ?? null;
 }
 
-/**
- * Append a captured language fragment.
- */
-export async function saveFragment(fragment: LanguageFragment): Promise<void> {
-  const current = await chrome.storage.local.get(FRAGMENTS_STORAGE_KEY);
-  const list = (current[FRAGMENTS_STORAGE_KEY] ?? []) as LanguageFragment[];
-  list.push(fragment);
-  await chrome.storage.local.set({ [FRAGMENTS_STORAGE_KEY]: list });
+export async function listTranscripts(): Promise<StoredTranscript[]> {
+  const current = await chrome.storage.local.get(TRANSCRIPTS_STORAGE_KEY);
+  const map = (current[TRANSCRIPTS_STORAGE_KEY] ?? {}) as Record<
+    string,
+    StoredTranscript
+  >;
+  return Object.values(map);
 }
 
 /**

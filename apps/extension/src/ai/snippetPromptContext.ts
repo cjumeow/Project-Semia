@@ -1,5 +1,7 @@
 import type { LanguageFragment } from '@semia/shared';
 import {
+  isDegradedWebAnchor,
+  isUncertainWebAnchor,
   isYouTubeAnchor,
   youtubeEndSeconds,
   youtubeStartSeconds,
@@ -34,12 +36,28 @@ export function formatTimedContext(fragment: LanguageFragment): string {
 
 export function buildVideoMetadata(fragment: LanguageFragment): string {
   if (!isYouTubeAnchor(fragment.anchor)) {
-    return [
+    const lines = [
       `Source URL: ${fragment.sourceUrl}`,
       `Title: ${fragment.sourceTitle}`,
       `Source language: ${fragment.languageCode}`,
       `Focus selection: ${fragment.selectedText}`,
-    ].join('\n');
+    ];
+    if (
+      fragment.anchor.kind === 'web' &&
+      isDegradedWebAnchor(fragment.anchor)
+    ) {
+      lines.push(
+        'Locate quality: degraded (page offsets unavailable; context may not match jump-back).',
+      );
+    } else if (
+      fragment.anchor.kind === 'web' &&
+      isUncertainWebAnchor(fragment.anchor, fragment.selectedText)
+    ) {
+      lines.push(
+        'Locate quality: uncertain (math/LaTeX or fuzzy locate; jump-back may fail).',
+      );
+    }
+    return lines.join('\n');
   }
 
   return [

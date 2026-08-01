@@ -7,10 +7,11 @@ import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
 import { getVideoIdFromUrl, navigateCue } from './playerSync';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
-
-// ------------------------------------------------------------
-// Page-world bridge
-// ------------------------------------------------------------
+import {
+  applyYoutubeMeta,
+  buildYoutubeMetaForVideo,
+  type YoutubePageMeta,
+} from './youtubePageMeta';
 
 const BRIDGE_SOURCE = 'YT_TRANSCRIPT_CAPTURE_BRIDGE';
 let lastCapturedVideoId: string | null = null;
@@ -19,6 +20,8 @@ type BridgeMessage = {
   source: typeof BRIDGE_SOURCE;
   type: 'TIMEDTEXT_URL';
   url: string;
+  title?: string;
+  channel?: string;
 };
 
 const sidebar = createCaptureSidebar();
@@ -34,13 +37,62 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   captionOverlay.setTranscript(transcript);
 }
 
-/**
- * Send transcript to background for storage.
- */
 async function sendTranscriptToBackground(
   transcript: StoredTranscript,
 ): Promise<void> {
   await chrome.runtime.sendMessage({ type: 'SAVE_TRANSCRIPT', transcript });
+}
+
+function buildPageMeta(
+  videoId: string,
+  bridgeMeta?: YoutubePageMeta,
+): { meta: YoutubePageMeta; authoritative: boolean } {
+  return buildYoutubeMetaForVideo(
+    videoId,
+    getVideoIdFromUrl() ?? currentVideoId,
+    bridgeMeta,
+  );
+}
+
+function applyPageMeta(
+  transcript: StoredTranscript,
+  pageMeta: YoutubePageMeta,
+  authoritative: boolean,
+): StoredTranscript {
+  const next = applyYoutubeMeta(transcript, pageMeta, authoritative);
+  return {
+    ...transcript,
+    title: next.title,
+    channel: next.channel,
+  };
+}
+
+async function refreshStoredVideoMeta(
+  videoId: string,
+  bridgeMeta?: YoutubePageMeta,
+): Promise<void> {
+  const existing = await getTranscript(videoId);
+  if (!existing) return;
+
+  const activeVideoId = getVideoIdFromUrl() ?? currentVideoId;
+  if (activeVideoId !== videoId) return;
+
+  const { meta, authoritative } = buildPageMeta(videoId, bridgeMeta);
+  if (!meta.title && !meta.channel) return;
+
+  const updated = applyPageMeta(existing, meta, authoritative);
+  if (
+    updated.title === existing.title &&
+    updated.channel === existing.channel
+  ) {
+    return;
+  }
+
+  await sendTranscriptToBackground(updated);
+
+  if (videoId === activeVideoId) {
+    syncTranscriptToUi(updated);
+  }
 }
 
 async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
@@ -52,14 +104,40 @@ async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
   syncTranscriptToUi(stored);
 }
 
-async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
+async function handleInterceptedURL(
+  timedtextUrl: string,
+  bridgeMeta?: YoutubePageMeta,
+): Promise<void> {
   try {
     const urlObj = new URL(timedtextUrl);
     const videoId = urlObj.searchParams.get('v');
     const lang = urlObj.searchParams.get('lang') ?? 'unknown';
     if (!videoId) return;
 
-    // Prevent duplicate captures for the same video.
+    const pageMetaResult = buildPageMeta(videoId, bridgeMeta);
+    const { meta: pageMeta, authoritative } = pageMetaResult;
+    const existing = await getTranscript(videoId);
+
+    if (existing?.segments.length) {
+      if (lastCapturedVideoId === videoId) return;
+      lastCapturedVideoId = videoId;
+
+      if (authoritative && (pageMeta.title || pageMeta.channel)) {
+        const updated = applyPageMeta(existing, pageMeta, true);
+        if (
+          updated.title !== existing.title ||
+          updated.channel !== existing.channel
+        ) {
+          await sendTranscriptToBackground(updated);
+          if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+            currentVideoId = videoId;
+            syncTranscriptToUi(updated);
+          }
+        }
+      }
+      return;
+    }
+
     if (lastCapturedVideoId === videoId) {
       return;
     }
@@ -75,11 +153,12 @@ async function handleInterceptedURL(timedtextUrl: string): Promise<void> {
       capturedAt: new Date().toISOString(),
       source: 'interceptedTimedtextUrl',
       segments,
+      title: pageMeta.title,
+      channel: pageMeta.channel,
     };
     await sendTranscriptToBackground(stored);
     console.debug('Transcript captured and sent to background:', stored);
 
-    // Keep sidebar in sync if this is the active video.
     if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
       currentVideoId = videoId;
       syncTranscriptToUi(stored);
@@ -95,7 +174,10 @@ function installPageWorldListener(): void {
     const data = event.data as Partial<BridgeMessage>;
     if (!data || data.source !== BRIDGE_SOURCE) return;
     if (data.type === 'TIMEDTEXT_URL' && typeof data.url === 'string') {
-      void handleInterceptedURL(data.url);
+      void handleInterceptedURL(data.url, {
+        title: data.title,
+        channel: data.channel,
+      });
     }
   });
 }
@@ -115,7 +197,6 @@ function installKeyboardShortcut(): void {
         return;
       }
 
-      // ←/→: previous/next cue while watching (not in capture).
       if (
         !sidebar.isOpen() &&
         !ev.altKey &&
@@ -132,7 +213,6 @@ function installKeyboardShortcut(): void {
         return;
       }
 
-      // Alt+Z: open panel at current cue (no focus word).
       if (
         ev.altKey &&
         !ev.metaKey &&
@@ -146,7 +226,6 @@ function installKeyboardShortcut(): void {
         return;
       }
 
-      // Alt+S: select focus word as start=end (view translation before Capture It!).
       if (ev.altKey && !ev.metaKey && !ev.ctrlKey && ev.code === 'KeyS') {
         ev.preventDefault();
         ev.stopPropagation();
@@ -160,7 +239,6 @@ function installKeyboardShortcut(): void {
   );
 }
 
-// To listen for changes to the transcripts storage.
 function installStorageListener(): void {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -175,9 +253,14 @@ function installStorageListener(): void {
   });
 }
 
-/**
- * YouTube SPA navigations change the URL without a full reload.
- */
+function scheduleMetaRefresh(videoId: string | null): void {
+  if (!videoId) return;
+  window.setTimeout(() => {
+    if ((getVideoIdFromUrl() ?? currentVideoId) !== videoId) return;
+    void refreshStoredVideoMeta(videoId);
+  }, 2000);
+}
+
 function installSpaNavigationWatcher(): void {
   let lastHref = location.href;
 
@@ -189,21 +272,19 @@ function installSpaNavigationWatcher(): void {
     if (nextId === currentVideoId) return;
 
     currentVideoId = nextId;
-    // Reset intercept dedupe so the new video can be captured.
     lastCapturedVideoId = null;
     void loadTranscriptForVideo(nextId);
+    scheduleMetaRefresh(nextId);
   };
 
   window.addEventListener('yt-navigate-finish', check);
   window.addEventListener('popstate', check);
-
-  // Fallback: poll lightly for URL changes YouTube may not announce.
   window.setInterval(check, 800);
 }
 
-// Boot
 installPageWorldListener();
 installKeyboardShortcut();
 installStorageListener();
 installSpaNavigationWatcher();
 void loadTranscriptForVideo(currentVideoId);
+scheduleMetaRefresh(currentVideoId);

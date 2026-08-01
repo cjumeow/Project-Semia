@@ -1,0 +1,118 @@
+import { generateContextWindow } from '../ai/generateContextWindow';
+import { generateSnippetNote } from '../ai/generateSnippetNote';
+import { saveCorpusNote } from '../corpusNotesStorage';
+import { deleteFragment, deleteSource } from '../deleteCaptures';
+import { ensureSnippetNote } from '../ensureSnippetNote';
+import {
+  appendFragment,
+  listFragments,
+  normalizeFragments,
+} from '../fragmentsStorage';
+import { openWebCapture } from '../pendingWebRestore';
+import {
+  getSnippetNote,
+  getSnippetNotes,
+  saveSnippetNote,
+} from '../snippetNotesStorage';
+import type { BackgroundMessage } from '../types';
+
+type FragmentMessage =
+  | Extract<BackgroundMessage, { type: 'SAVE_FRAGMENT' }>
+  | Extract<BackgroundMessage, { type: 'SAVE_CORPUS_NOTE' }>
+  | Extract<BackgroundMessage, { type: 'LIST_FRAGMENTS' }>
+  | Extract<BackgroundMessage, { type: 'LIST_SNIPPET_NOTES' }>
+  | Extract<BackgroundMessage, { type: 'GENERATE_SNIPPET_NOTE' }>
+  | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
+  | Extract<BackgroundMessage, { type: 'OPEN_WEB_CAPTURE' }>
+  | Extract<BackgroundMessage, { type: 'DELETE_FRAGMENT' }>
+  | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>;
+
+export function isFragmentMessage(
+  message: BackgroundMessage,
+): message is FragmentMessage {
+  return (
+    message.type === 'SAVE_FRAGMENT' ||
+    message.type === 'SAVE_CORPUS_NOTE' ||
+    message.type === 'LIST_FRAGMENTS' ||
+    message.type === 'LIST_SNIPPET_NOTES' ||
+    message.type === 'GENERATE_SNIPPET_NOTE' ||
+    message.type === 'GENERATE_CONTEXT_WINDOW' ||
+    message.type === 'OPEN_WEB_CAPTURE' ||
+    message.type === 'DELETE_FRAGMENT' ||
+    message.type === 'DELETE_SOURCE'
+  );
+}
+
+export async function handleFragmentMessage(
+  message: FragmentMessage,
+): Promise<Record<string, unknown>> {
+  switch (message.type) {
+    case 'SAVE_FRAGMENT':
+      await appendFragment(message.fragment);
+      return { ok: true };
+
+    case 'SAVE_CORPUS_NOTE':
+      await saveCorpusNote(message.fragmentId, message.markdown);
+      return { ok: true };
+
+    case 'LIST_FRAGMENTS':
+      return { ok: true, fragments: await listFragments() };
+
+    case 'LIST_SNIPPET_NOTES':
+      return { ok: true, notes: await getSnippetNotes() };
+
+    case 'GENERATE_SNIPPET_NOTE': {
+      const note = await generateSnippetNote(message.fragment);
+      await saveSnippetNote(message.fragment.id, note);
+      return { ok: true, note };
+    }
+
+    case 'GENERATE_CONTEXT_WINDOW': {
+      const existing = await getSnippetNote(message.fragment.id);
+      if (!existing?.generatedAt) {
+        return {
+          ok: false,
+          error: 'Generate the snippet note before building a context window.',
+        };
+      }
+
+      const dynamicContextBlock = await generateContextWindow(message.fragment);
+      const note = { ...existing, dynamicContextBlock };
+      await saveSnippetNote(message.fragment.id, note);
+      return { ok: true, note };
+    }
+
+    case 'OPEN_WEB_CAPTURE':
+      await openWebCapture(message.fragment);
+      return { ok: true };
+
+    case 'DELETE_FRAGMENT':
+      await deleteFragment(message.fragmentId);
+      return { ok: true };
+
+    case 'DELETE_SOURCE':
+      await deleteSource(message.sourceUrl);
+      return { ok: true };
+  }
+}
+
+export function onFragmentsStorageChanged(
+  oldValue: unknown,
+  newValue: unknown,
+): void {
+  const oldIds = new Set(
+    normalizeFragments(oldValue).map((fragment) => fragment.id),
+  );
+  const added = normalizeFragments(newValue).filter(
+    (fragment) => !oldIds.has(fragment.id),
+  );
+
+  for (const fragment of added) {
+    void ensureSnippetNote(fragment).catch((err) => {
+      console.error(
+        `[Semia] Failed to auto-generate note for ${fragment.id}:`,
+        err,
+      );
+    });
+  }
+}

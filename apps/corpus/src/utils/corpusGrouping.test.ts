@@ -66,6 +66,7 @@ function makeWebSnippet(
     capturedAt: overrides.capturedAt,
     anchor: {
       kind: 'web',
+      locateQuality: 'precise',
       textQuote: { exact: overrides.selectedText },
       textPosition: { start: overrides.start, end: overrides.start + overrides.selectedText.length },
     },

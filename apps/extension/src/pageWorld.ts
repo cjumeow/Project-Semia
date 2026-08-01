@@ -1,12 +1,47 @@
 (() => {
   const w = window as any;
-  // If the bridge is already installed, return.
   if (w.__ytTranscriptCaptureBridgeInstalled) return;
   w.__ytTranscriptCaptureBridgeInstalled = true;
 
   const BRIDGE_SOURCE = "YT_TRANSCRIPT_CAPTURE_BRIDGE";
 
-  // Patch fetch to observe timedtext requests.
+  function readPlayerMeta(videoId: string | null) {
+    const playerResponse = w.ytInitialPlayerResponse;
+    const details = playerResponse?.videoDetails;
+    if (!details?.title) return undefined;
+
+    if (videoId && details.videoId && details.videoId !== videoId) {
+      return undefined;
+    }
+
+    return {
+      title: details.title as string,
+      channel: details.author as string | undefined,
+    };
+  }
+
+  function postTimedtextUrl(url: string) {
+    let videoId: string | null = null;
+    try {
+      videoId = new URL(url, window.location.origin).searchParams.get("v");
+    } catch {
+      videoId = null;
+    }
+
+    const playerMeta = videoId ? readPlayerMeta(videoId) : undefined;
+
+    window.postMessage(
+      {
+        source: BRIDGE_SOURCE,
+        type: "TIMEDTEXT_URL",
+        url,
+        title: playerMeta?.title,
+        channel: playerMeta?.channel,
+      },
+      "*",
+    );
+  }
+
   const originalFetch = window.fetch;
 
   window.fetch = async (input: any, init?: any) => {
@@ -18,15 +53,11 @@
           : input?.url;
 
     if (typeof url === "string" && url.includes("youtube.com/api/timedtext")) {
-      window.postMessage(
-        { source: BRIDGE_SOURCE, type: "TIMEDTEXT_URL", url },
-        "*",
-      );
+      postTimedtextUrl(url);
     }
 
     return originalFetch(input, init);
   };
-
 
   const originalOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (
@@ -43,13 +74,9 @@
           : String(url);
 
     if (urlStr && urlStr.includes("youtube.com/api/timedtext")) {
-      window.postMessage(
-        { source: BRIDGE_SOURCE, type: "TIMEDTEXT_URL", url: urlStr },
-        "*",
-      );
+      postTimedtextUrl(urlStr);
     }
 
     return (originalOpen as any).apply(this, [method, url, ...args]);
   };
-
 })();

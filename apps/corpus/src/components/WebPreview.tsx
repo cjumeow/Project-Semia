@@ -1,5 +1,8 @@
 import type { CorpusSnippet } from '../types/corpus';
 import { corpusRepository } from '../data/corpusRepository';
+import { isWebJumpBackReliable } from '@semia/shared';
+import { useWebJumpBackHint } from '../hooks/useWebJumpBackHint';
+import { JumpBackHintCallout } from './JumpBackHintCallout';
 
 function faviconUrl(sourceUrl: string): string {
   try {
@@ -16,11 +19,27 @@ type WebPreviewProps = {
 
 export function WebPreview({ snippet }: WebPreviewProps) {
   const icon = faviconUrl(snippet.sourceUrl);
+  const webSnippet =
+    snippet.anchor.kind === 'web'
+      ? {
+          id: snippet.id,
+          anchor: snippet.anchor,
+          selectedText: snippet.selectedText,
+        }
+      : undefined;
+  const { hint: jumpBackHint, resetRestoreStatus } =
+    useWebJumpBackHint(webSnippet);
   const canRestore =
-    snippet.anchor.kind === 'web' && corpusRepository.isLive();
+    snippet.anchor.kind === 'web' &&
+    corpusRepository.isLive() &&
+    isWebJumpBackReliable(snippet.anchor);
 
   async function handleOpen(): Promise<void> {
     if (snippet.anchor.kind !== 'web') return;
+
+    if (canRestore) {
+      resetRestoreStatus();
+    }
 
     try {
       await corpusRepository.openWebCapture(snippet);
@@ -48,6 +67,11 @@ export function WebPreview({ snippet }: WebPreviewProps) {
             <p className="mt-1 truncate text-xs text-text-muted">
               {snippet.sourceUrl}
             </p>
+            {jumpBackHint ? (
+              <div className="mt-3">
+                <JumpBackHintCallout hint={jumpBackHint} />
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => void handleOpen()}

@@ -1,4 +1,5 @@
 import { contextCuesToText } from './contextText';
+import { inferWebLocateQuality } from './webAnchor';
 import type {
   FragmentAnchor,
   LanguageFragment,
@@ -93,6 +94,32 @@ function parseAnchor(value: unknown): FragmentAnchor | null {
         start: textPosition.start,
         end: textPosition.end,
       },
+      locateQuality:
+        value.locateQuality === 'precise' ||
+        value.locateQuality === 'uncertain' ||
+        value.locateQuality === 'degraded'
+          ? value.locateQuality
+          : inferWebLocateQuality(
+              {
+                exact: textQuote.exact,
+                prefix:
+                  typeof textQuote.prefix === 'string'
+                    ? textQuote.prefix
+                    : undefined,
+                suffix:
+                  typeof textQuote.suffix === 'string'
+                    ? textQuote.suffix
+                    : undefined,
+              },
+              {
+                start: textPosition.start,
+                end: textPosition.end,
+              },
+            ),
+      locateFailureReason:
+        typeof value.locateFailureReason === 'string'
+          ? value.locateFailureReason
+          : undefined,
       cssSelector:
         typeof value.cssSelector === 'string' ? value.cssSelector : undefined,
     };

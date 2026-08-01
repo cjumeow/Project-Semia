@@ -1,7 +1,10 @@
 import panelCss from './sidebarPanel.css';
 import { getContextCueIndices, getContextCuesByTimeRange } from './contextWindow';
 import { pauseVideo, playVideo, seekTo, findCueIndexByTime, getCurrentTime } from './playerSync';
-import { saveFragment } from './storage';
+import { submitFragment } from './submitCapture';
+import { buildYoutubeMetaForVideo } from './youtubePageMeta';
+import { placeholderYoutubeTitle } from '@semia/shared';
+import { getVideoIdFromUrl } from './playerSync';
 import {
   applyWordClick,
   clearSelection,
@@ -562,6 +565,12 @@ export function createCaptureSidebar(): CaptureSidebar {
     const centerTime = (bounds.start + bounds.end) / 2;
     const { cues: contextCues, indices: contextCueIndices } =
       getContextCuesByTimeRange(transcript.segments, centerTime, 15);
+    const { meta: pageMeta } = buildYoutubeMetaForVideo(
+      transcript.videoId,
+      getVideoIdFromUrl(),
+      { title: transcript.title, channel: transcript.channel },
+    );
+    const videoTitle = pageMeta.title;
 
     const fragment: LanguageFragment = {
       id: createId(),
@@ -569,7 +578,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       contextText: contextCuesToText(contextCues),
       languageCode: transcript.languageCode,
       sourceUrl: transcript.videoUrl,
-      sourceTitle: `YouTube · ${transcript.videoId}`,
+      sourceTitle: videoTitle || placeholderYoutubeTitle(transcript.videoId),
       capturedAt: new Date().toISOString(),
       anchor: {
         kind: 'youtube',
@@ -583,7 +592,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       },
     };
 
-    await saveFragment(fragment);
+    await submitFragment(fragment);
     await showCaptureSuccessAndClose();
   }
 

@@ -11,6 +11,9 @@ export type StoredTranscript = {
   capturedAt: string;
   source: 'ytInitialPlayerResponse' | 'interceptedTimedtextUrl' | 'unknown';
   segments: TranscriptSegment[];
+  /** Watch page title without the trailing " - YouTube". */
+  title?: string;
+  channel?: string;
 };
 
 export type WordRef = {
@@ -39,10 +42,16 @@ export type YouTubeAnchor = {
 };
 
 /** Reserved for Phase 2 web capture; not written yet. */
+export type WebLocateQuality = 'precise' | 'uncertain' | 'degraded';
+
 export type WebAnchor = {
   kind: 'web';
   textQuote: { exact: string; prefix?: string; suffix?: string };
   textPosition: { start: number; end: number };
+  /** `precise` when restore is likely; `uncertain` when LaTeX or fuzzy locate. */
+  locateQuality: WebLocateQuality;
+  /** Set when locateQuality is degraded (legacy captures or future explicit paths). */
+  locateFailureReason?: string;
   cssSelector?: string;
 };
 

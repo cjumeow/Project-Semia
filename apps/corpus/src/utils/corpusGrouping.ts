@@ -1,4 +1,9 @@
-import { sourceKey, youtubeStartSeconds } from '@semia/shared';
+import {
+  sourceKey,
+  youtubeStartSeconds,
+  resolveYoutubeChannel,
+  resolveYoutubeTitle,
+} from '@semia/shared';
 import type { CorpusSnippet, SourceGroup, VideoMeta } from '../types/corpus';
 
 type GroupOptions = {
@@ -18,8 +23,12 @@ function buildSourceMeta(
       sourceKey: sourceKey(snippet),
       sourceUrl: snippet.sourceUrl,
       videoId,
-      title: meta?.title ?? snippet.sourceTitle,
-      channel: meta?.channel ?? 'Unknown channel',
+      title: resolveYoutubeTitle({
+        videoId,
+        sourceTitle: snippet.sourceTitle,
+        metaTitle: meta?.title,
+      }),
+      channel: resolveYoutubeChannel(meta?.channel),
     };
   }
 

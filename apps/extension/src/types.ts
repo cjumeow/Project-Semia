@@ -19,10 +19,13 @@ export type StoredTranscriptError = {
 };
 
 export type BackgroundMessage =
+  | { type: 'SAVE_FRAGMENT'; fragment: LanguageFragment }
+  | { type: 'SAVE_CORPUS_NOTE'; fragmentId: string; markdown: string }
   | { type: 'SAVE_TRANSCRIPT'; transcript: StoredTranscript }
   | { type: 'SAVE_TRANSCRIPT_ERROR'; error: StoredTranscriptError }
   | { type: 'OPEN_SEMIA' }
   | { type: 'LIST_FRAGMENTS' }
+  | { type: 'LIST_TRANSCRIPTS' }
   | { type: 'LIST_SNIPPET_NOTES' }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
@@ -30,4 +33,4 @@ export type BackgroundMessage =
   | { type: 'DELETE_FRAGMENT'; fragmentId: string }
   | { type: 'DELETE_SOURCE'; sourceUrl: string }
   | { type: 'TAKE_PENDING_WEB_RESTORE' }
-  | { type: 'FRAGMENTS_CHANGED' };
+  | { type: 'WEB_RESTORE_RESULT'; fragmentId: string; ok: boolean };

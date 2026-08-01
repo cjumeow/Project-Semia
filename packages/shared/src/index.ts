@@ -5,5 +5,8 @@ export * from './removeFragments';
 export * from './storageKeys';
 export * from './textFragmentUrl';
 export * from './types';
+export * from './webAnchor';
+export * from './webRestoreStatus';
 export * from './webFragment';
 export * from './youtubeFragment';
+export * from './youtubeTitle';

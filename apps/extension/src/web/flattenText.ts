@@ -164,3 +164,121 @@ export function findFlatRange(
 
   return { start: match.index, end: match.index + match[0].length };
 }
+
+function firstTextNode(node: Node): Text | null {
+  if (node.nodeType === Node.TEXT_NODE) return node as Text;
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  return walker.nextNode() as Text | null;
+}
+
+function lastTextNode(node: Node): Text | null {
+  if (node.nodeType === Node.TEXT_NODE) return node as Text;
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  let last: Text | null = null;
+  let current = walker.nextNode() as Text | null;
+  while (current) {
+    last = current;
+    current = walker.nextNode() as Text | null;
+  }
+  return last;
+}
+
+function resolveRangeBoundary(
+  container: Node,
+  offset: number,
+  edge: 'start' | 'end',
+): { node: Text; offset: number } | null {
+  if (container.nodeType === Node.TEXT_NODE) {
+    return { node: container as Text, offset };
+  }
+  if (container.nodeType !== Node.ELEMENT_NODE) return null;
+
+  const el = container as Element;
+  if (edge === 'start') {
+    for (let index = offset; index < el.childNodes.length; index++) {
+      const text = firstTextNode(el.childNodes[index]!);
+      if (text) return { node: text, offset: 0 };
+    }
+    for (let index = offset - 1; index >= 0; index--) {
+      const text = lastTextNode(el.childNodes[index]!);
+      if (text) return { node: text, offset: text.data.length };
+    }
+    return null;
+  }
+
+  for (let index = offset - 1; index >= 0; index--) {
+    const text = lastTextNode(el.childNodes[index]!);
+    if (text) return { node: text, offset: text.data.length };
+  }
+  for (let index = offset; index < el.childNodes.length; index++) {
+    const text = firstTextNode(el.childNodes[index]!);
+    if (text) return { node: text, offset: 0 };
+  }
+  return null;
+}
+
+/** Map a DOM offset inside a text node to the flattened content offset for that node. */
+export function domOffsetToContentOffset(
+  node: Text,
+  domOffset: number,
+): number {
+  const raw = node.data;
+  const normalized = raw.replace(/\s+/g, ' ').trim();
+  if (!normalized) return 0;
+
+  const first = raw.search(/\S/);
+  if (first < 0) return 0;
+  if (domOffset <= first) return 0;
+
+  let normIdx = 0;
+  let index = first;
+  while (index < raw.length && index < domOffset) {
+    if (/\s/.test(raw[index]!)) {
+      while (index < raw.length && /\s/.test(raw[index]!)) index++;
+      if (normIdx < normalized.length && normalized[normIdx] === ' ') {
+        normIdx++;
+      }
+    } else {
+      normIdx++;
+      index++;
+    }
+  }
+
+  return Math.min(normIdx, normalized.length);
+}
+
+/**
+ * Locate a live DOM Range inside flattened page text by following the Range's
+ * boundary nodes — preferred over string search, which drifts from Range.toString().
+ */
+export function locateRangeInFlat(
+  flat: FlatText,
+  range: Range,
+): { start: number; end: number } | null {
+  if (!range.startContainer || !range.endContainer) return null;
+
+  const startBound = resolveRangeBoundary(
+    range.startContainer,
+    range.startOffset,
+    'start',
+  );
+  const endBound = resolveRangeBoundary(
+    range.endContainer,
+    range.endOffset,
+    'end',
+  );
+  if (!startBound || !endBound) return null;
+
+  const startChunk = flat.chunks.find((chunk) => chunk.node === startBound.node);
+  const endChunk = flat.chunks.find((chunk) => chunk.node === endBound.node);
+  if (!startChunk || !endChunk) return null;
+
+  const start =
+    startChunk.start +
+    domOffsetToContentOffset(startBound.node, startBound.offset);
+  const end =
+    endChunk.start + domOffsetToContentOffset(endBound.node, endBound.offset);
+
+  if (start >= end) return null;
+  return { start, end };
+}

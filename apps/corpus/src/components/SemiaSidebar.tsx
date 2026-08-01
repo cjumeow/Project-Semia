@@ -61,7 +61,11 @@ export function SemiaSidebar({
                   <SourceButton
                     key={group.meta.sourceKey}
                     title={group.meta.title}
-                    subtitle={`${group.snippets.length} snip`}
+                    subtitle={
+                      group.meta.kind === 'youtube'
+                        ? `${group.meta.channel} · ${group.snippets.length} snip`
+                        : `${group.snippets.length} snip`
+                    }
                     isActive={group.meta.sourceKey === selectedSourceKey}
                     onClick={() => onSelectSource(group.meta.sourceKey)}
                   />
