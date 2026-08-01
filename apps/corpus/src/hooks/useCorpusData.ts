@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
-import type { SourceGroup } from '../types/corpus';
+import type { CorpusSnippet, SourceGroup } from '../types/corpus';
 import { groupBySource } from '../utils/corpusGrouping';
 import { fragmentToSnippet } from '../utils/fragmentToSnippet';
 import { videoMetaFromTranscripts } from '../utils/videoMetaFromTranscripts';
 
 type UseCorpusDataResult = {
   groups: SourceGroup[];
+  snippets: CorpusSnippet[];
   loading: boolean;
   error: string | null;
   fragmentCount: number;
@@ -16,6 +17,7 @@ type UseCorpusDataResult = {
 
 export function useCorpusData(): UseCorpusDataResult {
   const [groups, setGroups] = useState<SourceGroup[]>([]);
+  const [snippets, setSnippets] = useState<CorpusSnippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fragmentCount, setFragmentCount] = useState(0);
@@ -29,11 +31,12 @@ export function useCorpusData(): UseCorpusDataResult {
         corpusRepository.listTranscripts(),
       ]);
       setFragmentCount(fragments.length);
-      const snippets = fragments.map((fragment) =>
+      const nextSnippets = fragments.map((fragment) =>
         fragmentToSnippet(fragment, snippetNotes[fragment.id]),
       );
+      setSnippets(nextSnippets);
       setGroups(
-        groupBySource(snippets, {
+        groupBySource(nextSnippets, {
           videoMeta: videoMetaFromTranscripts(transcripts),
         }),
       );
@@ -52,5 +55,5 @@ export function useCorpusData(): UseCorpusDataResult {
     });
   }, [refresh]);
 
-  return { groups, loading, error, fragmentCount, isLive, refresh };
+  return { groups, snippets, loading, error, fragmentCount, isLive, refresh };
 }

@@ -57,6 +57,8 @@ export type WebAnchor = {
 
 export type FragmentAnchor = YouTubeAnchor | WebAnchor;
 
+export type SnippetTriageStatus = 'pending' | 'review' | 'mastered';
+
 export type FragmentBase = {
   id: string;
   selectedText: string;
@@ -65,6 +67,8 @@ export type FragmentBase = {
   sourceUrl: string;
   sourceTitle: string;
   capturedAt: string;
+  /** Absent on legacy rows until migrateFragment runs. */
+  triageStatus?: SnippetTriageStatus;
 };
 
 export type LanguageFragment = FragmentBase & {

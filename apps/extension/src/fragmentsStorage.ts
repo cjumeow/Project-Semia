@@ -1,8 +1,13 @@
 import {
   FRAGMENTS_STORAGE_KEY,
+  migrateFragment,
   normalizeFragments,
   type LanguageFragment,
 } from '@semia/shared';
+import {
+  applySnippetTriageStatus,
+  type TriageStatusUpdate,
+} from './updateSnippetTriageStatus';
 
 export { normalizeFragments };
 
@@ -13,8 +18,16 @@ export async function listFragments(): Promise<LanguageFragment[]> {
 
 /** Background-only: append a captured fragment. */
 export async function appendFragment(fragment: LanguageFragment): Promise<void> {
+  const migrated = migrateFragment(fragment);
+  if (!migrated) {
+    throw new Error('Invalid fragment.');
+  }
+
   const list = await listFragments();
-  list.push(fragment);
+  list.push({
+    ...migrated,
+    triageStatus: migrated.triageStatus ?? 'pending',
+  });
   await chrome.storage.local.set({ [FRAGMENTS_STORAGE_KEY]: list });
 }
 
@@ -23,4 +36,17 @@ export async function replaceFragments(
   fragments: LanguageFragment[],
 ): Promise<void> {
   await chrome.storage.local.set({ [FRAGMENTS_STORAGE_KEY]: fragments });
+}
+
+export async function setSnippetTriageStatus(
+  fragmentId: string,
+  status: TriageStatusUpdate,
+): Promise<void> {
+  const list = await listFragments();
+  const result = applySnippetTriageStatus(list, fragmentId, status);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  await replaceFragments(result.fragments);
 }

@@ -1,8 +1,10 @@
 import {
+  allPendingSnippets,
   sourceKey,
   youtubeStartSeconds,
   resolveYoutubeChannel,
   resolveYoutubeTitle,
+  type SnippetTriageStatus,
 } from '@semia/shared';
 import type { CorpusSnippet, SourceGroup, VideoMeta } from '../types/corpus';
 
@@ -131,4 +133,50 @@ export function webGroups(groups: SourceGroup[]): SourceGroup[] {
 export function snippetSeekSeconds(snippet: CorpusSnippet): number | undefined {
   if (snippet.anchor.kind !== 'youtube') return undefined;
   return youtubeStartSeconds(snippet);
+}
+
+export function effectiveTriageStatus(
+  snippet: CorpusSnippet,
+): SnippetTriageStatus {
+  return snippet.triageStatus ?? 'pending';
+}
+
+function filterGroupsByTriage(
+  groups: SourceGroup[],
+  predicate: (status: SnippetTriageStatus) => boolean,
+): SourceGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      snippets: group.snippets.filter((snippet) =>
+        predicate(effectiveTriageStatus(snippet)),
+      ),
+    }))
+    .filter((group) => group.snippets.length > 0);
+}
+
+/** Sources that still have pending snippets (for Inbox sidebar). */
+export function inboxGroups(groups: SourceGroup[]): SourceGroup[] {
+  return filterGroupsByTriage(groups, (status) => status === 'pending');
+}
+
+/** Sources with triaged snippets only (for Library sidebar and workspace). */
+export function libraryGroups(groups: SourceGroup[]): SourceGroup[] {
+  return filterGroupsByTriage(groups, (status) => status !== 'pending');
+}
+
+/** Flat pending queue sorted for the inbox middle column. */
+export function pendingSnippets(snippets: CorpusSnippet[]): CorpusSnippet[] {
+  return allPendingSnippets(snippets) as CorpusSnippet[];
+}
+
+export function pendingCountForSourceGroup(group: SourceGroup): number {
+  return group.snippets.length;
+}
+
+export function sourceSubtitleForGroup(group: SourceGroup): string {
+  if (group.meta.kind === 'youtube') {
+    return group.meta.channel;
+  }
+  return group.meta.hostname;
 }

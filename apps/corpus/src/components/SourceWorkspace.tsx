@@ -86,6 +86,8 @@ export function SourceWorkspace({
           snippets={group.snippets}
           selectedSnippetId={selectedSnippetId}
           onSelectSnippet={onSelectSnippet}
+          showMediaLabel={false}
+          showStatusIcon
         />
       </div>
     </section>

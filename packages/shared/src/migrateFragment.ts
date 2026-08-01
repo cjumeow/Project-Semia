@@ -4,9 +4,17 @@ import type {
   FragmentAnchor,
   LanguageFragment,
   LegacyLanguageFragment,
+  SnippetTriageStatus,
   TranscriptSegment,
   YouTubeAnchor,
 } from './types';
+
+function parseTriageStatus(value: unknown): SnippetTriageStatus {
+  if (value === 'pending' || value === 'review' || value === 'mastered') {
+    return value;
+  }
+  return 'pending';
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object';
@@ -143,6 +151,7 @@ function migrateLegacy(value: Record<string, unknown>): LanguageFragment | null 
         : `https://www.youtube.com/watch?v=${legacy.videoId}`,
     sourceTitle: `YouTube · ${legacy.videoId}`,
     capturedAt: legacy.capturedAt,
+    triageStatus: 'pending',
     anchor: {
       kind: 'youtube',
       videoId: legacy.videoId,
@@ -185,6 +194,7 @@ function normalizeNewFragment(
     sourceUrl: value.sourceUrl,
     sourceTitle: value.sourceTitle,
     capturedAt: value.capturedAt,
+    triageStatus: parseTriageStatus(value.triageStatus),
     anchor,
   };
 }

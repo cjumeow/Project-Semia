@@ -1,10 +1,8 @@
 import { isYouTubeAnchor } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import { useCorpusNote } from '../hooks/useCorpusNote';
-import { useWebJumpBackHint } from '../hooks/useWebJumpBackHint';
-import { snippetSeekSeconds } from '../utils/corpusGrouping';
+import { effectiveTriageStatus, snippetSeekSeconds } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
-import { JumpBackHintCallout } from './JumpBackHintCallout';
 import { MarkdownNote } from './MarkdownNote';
 import { NoteCard } from './NoteCard';
 
@@ -17,6 +15,7 @@ type SnippetDetailProps = {
   generatingContext?: boolean;
   contextError?: string | null;
   onGenerateContext?: () => void;
+  onMarkMastered?: () => void;
 };
 
 export function SnippetDetail({
@@ -28,17 +27,9 @@ export function SnippetDetail({
   generatingContext,
   contextError,
   onGenerateContext,
+  onMarkMastered,
 }: SnippetDetailProps) {
   const { markdown, saving, save } = useCorpusNote(snippet?.id);
-  const webSnippet =
-    snippet?.anchor.kind === 'web'
-      ? {
-          id: snippet.id,
-          anchor: snippet.anchor,
-          selectedText: snippet.selectedText,
-        }
-      : undefined;
-  const { hint: jumpBackHint } = useWebJumpBackHint(webSnippet);
 
   if (!snippet) {
     return (
@@ -81,7 +72,6 @@ export function SnippetDetail({
         </div>
       </header>
       <div className="flex flex-col gap-5 p-5">
-        {jumpBackHint ? <JumpBackHintCallout hint={jumpBackHint} /> : null}
         {error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
@@ -89,10 +79,18 @@ export function SnippetDetail({
         ) : null}
         <NoteCard
           note={snippet.note}
+          highlightSelection={
+            snippet.note.originalSpeech.trim() || snippet.selectedText
+          }
           generating={generating}
           generatingContext={generatingContext}
           contextError={contextError}
           onGenerateContext={onGenerateContext}
+          onMarkMastered={
+            onMarkMastered && effectiveTriageStatus(snippet) === 'review'
+              ? onMarkMastered
+              : undefined
+          }
         />
         <MarkdownNote
           key={snippet.id}

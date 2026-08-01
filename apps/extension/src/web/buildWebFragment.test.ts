@@ -29,6 +29,7 @@ describe('buildWebFragment', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.fragment.selectedText).toBe('brave');
+      expect(result.fragment.triageStatus).toBe('pending');
       expect(result.fragment.anchor.kind).toBe('web');
       if (result.fragment.anchor.kind === 'web') {
         expect(result.fragment.anchor.locateQuality).toBe('precise');

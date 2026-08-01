@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react';
 import type { SnippetNote } from '../types/corpus';
+import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
+import { TriageStatusIcon } from './TriageStatusIcon';
 
 type NoteCardProps = {
   note: SnippetNote;
+  highlightSelection?: string;
   generating?: boolean;
   generatingContext?: boolean;
   contextError?: string | null;
   onGenerateContext?: () => void;
+  onMarkMastered?: () => void;
 };
 
 const NOTE_FIELDS = [
@@ -29,16 +33,32 @@ const NOTE_FIELDS = [
 
 export function NoteCard({
   note,
+  highlightSelection,
   generating,
   generatingContext,
   contextError,
   onGenerateContext,
+  onMarkMastered,
 }: NoteCardProps) {
   const noteReady = Boolean(note.generatedAt);
   const contextReady = Boolean(note.dynamicContextBlock?.trim());
 
   return (
-    <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
+    <div className="relative">
+      {onMarkMastered ? (
+        <button
+          type="button"
+          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary shadow-sm transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
+          aria-label="Mark as mastered"
+          title="Mark as mastered"
+          onClick={onMarkMastered}
+        >
+          <TriageStatusIcon status="review" size={12} />
+          <span aria-hidden>→</span>
+          <TriageStatusIcon status="mastered" size={12} />
+        </button>
+      ) : null}
+      <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
       {generating ? (
         <p className="mb-4 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
@@ -59,6 +79,9 @@ export function NoteCard({
               value={value}
               multiline={multiline}
               splitBilingual={splitBilingual && hasBilingualSplit(value)}
+              highlightSelection={
+                isContextField ? highlightSelection : undefined
+              }
               loading={isContextField ? generatingContext : generating}
               headerAction={
                 showContextAction ? (
@@ -81,7 +104,8 @@ export function NoteCard({
           {contextError}
         </p>
       ) : null}
-    </article>
+      </article>
+    </div>
   );
 }
 
@@ -164,6 +188,7 @@ type NoteFieldProps = {
   isExample?: boolean;
   multiline?: boolean;
   splitBilingual?: boolean;
+  highlightSelection?: string;
   loading?: boolean;
   headerAction?: ReactNode;
 };
@@ -174,6 +199,7 @@ function NoteField({
   isExample,
   multiline,
   splitBilingual,
+  highlightSelection,
   loading,
   headerAction,
 }: NoteFieldProps) {
@@ -206,7 +232,10 @@ function NoteField({
             <li>{value}</li>
           </ul>
         ) : splitBilingual ? (
-          <BilingualBlock value={value} />
+          <BilingualBlock
+            value={value}
+            highlightSelection={highlightSelection}
+          />
         ) : (
           value || '—'
         )}
@@ -215,7 +244,13 @@ function NoteField({
   );
 }
 
-function BilingualBlock({ value }: { value: string }) {
+function BilingualBlock({
+  value,
+  highlightSelection,
+}: {
+  value: string;
+  highlightSelection?: string;
+}) {
   const parts = value.split(/\s*---\s*/);
   const original = parts[0]?.trim() ?? '';
   const translation = parts.slice(1).join(' --- ').trim();
@@ -226,7 +261,13 @@ function BilingualBlock({ value }: { value: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="m-0">{original}</p>
+      <p className="m-0">
+        {highlightSelection?.trim() ? (
+          <HighlightSelection text={original} selection={highlightSelection} />
+        ) : (
+          original
+        )}
+      </p>
       {translation ? (
         <>
           <div className="border-t border-border" />

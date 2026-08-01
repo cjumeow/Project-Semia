@@ -5,6 +5,8 @@ import {
   findSnippet,
   findSourceGroup,
   groupBySource,
+  inboxGroups,
+  libraryGroups,
   webGroups,
   youtubeGroups,
 } from './corpusGrouping';
@@ -187,5 +189,58 @@ describe('findSourceGroup', () => {
       findSourceGroup(groups, sourceKey(snippets[3]!))?.snippets,
     ).toHaveLength(1);
     expect(findSourceGroup(groups, 'missing')).toBeUndefined();
+  });
+});
+
+describe('inboxGroups and libraryGroups', () => {
+  it('splits pending and triaged snippets for the same source', () => {
+    const mixed: CorpusSnippet[] = [
+      {
+        ...makeYoutubeSnippet({
+          id: 'pending-1',
+          videoId: 'mix',
+          startSeconds: 10,
+          capturedAt: '2026-08-01T00:00:00.000Z',
+        }),
+        triageStatus: 'pending',
+      },
+      {
+        ...makeYoutubeSnippet({
+          id: 'done-1',
+          videoId: 'mix',
+          startSeconds: 20,
+          capturedAt: '2026-08-01T01:00:00.000Z',
+        }),
+        triageStatus: 'mastered',
+      },
+    ];
+    const groups = groupBySource(mixed);
+
+    expect(inboxGroups(groups)).toHaveLength(1);
+    expect(inboxGroups(groups)[0]?.snippets.map((snippet) => snippet.id)).toEqual([
+      'pending-1',
+    ]);
+    expect(libraryGroups(groups)).toHaveLength(1);
+    expect(
+      libraryGroups(groups)[0]?.snippets.map((snippet) => snippet.id),
+    ).toEqual(['done-1']);
+  });
+
+  it('omits sources with no snippets in that pane', () => {
+    const onlyPending = groupBySource([
+      {
+        ...makeWebSnippet({
+          id: 'w-pending',
+          selectedText: 'todo',
+          sourceUrl: 'https://example.com/a',
+          start: 0,
+          capturedAt: '2026-08-01T00:00:00.000Z',
+        }),
+        triageStatus: 'pending',
+      },
+    ]);
+
+    expect(inboxGroups(onlyPending)).toHaveLength(1);
+    expect(libraryGroups(onlyPending)).toHaveLength(0);
   });
 });

@@ -8,6 +8,7 @@ import {
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
+  type SnippetTriageStatus,
   type StoredTranscript,
   type WebRestoreStatus,
   type WebRestoreStatusMap,
@@ -27,6 +28,10 @@ export interface CorpusRepository {
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
+  setSnippetTriageStatus(
+    fragmentId: string,
+    status: Exclude<SnippetTriageStatus, 'pending'>,
+  ): Promise<void>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
   getWebRestoreStatus(fragmentId: string): Promise<WebRestoreStatus | undefined>;
@@ -147,6 +152,21 @@ class ChromeCorpusRepository implements CorpusRepository {
     throw new Error(response?.error ?? 'Failed to delete source.');
   }
 
+  async setSnippetTriageStatus(
+    fragmentId: string,
+    status: Exclude<SnippetTriageStatus, 'pending'>,
+  ): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SET_SNIPPET_TRIAGE_STATUS',
+      fragmentId,
+      status,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to update triage status.');
+  }
+
   async getNotes(): Promise<CorpusNotesMap> {
     const result = await chrome.storage.local.get(CORPUS_NOTES_STORAGE_KEY);
     return (result[CORPUS_NOTES_STORAGE_KEY] ?? {}) as CorpusNotesMap;
@@ -239,6 +259,10 @@ class MockCorpusRepository implements CorpusRepository {
 
   async deleteSource(): Promise<void> {
     throw new Error('Delete requires the Chrome extension.');
+  }
+
+  async setSnippetTriageStatus(): Promise<void> {
+    throw new Error('Triage updates require the Chrome extension.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {

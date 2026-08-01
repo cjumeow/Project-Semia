@@ -16,6 +16,7 @@ const youtubeFragment = (
   sourceUrl: videoUrl,
   sourceTitle: 'Video',
   capturedAt: '2026-07-30T00:00:00.000Z',
+  triageStatus: 'pending',
   anchor: {
     kind: 'youtube',
     videoId: 'abc',

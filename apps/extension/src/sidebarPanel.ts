@@ -580,6 +580,7 @@ export function createCaptureSidebar(): CaptureSidebar {
       sourceUrl: transcript.videoUrl,
       sourceTitle: videoTitle || placeholderYoutubeTitle(transcript.videoId),
       capturedAt: new Date().toISOString(),
+      triageStatus: 'pending',
       anchor: {
         kind: 'youtube',
         videoId: transcript.videoId,
