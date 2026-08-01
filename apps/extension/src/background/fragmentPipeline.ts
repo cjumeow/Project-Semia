@@ -8,6 +8,7 @@ import {
   listFragments,
   normalizeFragments,
   setSnippetTriageStatus as persistSnippetTriageStatus,
+  recordStillLearning as persistStillLearning,
 } from '../fragmentsStorage';
 import { openWebCapture } from '../pendingWebRestore';
 import {
@@ -27,7 +28,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'OPEN_WEB_CAPTURE' }>
   | Extract<BackgroundMessage, { type: 'DELETE_FRAGMENT' }>
   | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>
-  | Extract<BackgroundMessage, { type: 'SET_SNIPPET_TRIAGE_STATUS' }>;
+  | Extract<BackgroundMessage, { type: 'SET_SNIPPET_TRIAGE_STATUS' }>
+  | Extract<BackgroundMessage, { type: 'RECORD_STILL_LEARNING' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -42,7 +44,8 @@ export function isFragmentMessage(
     message.type === 'OPEN_WEB_CAPTURE' ||
     message.type === 'DELETE_FRAGMENT' ||
     message.type === 'DELETE_SOURCE' ||
-    message.type === 'SET_SNIPPET_TRIAGE_STATUS'
+    message.type === 'SET_SNIPPET_TRIAGE_STATUS' ||
+    message.type === 'RECORD_STILL_LEARNING'
   );
 }
 
@@ -99,6 +102,10 @@ export async function handleFragmentMessage(
 
     case 'SET_SNIPPET_TRIAGE_STATUS':
       await persistSnippetTriageStatus(message.fragmentId, message.status);
+      return { ok: true };
+
+    case 'RECORD_STILL_LEARNING':
+      await persistStillLearning(message.fragmentId);
       return { ok: true };
   }
 }

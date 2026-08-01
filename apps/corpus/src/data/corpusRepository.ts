@@ -32,6 +32,7 @@ export interface CorpusRepository {
     fragmentId: string,
     status: Exclude<SnippetTriageStatus, 'pending'>,
   ): Promise<void>;
+  recordStillLearning(fragmentId: string): Promise<void>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
   getWebRestoreStatus(fragmentId: string): Promise<WebRestoreStatus | undefined>;
@@ -167,6 +168,17 @@ class ChromeCorpusRepository implements CorpusRepository {
     throw new Error(response?.error ?? 'Failed to update triage status.');
   }
 
+  async recordStillLearning(fragmentId: string): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'RECORD_STILL_LEARNING',
+      fragmentId,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to record still learning.');
+  }
+
   async getNotes(): Promise<CorpusNotesMap> {
     const result = await chrome.storage.local.get(CORPUS_NOTES_STORAGE_KEY);
     return (result[CORPUS_NOTES_STORAGE_KEY] ?? {}) as CorpusNotesMap;
@@ -263,6 +275,10 @@ class MockCorpusRepository implements CorpusRepository {
 
   async setSnippetTriageStatus(): Promise<void> {
     throw new Error('Triage updates require the Chrome extension.');
+  }
+
+  async recordStillLearning(): Promise<void> {
+    throw new Error('Review updates require the Chrome extension.');
   }
 
   async getNotes(): Promise<CorpusNotesMap> {

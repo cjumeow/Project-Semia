@@ -111,4 +111,53 @@ describe('migrateFragment', () => {
 
     expect(migrated?.triageStatus).toBe('review');
   });
+
+  it('backfills legacy review rows without schedule as due at capturedAt', () => {
+    const migrated = migrateFragment({
+      ...migratedFixture,
+      triageStatus: 'review',
+      capturedAt: '2026-07-29T00:00:00.000Z',
+    });
+
+    expect(migrated).toMatchObject({
+      triageStatus: 'review',
+      reviewStage: 0,
+      dueAt: '2026-07-29T00:00:00.000Z',
+    });
+  });
+
+  it('preserves stored schedule fields on review rows', () => {
+    const migrated = migrateFragment({
+      ...migratedFixture,
+      triageStatus: 'review',
+      reviewStage: 2,
+      dueAt: '2026-08-10T12:00:00.000Z',
+      enteredReviewAt: '2026-08-01T12:00:00.000Z',
+      lastReviewedAt: '2026-08-05T12:00:00.000Z',
+    });
+
+    expect(migrated).toMatchObject({
+      triageStatus: 'review',
+      reviewStage: 2,
+      dueAt: '2026-08-10T12:00:00.000Z',
+      enteredReviewAt: '2026-08-01T12:00:00.000Z',
+      lastReviewedAt: '2026-08-05T12:00:00.000Z',
+    });
+  });
+
+  it('does not backfill schedule fields for pending or mastered rows', () => {
+    const pending = migrateFragment({
+      ...migratedFixture,
+      triageStatus: 'pending',
+    });
+    const mastered = migrateFragment({
+      ...migratedFixture,
+      triageStatus: 'mastered',
+    });
+
+    expect(pending?.dueAt).toBeUndefined();
+    expect(pending?.reviewStage).toBeUndefined();
+    expect(mastered?.dueAt).toBeUndefined();
+    expect(mastered?.reviewStage).toBeUndefined();
+  });
 });

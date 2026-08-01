@@ -10,6 +10,7 @@ import {
 import {
   InboxIcon,
   LibraryIcon,
+  ReviewQueueIcon,
   WebIcon,
   YouTubeIcon,
 } from './SemiaNavIcons';
@@ -18,21 +19,26 @@ type SemiaSidebarProps = {
   pane: CorpusPane;
   inboxGroups: SourceGroup[];
   libraryGroups: SourceGroup[];
+  dueCount: number;
   selectedSourceKey: string | null;
   onSelectInboxSource: (sourceKey: string) => void;
   onSelectLibrarySource: (sourceKey: string) => void;
+  onSelectReviewQueue: () => void;
 };
 
 export function SemiaSidebar({
   pane,
   inboxGroups,
   libraryGroups,
+  dueCount,
   selectedSourceKey,
   onSelectInboxSource,
   onSelectLibrarySource,
+  onSelectReviewQueue,
 }: SemiaSidebarProps) {
   const [inboxExpanded, setInboxExpanded] = useState(true);
   const [libraryExpanded, setLibraryExpanded] = useState(true);
+  const [reviewQueueExpanded, setReviewQueueExpanded] = useState(true);
   const [youtubeExpanded, setYoutubeExpanded] = useState(true);
   const [webExpanded, setWebExpanded] = useState(true);
 
@@ -161,6 +167,46 @@ export function SemiaSidebar({
                 ))
               )}
             </SidebarFolder>
+          </div>
+        ) : null}
+
+        <SidebarRow
+          variant="section"
+          expanded={reviewQueueExpanded}
+          onToggle={() => setReviewQueueExpanded((value) => !value)}
+          icon={<ReviewQueueIcon />}
+          label="Review Queue"
+          count={dueCount}
+          ariaLabel="Review Queue"
+          className="mt-2"
+        />
+
+        {reviewQueueExpanded ? (
+          <div className="mt-0.5 space-y-0.5 pl-2">
+            <button
+              type="button"
+              className={[
+                rowBase,
+                rowHover,
+                'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
+                pane === 'review-queue'
+                  ? 'semia-margin-active text-accent shadow-sm'
+                  : 'text-text-secondary hover:text-text',
+              ].join(' ')}
+              onClick={onSelectReviewQueue}
+            >
+              <span className="truncate text-xs font-medium leading-snug">
+                Due now
+              </span>
+              <span
+                className={[
+                  'mt-0.5 truncate text-[10px] tabular-nums',
+                  pane === 'review-queue' ? 'text-accent/70' : 'text-text-muted',
+                ].join(' ')}
+              >
+                {dueCount} snippet{dueCount === 1 ? '' : 's'}
+              </span>
+            </button>
           </div>
         ) : null}
       </div>

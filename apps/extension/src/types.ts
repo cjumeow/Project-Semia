@@ -37,5 +37,6 @@ export type BackgroundMessage =
       fragmentId: string;
       status: Exclude<SnippetTriageStatus, 'pending'>;
     }
+  | { type: 'RECORD_STILL_LEARNING'; fragmentId: string }
   | { type: 'TAKE_PENDING_WEB_RESTORE' }
   | { type: 'WEB_RESTORE_RESULT'; fragmentId: string; ok: boolean };

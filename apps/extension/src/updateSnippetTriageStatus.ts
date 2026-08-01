@@ -1,5 +1,5 @@
 import {
-  setSnippetTriageStatus,
+  applySnippetTriageStatus as applySharedSnippetTriageStatus,
   type LanguageFragment,
   type SnippetTriageStatus,
 } from '@semia/shared';
@@ -14,6 +14,7 @@ export function applySnippetTriageStatus(
   fragments: LanguageFragment[],
   fragmentId: string,
   status: SnippetTriageStatus,
+  now: string = new Date().toISOString(),
 ): ApplySnippetTriageStatusResult {
   if (status !== 'review' && status !== 'mastered') {
     return { ok: false, error: 'Invalid triage status.' };
@@ -25,6 +26,11 @@ export function applySnippetTriageStatus(
 
   return {
     ok: true,
-    fragments: setSnippetTriageStatus(fragments, fragmentId, status),
+    fragments: applySharedSnippetTriageStatus(
+      fragments,
+      fragmentId,
+      status,
+      now,
+    ),
   };
 }

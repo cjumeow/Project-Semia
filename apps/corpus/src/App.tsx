@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { InboxWorkspace } from './components/InboxWorkspace';
+import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -21,10 +22,13 @@ export default function App() {
     inboxSourceGroups,
     librarySourceGroups,
     pendingQueue,
+    dueQueue,
     selectedGroup,
     selectedSnippet,
     selectInboxSource,
     selectLibrarySource,
+    selectReviewQueue,
+    selectReviewQueueSnippet,
     selectSnippet,
   } = useCorpusSelection(groups, snippets);
 
@@ -63,6 +67,15 @@ export default function App() {
     async (snippetId: string, status: 'review' | 'mastered'): Promise<void> => {
       if (!isLive) return;
       await corpusRepository.setSnippetTriageStatus(snippetId, status);
+      await refresh();
+    },
+    [isLive, refresh],
+  );
+
+  const handleStillLearning = useCallback(
+    async (snippetId: string): Promise<void> => {
+      if (!isLive) return;
+      await corpusRepository.recordStillLearning(snippetId);
       await refresh();
     },
     [isLive, refresh],
@@ -120,6 +133,26 @@ export default function App() {
         }}
         triageEnabled={isLive}
       />
+    ) : selection.pane === 'review-queue' ? (
+      <ReviewQueueWorkspace
+        dueSnippets={dueQueue}
+        selectedSnippet={selectedSnippet}
+        actionsEnabled={isLive}
+        generating={generating}
+        noteError={noteError}
+        generatingContext={generatingContext}
+        contextError={contextError}
+        onSelectSnippet={selectReviewQueueSnippet}
+        onStillLearning={(snippetId) => {
+          void handleStillLearning(snippetId);
+        }}
+        onMastered={(snippetId) => {
+          void handleMarkTriage(snippetId, 'mastered');
+        }}
+        onGenerateContext={() => {
+          void generateContext();
+        }}
+      />
     ) : (
       <SourceWorkspace
         group={selectedGroup}
@@ -132,6 +165,8 @@ export default function App() {
       />
     );
 
+  const showDetailPanel = selection.pane !== 'review-queue';
+
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
@@ -142,9 +177,11 @@ export default function App() {
           pane={selection.pane}
           inboxGroups={inboxSourceGroups}
           libraryGroups={librarySourceGroups}
+          dueCount={dueQueue.length}
           selectedSourceKey={selection.sourceKey}
           onSelectInboxSource={selectInboxSource}
           onSelectLibrarySource={selectLibrarySource}
+          onSelectReviewQueue={selectReviewQueue}
         />
       </div>
 
@@ -188,33 +225,37 @@ export default function App() {
         workspace
       )}
 
-      <ResizeHandle onResizeStart={onDetailResizeStart} />
+      {showDetailPanel ? (
+        <>
+          <ResizeHandle onResizeStart={onDetailResizeStart} />
 
-      <div className="flex h-full shrink-0 border-l border-border bg-surface shadow-[inset_1px_0_0_rgba(28,25,23,0.04)]">
-        <SnippetDetail
-          snippet={selectedSnippet}
-          width={detailWidth}
-          generating={generating}
-          error={noteError}
-          onRegenerate={() => {
-            void regenerate();
-          }}
-          generatingContext={generatingContext}
-          contextError={contextError}
-          onGenerateContext={() => {
-            void generateContext();
-          }}
-          onMarkMastered={
-            isLive &&
-            selectedSnippet &&
-            effectiveTriageStatus(selectedSnippet) === 'review'
-              ? () => {
-                  void handleMarkTriage(selectedSnippet.id, 'mastered');
-                }
-              : undefined
-          }
-        />
-      </div>
+          <div className="flex h-full shrink-0 border-l border-border bg-surface shadow-[inset_1px_0_0_rgba(28,25,23,0.04)]">
+            <SnippetDetail
+              snippet={selectedSnippet}
+              width={detailWidth}
+              generating={generating}
+              error={noteError}
+              onRegenerate={() => {
+                void regenerate();
+              }}
+              generatingContext={generatingContext}
+              contextError={contextError}
+              onGenerateContext={() => {
+                void generateContext();
+              }}
+              onMarkMastered={
+                isLive &&
+                selectedSnippet &&
+                effectiveTriageStatus(selectedSnippet) === 'review'
+                  ? () => {
+                      void handleMarkTriage(selectedSnippet.id, 'mastered');
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        </>
+      ) : null}
     </main>
   );
 }

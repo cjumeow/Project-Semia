@@ -1,13 +1,49 @@
 import { contextCuesToText } from './contextText';
+import { backfillReviewSchedule } from './reviewSchedule';
 import { inferWebLocateQuality } from './webAnchor';
 import type {
   FragmentAnchor,
   LanguageFragment,
   LegacyLanguageFragment,
+  ReviewStage,
   SnippetTriageStatus,
   TranscriptSegment,
   YouTubeAnchor,
 } from './types';
+
+function parseReviewStage(value: unknown): ReviewStage | undefined {
+  if (value === 0 || value === 1 || value === 2 || value === 3 || value === 4) {
+    return value;
+  }
+  return undefined;
+}
+
+function parseOptionalIso(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function parseScheduleFields(value: Record<string, unknown>): {
+  reviewStage?: ReviewStage;
+  dueAt?: string;
+  enteredReviewAt?: string;
+  lastReviewedAt?: string;
+} {
+  const reviewStage = parseReviewStage(value.reviewStage);
+  const dueAt = parseOptionalIso(value.dueAt);
+  const enteredReviewAt = parseOptionalIso(value.enteredReviewAt);
+  const lastReviewedAt = parseOptionalIso(value.lastReviewedAt);
+
+  return {
+    ...(reviewStage !== undefined ? { reviewStage } : {}),
+    ...(dueAt !== undefined ? { dueAt } : {}),
+    ...(enteredReviewAt !== undefined ? { enteredReviewAt } : {}),
+    ...(lastReviewedAt !== undefined ? { lastReviewedAt } : {}),
+  };
+}
+
+function finalizeFragment(fragment: LanguageFragment): LanguageFragment {
+  return backfillReviewSchedule(fragment);
+}
 
 function parseTriageStatus(value: unknown): SnippetTriageStatus {
   if (value === 'pending' || value === 'review' || value === 'mastered') {
@@ -139,7 +175,7 @@ function migrateLegacy(value: Record<string, unknown>): LanguageFragment | null 
   const legacy = value as LegacyLanguageFragment;
   const contextCues = parseTranscriptSegments(legacy.contextCues);
 
-  return {
+  return finalizeFragment({
     id: legacy.id,
     selectedText: legacy.selectedText,
     contextText: contextCuesToText(contextCues),
@@ -162,7 +198,7 @@ function migrateLegacy(value: Record<string, unknown>): LanguageFragment | null 
       startSeconds: legacy.start,
       endSeconds: legacy.end,
     },
-  };
+  });
 }
 
 function normalizeNewFragment(
@@ -186,7 +222,7 @@ function normalizeNewFragment(
     contextText = contextCuesToText(anchor.contextCues);
   }
 
-  return {
+  return finalizeFragment({
     id: value.id as string,
     selectedText: value.selectedText as string,
     contextText,
@@ -195,8 +231,9 @@ function normalizeNewFragment(
     sourceTitle: value.sourceTitle,
     capturedAt: value.capturedAt,
     triageStatus: parseTriageStatus(value.triageStatus),
+    ...parseScheduleFields(value),
     anchor,
-  };
+  });
 }
 
 /** Upgrade legacy storage rows or validate already-migrated fragments. */

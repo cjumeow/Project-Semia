@@ -27,30 +27,56 @@ function fragment(
 }
 
 describe('applySnippetTriageStatus', () => {
-  it('updates the matching fragment to review', () => {
+  const now = '2026-08-06T12:00:00.000Z';
+
+  it('enters review queue when marking review', () => {
     const fragments = [fragment('a'), fragment('b')];
 
-    const result = applySnippetTriageStatus(fragments, 'a', 'review');
+    const result = applySnippetTriageStatus(fragments, 'a', 'review', now);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.fragments.find((item) => item.id === 'a')?.triageStatus).toBe(
-        'review',
-      );
+      expect(result.fragments.find((item) => item.id === 'a')).toMatchObject({
+        triageStatus: 'review',
+        reviewStage: 0,
+        dueAt: now,
+      });
       expect(result.fragments.find((item) => item.id === 'b')?.triageStatus).toBe(
         'pending',
       );
     }
   });
 
+  it('clears schedule when mastering from review', () => {
+    const fragments = [
+      fragment('a', 'review'),
+      fragment('b', 'pending'),
+    ];
+    fragments[0] = {
+      ...fragments[0]!,
+      reviewStage: 1,
+      dueAt: now,
+    };
+
+    const result = applySnippetTriageStatus(fragments, 'a', 'mastered', now);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const updated = result.fragments.find((item) => item.id === 'a');
+      expect(updated?.triageStatus).toBe('mastered');
+      expect(updated?.dueAt).toBeUndefined();
+      expect(updated?.lastReviewedAt).toBe(now);
+    }
+  });
+
   it('rejects unknown fragment ids', () => {
-    const result = applySnippetTriageStatus([fragment('a')], 'missing', 'review');
+    const result = applySnippetTriageStatus([fragment('a')], 'missing', 'review', now);
 
     expect(result).toEqual({ ok: false, error: 'Fragment not found.' });
   });
 
   it('rejects pending as a write target', () => {
-    const result = applySnippetTriageStatus([fragment('a')], 'a', 'pending');
+    const result = applySnippetTriageStatus([fragment('a')], 'a', 'pending', now);
 
     expect(result).toEqual({ ok: false, error: 'Invalid triage status.' });
   });

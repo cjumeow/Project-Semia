@@ -59,6 +59,9 @@ export type FragmentAnchor = YouTubeAnchor | WebAnchor;
 
 export type SnippetTriageStatus = 'pending' | 'review' | 'mastered';
 
+/** 0 = immediate on first review; 1–4 map to 1d / 3d / 14d / 30d+ */
+export type ReviewStage = 0 | 1 | 2 | 3 | 4;
+
 export type FragmentBase = {
   id: string;
   selectedText: string;
@@ -69,6 +72,11 @@ export type FragmentBase = {
   capturedAt: string;
   /** Absent on legacy rows until migrateFragment runs. */
   triageStatus?: SnippetTriageStatus;
+  /** Meaningful while triageStatus is review. */
+  reviewStage?: ReviewStage;
+  dueAt?: string;
+  enteredReviewAt?: string;
+  lastReviewedAt?: string;
 };
 
 export type LanguageFragment = FragmentBase & {
