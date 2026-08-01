@@ -3,7 +3,7 @@
   "name": "Project-Semia",
   "version": "0.5.1",
   "description": "Capture language snippets from YouTube transcripts and web pages into SEMIA.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "unlimitedStorage", "tabs"],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": false

@@ -3,3 +3,5 @@ export const FRAGMENTS_STORAGE_KEY = 'languageFragments';
 export const CORPUS_NOTES_STORAGE_KEY = 'corpusNotes';
 export const SNIPPET_NOTES_STORAGE_KEY = 'snippetNotes';
 export const SEMIA_SETTINGS_STORAGE_KEY = 'semiaSettings';
+/** Per-fragment result of the last web jump-back attempt (SEMIA UI). */
+export const WEB_RESTORE_STATUS_STORAGE_KEY = 'webRestoreStatus';

@@ -1,8 +1,13 @@
-import type { LanguageFragment } from '@semia/shared';
-import { getArticleRoot } from './articleRoot';
+import type { LanguageFragment, WebLocateQuality } from '@semia/shared';
+import { hasLikelyLatexOrMathMarkup } from '@semia/shared';
 import { buildWebAnchor } from './buildWebAnchor';
 import { extractContext } from './extractContext';
-import { findFlatRange, flattenText, type FlatText } from './flattenText';
+import {
+  findFlatRange,
+  flattenText,
+  locateRangeInFlat,
+  type FlatText,
+} from './flattenText';
 
 function createId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -23,44 +28,78 @@ function pageTitle(doc: Document = document): string {
   return doc.title.trim() || doc.location.hostname;
 }
 
+export type WebCaptureFailureReason = 'empty-selection' | 'locate-failed';
+
+export type WebCaptureResult =
+  | { ok: true; fragment: LanguageFragment }
+  | { ok: false; reason: WebCaptureFailureReason };
+
 type LocatedSelection = {
   flat: FlatText;
-  offsets: { start: number; end: number } | null;
+  offsets: { start: number; end: number };
+  fromRange: boolean;
 };
 
 /**
- * Readability rebuilds the article into a detached tree, so a selection made in
- * the live page is not always present there. Fall back to the live body.
+ * Locate against the live page body.
+ *
+ * Prefer mapping the DOM Range through flatten chunks (same nodes the user
+ * selected). Fall back to string search when the Range boundaries are not in
+ * the flattened tree (e.g. skipped hidden nodes).
  */
-function locateSelection(selectedText: string): LocatedSelection {
-  const articleFlat = flattenText(getArticleRoot());
-  const articleOffsets = findFlatRange(articleFlat, selectedText);
-  if (articleOffsets) {
-    return { flat: articleFlat, offsets: articleOffsets };
+function locateSelection(
+  range: Range,
+  selectedText: string,
+): LocatedSelection | null {
+  const bodyFlat = flattenText(document.body);
+  const fromRange = locateRangeInFlat(bodyFlat, range);
+  if (fromRange) {
+    return { flat: bodyFlat, offsets: fromRange, fromRange: true };
   }
 
-  const bodyFlat = flattenText(document.body);
-  return { flat: bodyFlat, offsets: findFlatRange(bodyFlat, selectedText) };
+  const fromSearch = findFlatRange(bodyFlat, selectedText);
+  if (!fromSearch) return null;
+
+  return { flat: bodyFlat, offsets: fromSearch, fromRange: false };
 }
 
-export function buildWebFragment(range: Range): LanguageFragment | null {
-  const selectedText = range.toString().replace(/\s+/g, ' ').trim();
-  if (!selectedText) return null;
+function inferLocateQuality(
+  selectedText: string,
+  fromRange: boolean,
+): WebLocateQuality {
+  if (hasLikelyLatexOrMathMarkup(selectedText) || !fromRange) {
+    return 'uncertain';
+  }
+  return 'precise';
+}
 
-  const { flat, offsets } = locateSelection(selectedText);
-  const anchor = buildWebAnchor(flat, selectedText, offsets);
-  const contextText = offsets
-    ? extractContext(flat, offsets.start, offsets.end)
-    : selectedText;
+export function buildWebFragment(range: Range): WebCaptureResult {
+  const selectedText = range.toString().replace(/\s+/g, ' ').trim();
+  if (!selectedText) {
+    return { ok: false, reason: 'empty-selection' };
+  }
+
+  const located = locateSelection(range, selectedText);
+  if (!located) {
+    return { ok: false, reason: 'locate-failed' };
+  }
+
+  const { flat, offsets, fromRange } = located;
+  const locateQuality = inferLocateQuality(selectedText, fromRange);
+  const anchor = buildWebAnchor(flat, selectedText, offsets, locateQuality);
+  const contextText = extractContext(flat, offsets.start, offsets.end);
 
   return {
-    id: createId(),
-    selectedText,
-    contextText,
-    languageCode: detectLanguageCode(),
-    sourceUrl: window.location.href,
-    sourceTitle: pageTitle(),
-    capturedAt: new Date().toISOString(),
-    anchor,
+    ok: true,
+    fragment: {
+      id: createId(),
+      selectedText,
+      contextText,
+      languageCode: detectLanguageCode(),
+      sourceUrl: window.location.href,
+      sourceTitle: pageTitle(),
+      capturedAt: new Date().toISOString(),
+      anchor,
+    },
   };
 }

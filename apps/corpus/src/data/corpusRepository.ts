@@ -2,10 +2,15 @@ import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
   SNIPPET_NOTES_STORAGE_KEY,
+  TRANSCRIPTS_STORAGE_KEY,
+  WEB_RESTORE_STATUS_STORAGE_KEY,
   type CorpusNotesMap,
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
+  type StoredTranscript,
+  type WebRestoreStatus,
+  type WebRestoreStatusMap,
   normalizeFragments,
 } from '@semia/shared';
 import { isExtensionContext } from '../utils/extensionContext';
@@ -15,6 +20,7 @@ type ErrResponse = { ok: false; error: string };
 
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
+  listTranscripts(): Promise<StoredTranscript[]>;
   getSnippetNotes(): Promise<SnippetNotesMap>;
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
   generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
@@ -23,6 +29,7 @@ export interface CorpusRepository {
   deleteSource(sourceUrl: string): Promise<void>;
   getNotes(): Promise<CorpusNotesMap>;
   saveNote(fragmentId: string, markdown: string): Promise<void>;
+  getWebRestoreStatus(fragmentId: string): Promise<WebRestoreStatus | undefined>;
   subscribe(listener: () => void): () => void;
   isLive(): boolean;
 }
@@ -43,6 +50,23 @@ class ChromeCorpusRepository implements CorpusRepository {
 
     throw new Error(
       response?.error ?? 'Failed to load captures from extension.',
+    );
+  }
+
+  async listTranscripts(): Promise<StoredTranscript[]> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'LIST_TRANSCRIPTS',
+    })) as
+      | OkResponse<{ transcripts: StoredTranscript[] }>
+      | ErrResponse
+      | undefined;
+
+    if (response?.ok) {
+      return response.transcripts ?? [];
+    }
+
+    throw new Error(
+      response?.error ?? 'Failed to load YouTube transcripts.',
     );
   }
 
@@ -129,14 +153,24 @@ class ChromeCorpusRepository implements CorpusRepository {
   }
 
   async saveNote(fragmentId: string, markdown: string): Promise<void> {
-    const notes = await this.getNotes();
-    notes[fragmentId] = {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SAVE_CORPUS_NOTE',
+      fragmentId,
       markdown,
-      updatedAt: new Date().toISOString(),
-    };
-    await chrome.storage.local.set({
-      [CORPUS_NOTES_STORAGE_KEY]: notes,
-    });
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to save note.');
+  }
+
+  async getWebRestoreStatus(
+    fragmentId: string,
+  ): Promise<WebRestoreStatus | undefined> {
+    const result = await chrome.storage.local.get(WEB_RESTORE_STATUS_STORAGE_KEY);
+    const map = (result[WEB_RESTORE_STATUS_STORAGE_KEY] ??
+      {}) as WebRestoreStatusMap;
+    return map[fragmentId];
   }
 
   subscribe(listener: () => void): () => void {
@@ -148,29 +182,18 @@ class ChromeCorpusRepository implements CorpusRepository {
       if (
         changes[FRAGMENTS_STORAGE_KEY] ||
         changes[SNIPPET_NOTES_STORAGE_KEY] ||
-        changes[CORPUS_NOTES_STORAGE_KEY]
-      ) {
-        listener();
-      }
-    };
-
-    const onRuntimeMessage = (message: unknown): void => {
-      if (
-        message &&
-        typeof message === 'object' &&
-        'type' in message &&
-        message.type === 'FRAGMENTS_CHANGED'
+        changes[CORPUS_NOTES_STORAGE_KEY] ||
+        changes[TRANSCRIPTS_STORAGE_KEY] ||
+        changes[WEB_RESTORE_STATUS_STORAGE_KEY]
       ) {
         listener();
       }
     };
 
     chrome.storage.onChanged.addListener(onStorageChanged);
-    chrome.runtime.onMessage.addListener(onRuntimeMessage);
 
     return () => {
       chrome.storage.onChanged.removeListener(onStorageChanged);
-      chrome.runtime.onMessage.removeListener(onRuntimeMessage);
     };
   }
 }
@@ -183,6 +206,10 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async listFragments(): Promise<LanguageFragment[]> {
+    return [];
+  }
+
+  async listTranscripts(): Promise<StoredTranscript[]> {
     return [];
   }
 
@@ -223,6 +250,10 @@ class MockCorpusRepository implements CorpusRepository {
       markdown,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  async getWebRestoreStatus(): Promise<WebRestoreStatus | undefined> {
+    return undefined;
   }
 
   subscribe(): () => void {

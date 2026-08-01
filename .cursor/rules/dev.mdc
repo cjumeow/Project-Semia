@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- 當我要開始開發新功能時，請主動根據 forMe/suggestion.md 或直接閱讀 matt 的 skills 提示我相關的流程，並附上建議。
+- 當我要修一個feature或bug時，請根據 matt skills (.agent/skills) 主動推薦我相關流程，而不是主動去使用其中的skills。
+- 當我要提交新的pr或發版時，告訴我哪些skills (e.g. old-coder) 可以被使用上。
+- 時時刻刻提醒我哪些skill可以派上用場，並由我來指派。

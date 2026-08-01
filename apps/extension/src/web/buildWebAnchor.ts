@@ -1,4 +1,4 @@
-import type { WebAnchor } from '@semia/shared';
+import type { WebAnchor, WebLocateQuality } from '@semia/shared';
 import type { FlatText } from './flattenText';
 
 const QUOTE_RADIUS = 32;
@@ -12,24 +12,18 @@ function quotePart(text: string, fromEnd: boolean): string | undefined {
   return slice.trim() || undefined;
 }
 
-/** Build a web anchor from a located selection inside flattened article text. */
+/** Build a web anchor from located offsets in flattened page text. */
 export function buildWebAnchor(
   flat: FlatText,
   selectedText: string,
-  offsets: { start: number; end: number } | null,
+  offsets: { start: number; end: number },
+  locateQuality: WebLocateQuality = 'precise',
 ): WebAnchor {
-  if (!offsets) {
-    return {
-      kind: 'web',
-      textQuote: { exact: selectedText },
-      textPosition: { start: 0, end: selectedText.length },
-    };
-  }
-
   const { start, end } = offsets;
 
   return {
     kind: 'web',
+    locateQuality,
     textQuote: {
       exact: selectedText,
       prefix: quotePart(flat.text.slice(Math.max(0, start - QUOTE_RADIUS), start), true),

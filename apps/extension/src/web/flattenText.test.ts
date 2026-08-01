@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from 'vitest';
-import { findFlatRange, flattenText } from './flattenText';
+import {
+  findFlatRange,
+  flattenText,
+  locateRangeInFlat,
+} from './flattenText';
 
 describe('flattenText', () => {
   it('keeps inline markup on one line with original spacing', () => {
@@ -73,5 +77,34 @@ describe('findFlatRange', () => {
     const flat = flattenText(document.body);
 
     expect(findFlatRange(flat, 'not on this page')).toBeNull();
+  });
+});
+
+describe('locateRangeInFlat', () => {
+  it('maps a live Range through flatten chunks without string search', () => {
+    document.body.innerHTML = '<p>Hello <em>brave</em> world</p>';
+    const em = document.querySelector('em')!;
+    const range = document.createRange();
+    range.selectNodeContents(em);
+
+    const flat = flattenText(document.body);
+    const found = locateRangeInFlat(flat, range);
+
+    expect(found).not.toBeNull();
+    expect(flat.text.slice(found!.start, found!.end)).toBe('brave');
+  });
+
+  it('handles a partial text-node selection', () => {
+    document.body.innerHTML = '<p>Hello brave world</p>';
+    const text = document.querySelector('p')!.firstChild as Text;
+    const range = document.createRange();
+    range.setStart(text, 6);
+    range.setEnd(text, 11);
+
+    const flat = flattenText(document.body);
+    const found = locateRangeInFlat(flat, range);
+
+    expect(found).not.toBeNull();
+    expect(flat.text.slice(found!.start, found!.end)).toBe('brave');
   });
 });

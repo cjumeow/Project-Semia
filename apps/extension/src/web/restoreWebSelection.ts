@@ -1,9 +1,13 @@
 import type { WebAnchor } from '@semia/shared';
 import { findFlatRange, flattenText, type FlatText } from './flattenText';
 
-export type WebRestorePayload = {
+export type WebRestoreInput = {
   selectedText: string;
   textQuote: WebAnchor['textQuote'];
+};
+
+export type WebRestorePayload = WebRestoreInput & {
+  fragmentId: string;
 };
 
 /** Skip SPA retry once the page has enough text for offset lookup to succeed. */
@@ -157,7 +161,7 @@ function flatOffsetsToDomRange(
 /** Scroll to and select captured text using the browser's native selection UI. */
 export function restoreWebSelection(
   root: Element,
-  payload: WebRestorePayload,
+  payload: WebRestoreInput,
 ): boolean {
   const flat = flattenText(root);
   const offsets =

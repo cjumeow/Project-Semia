@@ -1,7 +1,7 @@
-import { saveFragment } from './storage';
+import { submitFragment } from './submitCapture';
 import { buildWebFragment } from './web/buildWebFragment';
+import { runWebRestoreWithRetry } from './web/runWebRestoreWithRetry';
 import {
-  isPageTextLoaded,
   restoreWebSelection,
   type WebRestorePayload,
 } from './web/restoreWebSelection';
@@ -124,25 +124,32 @@ function showToolbar(range: Range): void {
     status.textContent = 'Saving…';
 
     try {
-      const fragment = buildWebFragment(savedRange);
-      if (!fragment) {
-        status.textContent = 'Could not capture selection';
+      const result = buildWebFragment(savedRange);
+      if (!result.ok) {
+        status.textContent =
+          result.reason === 'locate-failed'
+            ? 'Could not locate selection on this page'
+            : 'Could not capture selection';
         button.disabled = false;
         applyStyles(button, { opacity: '1', cursor: 'pointer' });
         return;
       }
 
-      await saveFragment(fragment);
+      await submitFragment(result.fragment);
       status.textContent = 'Saved to SEMIA';
       window.setTimeout(removeToolbar, 1000);
     } catch (error) {
       console.error('[Semia] Failed to save web capture:', error);
-      status.textContent = 'Save failed';
+      const message = String(
+        error instanceof Error ? error.message : (error ?? ''),
+      );
+      status.textContent = /quota/i.test(message)
+        ? 'Storage full — see console'
+        : 'Save failed';
       button.disabled = false;
       applyStyles(button, { opacity: '1', cursor: 'pointer' });
     }
   }
-
   positionToolbar(host, range.getBoundingClientRect());
 }
 
@@ -206,6 +213,12 @@ type PendingRestoreResponse =
   | { ok: true; payload: WebRestorePayload | null }
   | { ok: false; error?: string };
 
+function reportWebRestoreResult(fragmentId: string, ok: boolean): void {
+  void chrome.runtime
+    .sendMessage({ type: 'WEB_RESTORE_RESULT', fragmentId, ok })
+    .catch(() => {});
+}
+
 async function tryRestorePendingSelection(): Promise<void> {
   const response = (await chrome.runtime.sendMessage({
     type: 'TAKE_PENDING_WEB_RESTORE',
@@ -213,19 +226,15 @@ async function tryRestorePendingSelection(): Promise<void> {
 
   if (!response?.ok || !response.payload) return;
 
-  const payload = response.payload;
-  const tryOnce = (): boolean => restoreWebSelection(document.body, payload);
+  const { fragmentId, ...restoreInput } = response.payload;
+  const tryOnce = (): boolean =>
+    restoreWebSelection(document.body, restoreInput);
 
-  if (tryOnce()) return;
-  if (isPageTextLoaded(document.body)) return;
-
-  let attempts = 0;
-  const timer = window.setInterval(() => {
-    attempts += 1;
-    if (tryOnce() || attempts >= RESTORE_MAX_ATTEMPTS) {
-      window.clearInterval(timer);
-    }
-  }, RESTORE_RETRY_MS);
+  runWebRestoreWithRetry(
+    tryOnce,
+    { maxAttempts: RESTORE_MAX_ATTEMPTS, intervalMs: RESTORE_RETRY_MS },
+    (ok) => reportWebRestoreResult(fragmentId, ok),
+  );
 }
 
 bootWebCapture();

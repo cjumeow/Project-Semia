@@ -1,5 +1,6 @@
 import type { LanguageFragment } from '@semia/shared';
 import type { WebRestorePayload } from './web/restoreWebSelection';
+import { clearWebRestoreStatus } from './webRestoreStatusStorage';
 
 const pendingByTabId = new Map<number, WebRestorePayload>();
 
@@ -21,10 +22,13 @@ export async function openWebCapture(fragment: LanguageFragment): Promise<void> 
     throw new Error('Only web captures can be opened on the original page.');
   }
 
+  await clearWebRestoreStatus(fragment.id);
+
   const tab = await chrome.tabs.create({ url: fragment.sourceUrl });
   if (!tab.id) return;
 
   setPendingWebRestore(tab.id, {
+    fragmentId: fragment.id,
     selectedText: fragment.selectedText,
     textQuote: fragment.anchor.textQuote,
   });
