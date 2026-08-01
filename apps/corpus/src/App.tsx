@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { InboxWorkspace } from './components/InboxWorkspace';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -13,15 +14,19 @@ import { snippetSeekSeconds } from './utils/corpusGrouping';
 import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
-  const { groups, loading, error, fragmentCount, isLive, refresh } =
+  const { groups, snippets, loading, error, fragmentCount, isLive, refresh } =
     useCorpusData();
   const {
     selection,
+    inboxSourceGroups,
+    librarySourceGroups,
+    pendingQueue,
     selectedGroup,
     selectedSnippet,
-    selectSource,
+    selectInboxSource,
+    selectLibrarySource,
     selectSnippet,
-  } = useCorpusSelection(groups);
+  } = useCorpusSelection(groups, snippets);
 
   const { generating, error: noteError, regenerate } = useSnippetNoteGeneration(
     selectedSnippet,
@@ -53,6 +58,15 @@ export default function App() {
     });
 
   const showEmpty = !loading && !error && groups.length === 0;
+
+  const handleMarkTriage = useCallback(
+    async (snippetId: string, status: 'review' | 'mastered'): Promise<void> => {
+      if (!isLive) return;
+      await corpusRepository.setSnippetTriageStatus(snippetId, status);
+      await refresh();
+    },
+    [isLive, refresh],
+  );
 
   const handleDeleteSnippet = useCallback(async (): Promise<void> => {
     if (!selectedSnippet || !isLive) return;
@@ -91,6 +105,33 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [error, handleDeleteSnippet, isLive, loading, selectedSnippet]);
 
+  const workspace =
+    selection.pane === 'inbox' ? (
+      <InboxWorkspace
+        pendingSnippets={pendingQueue}
+        inboxSourceCount={inboxSourceGroups.length}
+        selectedSnippetId={selection.snippetId}
+        onSelectSnippet={selectSnippet}
+        onMarkReview={(snippetId) => {
+          void handleMarkTriage(snippetId, 'review');
+        }}
+        onMarkMastered={(snippetId) => {
+          void handleMarkTriage(snippetId, 'mastered');
+        }}
+        triageEnabled={isLive}
+      />
+    ) : (
+      <SourceWorkspace
+        group={selectedGroup}
+        selectedSnippetId={selection.snippetId}
+        seekSeconds={
+          selectedSnippet ? snippetSeekSeconds(selectedSnippet) : undefined
+        }
+        onSelectSnippet={selectSnippet}
+        onDeleteSource={isLive ? () => void handleDeleteSource() : undefined}
+      />
+    );
+
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
@@ -98,9 +139,12 @@ export default function App() {
         style={{ width: sidebarWidth }}
       >
         <SemiaSidebar
-          groups={groups}
+          pane={selection.pane}
+          inboxGroups={inboxSourceGroups}
+          libraryGroups={librarySourceGroups}
           selectedSourceKey={selection.sourceKey}
-          onSelectSource={selectSource}
+          onSelectInboxSource={selectInboxSource}
+          onSelectLibrarySource={selectLibrarySource}
         />
       </div>
 
@@ -141,15 +185,7 @@ export default function App() {
           </div>
         </section>
       ) : (
-        <SourceWorkspace
-          group={selectedGroup}
-          selectedSnippetId={selection.snippetId}
-          seekSeconds={
-            selectedSnippet ? snippetSeekSeconds(selectedSnippet) : undefined
-          }
-          onSelectSnippet={selectSnippet}
-          onDeleteSource={isLive ? () => void handleDeleteSource() : undefined}
-        />
+        workspace
       )}
 
       <ResizeHandle onResizeStart={onDetailResizeStart} />

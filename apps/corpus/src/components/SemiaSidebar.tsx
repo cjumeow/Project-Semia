@@ -1,31 +1,43 @@
 import { useState, type ReactNode } from 'react';
 import { SEMIA_BUILD_ID } from '../buildInfo';
-import type { SourceGroup } from '../types/corpus';
-import { webGroups, youtubeGroups } from '../utils/corpusGrouping';
+import type { CorpusPane, SourceGroup } from '../types/corpus';
 import {
+  pendingCountForSourceGroup,
+  sourceSubtitleForGroup,
+  webGroups,
+  youtubeGroups,
+} from '../utils/corpusGrouping';
+import {
+  InboxIcon,
   LibraryIcon,
   WebIcon,
   YouTubeIcon,
 } from './SemiaNavIcons';
 
 type SemiaSidebarProps = {
-  groups: SourceGroup[];
+  pane: CorpusPane;
+  inboxGroups: SourceGroup[];
+  libraryGroups: SourceGroup[];
   selectedSourceKey: string | null;
-  onSelectSource: (sourceKey: string) => void;
+  onSelectInboxSource: (sourceKey: string) => void;
+  onSelectLibrarySource: (sourceKey: string) => void;
 };
 
 export function SemiaSidebar({
-  groups,
+  pane,
+  inboxGroups,
+  libraryGroups,
   selectedSourceKey,
-  onSelectSource,
+  onSelectInboxSource,
+  onSelectLibrarySource,
 }: SemiaSidebarProps) {
+  const [inboxExpanded, setInboxExpanded] = useState(true);
   const [libraryExpanded, setLibraryExpanded] = useState(true);
   const [youtubeExpanded, setYoutubeExpanded] = useState(true);
   const [webExpanded, setWebExpanded] = useState(true);
 
-  const youtube = youtubeGroups(groups);
-  const web = webGroups(groups);
-  const libraryCount = youtube.length + web.length;
+  const youtube = youtubeGroups(libraryGroups);
+  const web = webGroups(libraryGroups);
 
   return (
     <aside className="flex h-full flex-col bg-shelf">
@@ -41,12 +53,51 @@ export function SemiaSidebar({
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3">
         <SidebarRow
           variant="section"
+          expanded={inboxExpanded}
+          onToggle={() => setInboxExpanded((value) => !value)}
+          icon={<InboxIcon />}
+          label="Inbox"
+          count={inboxGroups.length}
+          ariaLabel="Inbox"
+        />
+
+        {inboxExpanded ? (
+          <div className="mt-0.5 space-y-0.5 pl-2">
+            {inboxGroups.length === 0 ? (
+              <EmptyHint>Nothing waiting for triage</EmptyHint>
+            ) : (
+              inboxGroups.map((group) => (
+                <SourceButton
+                  key={`inbox:${group.meta.sourceKey}`}
+                  title={group.meta.title}
+                  subtitle={`${sourceSubtitleForGroup(group)} · ${pendingCountForSourceGroup(group)} pending`}
+                  icon={
+                    group.meta.kind === 'youtube' ? (
+                      <YouTubeIcon size={14} />
+                    ) : (
+                      <WebIcon size={14} />
+                    )
+                  }
+                  isActive={
+                    pane === 'inbox' &&
+                    group.meta.sourceKey === selectedSourceKey
+                  }
+                  onClick={() => onSelectInboxSource(group.meta.sourceKey)}
+                />
+              ))
+            )}
+          </div>
+        ) : null}
+
+        <SidebarRow
+          variant="section"
           expanded={libraryExpanded}
           onToggle={() => setLibraryExpanded((value) => !value)}
           icon={<LibraryIcon />}
           label="Library"
-          count={libraryCount}
+          count={libraryGroups.length}
           ariaLabel="Library"
+          className="mt-2"
         />
 
         {libraryExpanded ? (
@@ -60,7 +111,7 @@ export function SemiaSidebar({
               ariaLabel="YouTube videos"
             >
               {youtube.length === 0 ? (
-                <EmptyHint>No YouTube captures yet</EmptyHint>
+                <EmptyHint>No archived YouTube sources yet</EmptyHint>
               ) : (
                 youtube.map((group) => (
                   <SourceButton
@@ -71,8 +122,12 @@ export function SemiaSidebar({
                         ? `${group.meta.channel} · ${group.snippets.length} snip`
                         : `${group.snippets.length} snip`
                     }
-                    isActive={group.meta.sourceKey === selectedSourceKey}
-                    onClick={() => onSelectSource(group.meta.sourceKey)}
+                    icon={<YouTubeIcon size={14} />}
+                    isActive={
+                      pane === 'library' &&
+                      group.meta.sourceKey === selectedSourceKey
+                    }
+                    onClick={() => onSelectLibrarySource(group.meta.sourceKey)}
                   />
                 ))
               )}
@@ -87,7 +142,7 @@ export function SemiaSidebar({
               ariaLabel="Web pages"
             >
               {web.length === 0 ? (
-                <EmptyHint>No web captures yet</EmptyHint>
+                <EmptyHint>No archived web sources yet</EmptyHint>
               ) : (
                 web.map((group) => (
                   <SourceButton
@@ -95,11 +150,15 @@ export function SemiaSidebar({
                     title={group.meta.title}
                     subtitle={
                       group.meta.kind === 'web'
-                        ? group.meta.hostname
-                        : group.meta.sourceUrl
+                        ? `${group.meta.hostname} · ${group.snippets.length} snip`
+                        : `${group.snippets.length} snip`
                     }
-                    isActive={group.meta.sourceKey === selectedSourceKey}
-                    onClick={() => onSelectSource(group.meta.sourceKey)}
+                    icon={<WebIcon size={14} />}
+                    isActive={
+                      pane === 'library' &&
+                      group.meta.sourceKey === selectedSourceKey
+                    }
+                    onClick={() => onSelectLibrarySource(group.meta.sourceKey)}
                   />
                 ))
               )}
@@ -128,6 +187,7 @@ function SidebarRow({
   label,
   count,
   ariaLabel,
+  className = '',
 }: {
   variant: 'section' | 'folder';
   expanded?: boolean;
@@ -136,6 +196,7 @@ function SidebarRow({
   label: string;
   count?: number;
   ariaLabel?: string;
+  className?: string;
 }) {
   const isSection = variant === 'section';
   const isFolder = variant === 'folder';
@@ -143,11 +204,7 @@ function SidebarRow({
   return (
     <button
       type="button"
-      className={[
-        rowBase,
-        rowHover,
-        isFolder ? 'text-text-secondary' : '',
-      ]
+      className={[rowBase, rowHover, isFolder ? 'text-text-secondary' : '', className]
         .filter(Boolean)
         .join(' ')}
       onClick={onToggle}
@@ -155,7 +212,11 @@ function SidebarRow({
       aria-label={ariaLabel ?? label}
     >
       <ChevronIcon expanded={expanded ?? false} />
-      {icon ? <span className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span> : null}
+      {icon ? (
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+          {icon}
+        </span>
+      ) : null}
       <span
         className={[
           'min-w-0 flex-1 truncate',
@@ -207,10 +268,7 @@ function SidebarFolder({
       />
 
       {expanded ? (
-        <nav
-          className="mt-0.5 space-y-0.5 pl-3"
-          aria-label={ariaLabel}
-        >
+        <nav className="mt-0.5 space-y-0.5 pl-3" aria-label={ariaLabel}>
           {children}
         </nav>
       ) : null}
@@ -221,11 +279,13 @@ function SidebarFolder({
 function SourceButton({
   title,
   subtitle,
+  icon,
   isActive,
   onClick,
 }: {
   title: string;
   subtitle: string;
+  icon?: ReactNode;
   isActive: boolean;
   onClick: () => void;
 }) {
@@ -243,10 +303,17 @@ function SourceButton({
       ].join(' ')}
       onClick={onClick}
     >
-      <span className="truncate text-xs font-medium leading-snug">{title}</span>
+      <span className="flex items-center gap-1.5">
+        {icon ? (
+          <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+            {icon}
+          </span>
+        ) : null}
+        <span className="truncate text-xs font-medium leading-snug">{title}</span>
+      </span>
       <span
         className={[
-          'mt-0.5 truncate text-[10px] tabular-nums',
+          'mt-0.5 truncate pl-5 text-[10px] tabular-nums',
           isActive ? 'text-accent/70' : 'text-text-muted',
         ].join(' ')}
       >

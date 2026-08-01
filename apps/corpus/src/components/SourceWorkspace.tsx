@@ -86,6 +86,7 @@ export function SourceWorkspace({
           snippets={group.snippets}
           selectedSnippetId={selectedSnippetId}
           onSelectSnippet={onSelectSnippet}
+          showStatusIcon
         />
       </div>
     </section>
