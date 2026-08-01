@@ -1,9 +1,9 @@
 ---
-description: Branch, PR, and release workflow — user owns PR/release copy
+description: Branch and PR workflow — user owns PR copy
 alwaysApply: true
 ---
 
-# PR & release
+# PR workflow
 
 ## Branching
 
@@ -16,7 +16,7 @@ alwaysApply: true
 - You may: create branch, commit, push, and tell the user verify passed.
 - High-stakes changes (auth, data loss, storage, public API): also follow `.cursor/skills/old-coder/SKILL.md` evidence bar before merge.
 
-## Releases
+## Extension install (local)
 
-- **Release title, summary, and changelog wording are written by the user.** Do not publish a GitHub Release or write release notes on your own.
-- You may: bump `version` / `version_name` in manifest and package files when asked, tag, or run build scripts — only after the user supplies the release narrative.
+- No automated GitHub Release workflow. After `npm run build`, load unpacked from `apps/extension/dist` in `chrome://extensions`.
+- Bump `version` in `apps/extension/manifest.json` only when the user asks (e.g. for Chrome update UX).
