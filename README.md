@@ -9,7 +9,7 @@ Master languages through seamless immersion and semantic understanding.
 
 | Version                                                                | Date         | Summary                                                                                  |
 | ---------------------------------------------------------------------- | ----------   | ---------------------------------------------------------------------------------------- |
-| [v0.5.2](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.2) | 2026-08-01   | - 修正無法 jump back 時的 ui 提示。 - 重構codebase `/improve-codebase-architecture`                 |
+| [v0.5.2](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.2) | 2026-08-01   | 修正無法 jump back 時的 ui 提示、重構codebase using `/improve-codebase-architecture`       |
 | [v0.5.1](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.1) | 2026-07-31   | Web jump-back with native selection, delete source/snippets (Backspace), restore CPU fix |
 | [v0.5.0](https://github.com/cjumeow/Project-Semia/releases/tag/v0.5.0) | 2026-07-30   | Web page capture, Library sidebar, Text Fragment jump-back, source-aware AI prompts      |
 | [v0.4.3](https://github.com/cjumeow/Project-Semia/releases/tag/v0.4.3) | 2026-07-29   | Underlined focus word, larger SEMIA header, unit tests and automated release             |
