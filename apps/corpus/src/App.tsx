@@ -10,7 +10,7 @@ import { SemiaSidebar } from './components/SemiaSidebar';
 import { SnippetDetail } from './components/SnippetDetail';
 import { SourceWorkspace } from './components/SourceWorkspace';
 import { corpusRepository } from './data/corpusRepository';
-import { snippetSeekSeconds } from './utils/corpusGrouping';
+import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGrouping';
 import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
@@ -204,6 +204,15 @@ export default function App() {
           onGenerateContext={() => {
             void generateContext();
           }}
+          onMarkMastered={
+            isLive &&
+            selectedSnippet &&
+            effectiveTriageStatus(selectedSnippet) === 'review'
+              ? () => {
+                  void handleMarkTriage(selectedSnippet.id, 'mastered');
+                }
+              : undefined
+          }
         />
       </div>
     </main>

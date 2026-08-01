@@ -13,6 +13,7 @@ type SelectionListProps = {
   selectedSnippetId: string | null;
   onSelectSnippet: (snippetId: string) => void;
   showSourceSubtitle?: boolean;
+  showMediaLabel?: boolean;
   showStatusIcon?: boolean;
   inlineTriage?: {
     onMarkReview: (snippetId: string) => void;
@@ -26,6 +27,7 @@ export function SelectionList({
   selectedSnippetId,
   onSelectSnippet,
   showSourceSubtitle = false,
+  showMediaLabel = true,
   showStatusIcon = false,
   inlineTriage,
   emptyMessage = 'No captures for this source yet.',
@@ -69,15 +71,18 @@ export function SelectionList({
                 ].join(' ')}
                 onClick={() => onSelectSnippet(snippet.id)}
               >
-                {isYouTubeAnchor(snippet.anchor) && seekSeconds !== undefined ? (
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
-                    {formatTimestamp(seekSeconds)}
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                    Web
-                  </span>
-                )}
+                {showMediaLabel ? (
+                  isYouTubeAnchor(snippet.anchor) &&
+                  seekSeconds !== undefined ? (
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
+                      {formatTimestamp(seekSeconds)}
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                      Web
+                    </span>
+                  )
+                ) : null}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
                     {snippet.selectedText}
