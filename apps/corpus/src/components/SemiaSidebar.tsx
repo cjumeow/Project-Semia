@@ -122,7 +122,6 @@ export function SemiaSidebar({
                         ? `${group.meta.channel} · ${group.snippets.length} snip`
                         : `${group.snippets.length} snip`
                     }
-                    icon={<YouTubeIcon size={14} />}
                     isActive={
                       pane === 'library' &&
                       group.meta.sourceKey === selectedSourceKey
@@ -153,7 +152,6 @@ export function SemiaSidebar({
                         ? `${group.meta.hostname} · ${group.snippets.length} snip`
                         : `${group.snippets.length} snip`
                     }
-                    icon={<WebIcon size={14} />}
                     isActive={
                       pane === 'library' &&
                       group.meta.sourceKey === selectedSourceKey
@@ -313,7 +311,8 @@ function SourceButton({
       </span>
       <span
         className={[
-          'mt-0.5 truncate pl-5 text-[10px] tabular-nums',
+          'mt-0.5 truncate text-[10px] tabular-nums',
+          icon ? 'pl-5' : '',
           isActive ? 'text-accent/70' : 'text-text-muted',
         ].join(' ')}
       >
