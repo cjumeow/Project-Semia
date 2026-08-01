@@ -117,6 +117,42 @@ export function markMasteredFromReview(
   });
 }
 
+/** Triage write path: review enters queue; mastered clears any schedule. */
+export function applySnippetTriageStatus(
+  fragments: LanguageFragment[],
+  fragmentId: string,
+  status: Exclude<SnippetTriageStatus, 'pending'>,
+  now: string,
+): LanguageFragment[] {
+  if (status === 'review') {
+    return enterReviewQueue(fragments, fragmentId, now);
+  }
+  return markMasteredFromTriage(fragments, fragmentId, now);
+}
+
+function markMasteredFromTriage(
+  fragments: LanguageFragment[],
+  fragmentId: string,
+  now: string,
+): LanguageFragment[] {
+  return fragments.map((fragment) => {
+    if (fragment.id !== fragmentId) {
+      return fragment;
+    }
+    if (effectiveTriageStatus(fragment) === 'review') {
+      return clearReviewSchedule({
+        ...fragment,
+        triageStatus: 'mastered',
+        lastReviewedAt: now,
+      });
+    }
+    return clearReviewSchedule({
+      ...fragment,
+      triageStatus: 'mastered',
+    });
+  });
+}
+
 /** Backfill legacy `review` rows that predate schedule fields. */
 export function backfillReviewSchedule(
   fragment: LanguageFragment,

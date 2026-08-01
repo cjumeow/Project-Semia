@@ -8,6 +8,7 @@ import {
   applySnippetTriageStatus,
   type TriageStatusUpdate,
 } from './updateSnippetTriageStatus';
+import { applyStillLearning } from './applyStillLearning';
 
 export { normalizeFragments };
 
@@ -44,6 +45,16 @@ export async function setSnippetTriageStatus(
 ): Promise<void> {
   const list = await listFragments();
   const result = applySnippetTriageStatus(list, fragmentId, status);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  await replaceFragments(result.fragments);
+}
+
+export async function recordStillLearning(fragmentId: string): Promise<void> {
+  const list = await listFragments();
+  const result = applyStillLearning(list, fragmentId, new Date().toISOString());
   if (!result.ok) {
     throw new Error(result.error);
   }

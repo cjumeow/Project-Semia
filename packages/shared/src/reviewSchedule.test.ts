@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LanguageFragment, ReviewStage } from './types';
 import {
   addDays,
+  applySnippetTriageStatus,
   backfillReviewSchedule,
   dueReviewFragments,
   enterReviewQueue,
@@ -177,6 +178,59 @@ describe('isDue', () => {
       ),
     ).toBe(false);
     expect(isDue(fragment('a', { triageStatus: 'pending' }), now)).toBe(false);
+  });
+});
+
+describe('applySnippetTriageStatus', () => {
+  const now = '2026-08-06T12:00:00.000Z';
+
+  it('enters review queue when marking review from inbox', () => {
+    const [next] = applySnippetTriageStatus(
+      [fragment('a')],
+      'a',
+      'review',
+      now,
+    );
+
+    expect(next).toMatchObject({
+      triageStatus: 'review',
+      reviewStage: 0,
+      dueAt: now,
+      enteredReviewAt: now,
+    });
+  });
+
+  it('clears schedule when mastering from review', () => {
+    const input = [
+      fragment('a', {
+        triageStatus: 'review',
+        reviewStage: 2,
+        dueAt: '2026-08-03T12:00:00.000Z',
+        enteredReviewAt: '2026-08-01T12:00:00.000Z',
+      }),
+    ];
+
+    const [next] = applySnippetTriageStatus(input, 'a', 'mastered', now);
+
+    expect(next).toMatchObject({
+      triageStatus: 'mastered',
+      lastReviewedAt: now,
+    });
+    expect(next?.reviewStage).toBeUndefined();
+    expect(next?.dueAt).toBeUndefined();
+  });
+
+  it('masters from pending without creating schedule fields', () => {
+    const [next] = applySnippetTriageStatus(
+      [fragment('a')],
+      'a',
+      'mastered',
+      now,
+    );
+
+    expect(next).toMatchObject({ triageStatus: 'mastered' });
+    expect(next?.dueAt).toBeUndefined();
+    expect(next?.lastReviewedAt).toBeUndefined();
   });
 });
 
