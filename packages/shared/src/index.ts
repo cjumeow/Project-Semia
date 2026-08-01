@@ -3,6 +3,7 @@ export * from './inboxTriage';
 export * from './migrateFragment';
 export * from './normalizeFragments';
 export * from './removeFragments';
+export * from './reviewSchedule';
 export * from './storageKeys';
 export * from './textFragmentUrl';
 export * from './types';
