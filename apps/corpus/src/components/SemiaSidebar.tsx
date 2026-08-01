@@ -107,7 +107,6 @@ export function SemiaSidebar({
               count={youtube.length}
               expanded={youtubeExpanded}
               onToggle={() => setYoutubeExpanded((value) => !value)}
-              icon={<YouTubeIcon />}
               ariaLabel="YouTube videos"
             >
               {youtube.length === 0 ? (
@@ -137,7 +136,6 @@ export function SemiaSidebar({
               count={web.length}
               expanded={webExpanded}
               onToggle={() => setWebExpanded((value) => !value)}
-              icon={<WebIcon />}
               ariaLabel="Web pages"
             >
               {web.length === 0 ? (
@@ -249,7 +247,7 @@ function SidebarFolder({
   count: number;
   expanded: boolean;
   onToggle: () => void;
-  icon: ReactNode;
+  icon?: ReactNode;
   ariaLabel: string;
   children: ReactNode;
 }) {
