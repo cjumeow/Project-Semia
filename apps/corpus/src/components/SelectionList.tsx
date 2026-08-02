@@ -6,6 +6,7 @@ import {
   snippetSeekSeconds,
 } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
+import { CardCountBadge } from './CardCountBadge';
 import { TriageStatusIcon } from './TriageStatusIcon';
 
 type SelectionListProps = {
@@ -15,6 +16,7 @@ type SelectionListProps = {
   showSourceSubtitle?: boolean;
   showMediaLabel?: boolean;
   showStatusIcon?: boolean;
+  cardCountForSnippet?: (snippetId: string) => number;
   inlineTriage?: {
     onMarkReview: (snippetId: string) => void;
     onMarkMastered: (snippetId: string) => void;
@@ -29,6 +31,7 @@ export function SelectionList({
   showSourceSubtitle = false,
   showMediaLabel = true,
   showStatusIcon = false,
+  cardCountForSnippet,
   inlineTriage,
   emptyMessage = 'No captures for this source yet.',
 }: SelectionListProps) {
@@ -100,6 +103,11 @@ export function SelectionList({
                 </span>
                 {scheduleMeta ? (
                   <ReviewScheduleBadge meta={scheduleMeta} />
+                ) : null}
+                {cardCountForSnippet ? (
+                  <CardCountBadge
+                    count={cardCountForSnippet(snippet.id)}
+                  />
                 ) : null}
                 {showStatusIcon ? (
                   <TriageStatusIcon status={triageStatus} size={16} />

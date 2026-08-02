@@ -13,6 +13,7 @@ type SourceWorkspaceProps = {
   seekSeconds: number | undefined;
   onSelectSnippet: (snippetId: string) => void;
   onDeleteSource?: () => void;
+  cardCountForSnippet?: (snippetId: string) => number;
 };
 
 export function SourceWorkspace({
@@ -21,6 +22,7 @@ export function SourceWorkspace({
   seekSeconds,
   onSelectSnippet,
   onDeleteSource,
+  cardCountForSnippet,
 }: SourceWorkspaceProps) {
   const [sortByReview, setSortByReview] = useLibrarySortByReview();
   const orderedSnippets = useMemo(
@@ -111,6 +113,7 @@ export function SourceWorkspace({
           onSelectSnippet={onSelectSnippet}
           showMediaLabel={false}
           showStatusIcon
+          cardCountForSnippet={cardCountForSnippet}
         />
       </div>
     </section>

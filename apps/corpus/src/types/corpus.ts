@@ -45,7 +45,7 @@ export type SourceGroup = {
 export type VideoGroup = SourceGroup;
 
 /** Top-level selection state for the three-column layout. */
-export type CorpusPane = 'inbox' | 'library' | 'review-queue';
+export type CorpusPane = 'inbox' | 'library' | 'my-cards' | 'review-queue';
 
 export type CorpusSelection = {
   pane: CorpusPane;

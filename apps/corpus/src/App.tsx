@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
 import { InboxWorkspace } from './components/InboxWorkspace';
+import { MyCardsWorkspace } from './components/MyCardsWorkspace';
 import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
 import { SemiaSettingsDialog } from './components/SemiaSettingsDialog';
 import { useCorpusData } from './hooks/useCorpusData';
@@ -30,7 +31,11 @@ export default function App() {
     setLanguageCardsProEnabled,
   } = useSemiaSettings();
   const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
-  const { refresh: refreshLanguageCards, countForFragment } = useLanguageCards();
+  const {
+    cards: languageCards,
+    refresh: refreshLanguageCards,
+    countForFragment,
+  } = useLanguageCards();
   const { groups, snippets, loading, error, fragmentCount, isLive, refresh } =
     useCorpusData();
   const {
@@ -43,6 +48,7 @@ export default function App() {
     selectedSnippet,
     selectInboxSource,
     selectLibrarySource,
+    selectMyCards,
     selectReviewQueue,
     selectReviewQueueSnippet,
     selectSnippet,
@@ -207,6 +213,12 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         {...languageCardProps}
       />
+    ) : selection.pane === 'my-cards' ? (
+      <MyCardsWorkspace
+        cards={languageCards}
+        snippets={snippets}
+        contextWindowEnabled={contextWindowEnabled}
+      />
     ) : (
       <SourceWorkspace
         group={selectedGroup}
@@ -216,10 +228,12 @@ export default function App() {
         }
         onSelectSnippet={selectSnippet}
         onDeleteSource={isLive ? () => void handleDeleteSource() : undefined}
+        cardCountForSnippet={countForFragment}
       />
     );
 
-  const showDetailPanel = selection.pane !== 'review-queue';
+  const showDetailPanel =
+    selection.pane !== 'review-queue' && selection.pane !== 'my-cards';
 
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
@@ -231,10 +245,12 @@ export default function App() {
           pane={selection.pane}
           inboxGroups={inboxSourceGroups}
           libraryGroups={librarySourceGroups}
+          myCardsCount={languageCards.length}
           dueCount={dueQueue.length}
           selectedSourceKey={selection.sourceKey}
           onSelectInboxSource={selectInboxSource}
           onSelectLibrarySource={selectLibrarySource}
+          onSelectMyCards={selectMyCards}
           onSelectReviewQueue={selectReviewQueue}
           onOpenSettings={() => setSettingsOpen(true)}
         />

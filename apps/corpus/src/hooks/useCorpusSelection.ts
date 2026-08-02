@@ -21,6 +21,7 @@ type UseCorpusSelectionResult = {
   selectedSnippet: CorpusSnippet | undefined;
   selectInboxSource: (sourceKeyValue: string) => void;
   selectLibrarySource: (sourceKeyValue: string) => void;
+  selectMyCards: () => void;
   selectReviewQueue: () => void;
   selectReviewQueueSnippet: (snippetId: string) => void;
   selectSnippet: (snippetId: string) => void;
@@ -58,6 +59,10 @@ export function useCorpusSelection(
     }
 
     setSelection((prev) => {
+      if (prev.pane === 'my-cards') {
+        return prev;
+      }
+
       if (prev.pane === 'review-queue') {
         if (
           prev.snippetId &&
@@ -176,6 +181,14 @@ export function useCorpusSelection(
     });
   };
 
+  const selectMyCards = (): void => {
+    setSelection({
+      pane: 'my-cards',
+      sourceKey: null,
+      snippetId: null,
+    });
+  };
+
   const selectReviewQueue = (): void => {
     setSelection({
       pane: 'review-queue',
@@ -216,6 +229,7 @@ export function useCorpusSelection(
     selectedSnippet,
     selectInboxSource,
     selectLibrarySource,
+    selectMyCards,
     selectReviewQueue,
     selectReviewQueueSnippet,
     selectSnippet,

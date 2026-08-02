@@ -19,10 +19,12 @@ type SemiaSidebarProps = {
   pane: CorpusPane;
   inboxGroups: SourceGroup[];
   libraryGroups: SourceGroup[];
+  myCardsCount: number;
   dueCount: number;
   selectedSourceKey: string | null;
   onSelectInboxSource: (sourceKey: string) => void;
   onSelectLibrarySource: (sourceKey: string) => void;
+  onSelectMyCards: () => void;
   onSelectReviewQueue: () => void;
   onOpenSettings: () => void;
 };
@@ -31,10 +33,12 @@ export function SemiaSidebar({
   pane,
   inboxGroups,
   libraryGroups,
+  myCardsCount,
   dueCount,
   selectedSourceKey,
   onSelectInboxSource,
   onSelectLibrarySource,
+  onSelectMyCards,
   onSelectReviewQueue,
   onOpenSettings,
 }: SemiaSidebarProps) {
@@ -110,6 +114,10 @@ export function SemiaSidebar({
 
         {libraryExpanded ? (
           <div className="mt-0.5 space-y-0.5 pl-2">
+            <p className="px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+              Media
+            </p>
+
             <SidebarFolder
               title="YouTube"
               count={youtube.length}
@@ -169,6 +177,31 @@ export function SemiaSidebar({
                 ))
               )}
             </SidebarFolder>
+
+            <button
+              type="button"
+              className={[
+                rowBase,
+                rowHover,
+                'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
+                pane === 'my-cards'
+                  ? 'semia-margin-active text-accent shadow-sm'
+                  : 'text-text-secondary hover:text-text',
+              ].join(' ')}
+              onClick={onSelectMyCards}
+            >
+              <span className="truncate text-xs font-medium leading-snug">
+                My cards
+              </span>
+              <span
+                className={[
+                  'mt-0.5 truncate text-[10px] tabular-nums',
+                  pane === 'my-cards' ? 'text-accent/70' : 'text-text-muted',
+                ].join(' ')}
+              >
+                {myCardsCount} card{myCardsCount === 1 ? '' : 's'}
+              </span>
+            </button>
           </div>
         ) : null}
 
