@@ -1,4 +1,7 @@
+import { sortLibrarySnippets } from '@semia/shared';
+import { useMemo } from 'react';
 import type { SourceGroup } from '../types/corpus';
+import { useLibrarySortByReview } from '../hooks/useLibrarySortByReview';
 import { SemiaButton } from './SemiaButton';
 import { SelectionList } from './SelectionList';
 import { VideoPreview } from './VideoPreview';
@@ -19,6 +22,17 @@ export function SourceWorkspace({
   onSelectSnippet,
   onDeleteSource,
 }: SourceWorkspaceProps) {
+  const [sortByReview, setSortByReview] = useLibrarySortByReview();
+  const orderedSnippets = useMemo(
+    () =>
+      sortLibrarySnippets(
+        group?.snippets ?? [],
+        sortByReview,
+        new Date().toISOString(),
+      ),
+    [group?.snippets, sortByReview],
+  );
+
   if (!group) {
     return (
       <section className="flex flex-1 items-center justify-center bg-canvas">
@@ -79,11 +93,20 @@ export function SourceWorkspace({
       </div>
 
       <div className="min-h-0 flex-1 px-5 pb-6">
-        <h3 className="semia-section-label mb-2">
-          Selections
-        </h3>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h3 className="semia-section-label">Selections</h3>
+          <label className="flex cursor-pointer items-center gap-2 text-[11px] text-text-secondary">
+            <input
+              type="checkbox"
+              className="rounded border-border"
+              checked={sortByReview}
+              onChange={(event) => setSortByReview(event.target.checked)}
+            />
+            Sort by next review
+          </label>
+        </div>
         <SelectionList
-          snippets={group.snippets}
+          snippets={orderedSnippets}
           selectedSnippetId={selectedSnippetId}
           onSelectSnippet={onSelectSnippet}
           showMediaLabel={false}
