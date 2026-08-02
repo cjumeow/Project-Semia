@@ -1,6 +1,8 @@
+import { dueReviewCards } from '@semia/shared';
+import type { LanguageCard } from '@semia/shared';
 import { sourceKey } from '@semia/shared';
 import { useEffect, useMemo, useState } from 'react';
-import type { CorpusPane, CorpusSelection, CorpusSnippet, SourceGroup } from '../types/corpus';
+import type { CorpusSelection, CorpusSnippet, SourceGroup } from '../types/corpus';
 import {
   dueReviewSnippets,
   effectiveTriageStatus,
@@ -17,13 +19,17 @@ type UseCorpusSelectionResult = {
   librarySourceGroups: SourceGroup[];
   pendingQueue: CorpusSnippet[];
   dueQueue: CorpusSnippet[];
+  dueCardQueue: LanguageCard[];
   selectedGroup: SourceGroup | undefined;
   selectedSnippet: CorpusSnippet | undefined;
+  selectedCard: LanguageCard | undefined;
   selectInboxSource: (sourceKeyValue: string) => void;
   selectLibrarySource: (sourceKeyValue: string) => void;
   selectMyCards: () => void;
   selectReviewQueue: () => void;
+  selectCardReviewQueue: () => void;
   selectReviewQueueSnippet: (snippetId: string) => void;
+  selectCardReviewQueueCard: (cardId: string) => void;
   selectSnippet: (snippetId: string) => void;
 };
 
@@ -34,9 +40,16 @@ function firstPendingForSource(
   return queue.find((snippet) => sourceKey(snippet) === sourceKeyValue);
 }
 
+const emptySelection = {
+  sourceKey: null,
+  snippetId: null,
+  cardId: null,
+} as const;
+
 export function useCorpusSelection(
   allGroups: SourceGroup[],
   snippets: CorpusSnippet[],
+  languageCards: LanguageCard[],
 ): UseCorpusSelectionResult {
   const inboxSourceGroups = useMemo(() => inboxGroups(allGroups), [allGroups]);
   const librarySourceGroups = useMemo(
@@ -45,22 +58,40 @@ export function useCorpusSelection(
   );
   const pendingQueue = useMemo(() => pendingSnippets(snippets), [snippets]);
   const dueQueue = useMemo(() => dueReviewSnippets(snippets), [snippets]);
+  const dueCardQueue = useMemo(
+    () => dueReviewCards(languageCards, new Date().toISOString()),
+    [languageCards],
+  );
 
   const [selection, setSelection] = useState<CorpusSelection>({
     pane: 'inbox',
-    sourceKey: null,
-    snippetId: null,
+    ...emptySelection,
   });
 
   useEffect(() => {
-    if (allGroups.length === 0) {
-      setSelection({ pane: 'inbox', sourceKey: null, snippetId: null });
+    if (allGroups.length === 0 && languageCards.length === 0) {
+      setSelection({ pane: 'inbox', ...emptySelection });
       return;
     }
 
     setSelection((prev) => {
       if (prev.pane === 'my-cards') {
         return prev;
+      }
+
+      if (prev.pane === 'card-review-queue') {
+        if (
+          prev.cardId &&
+          dueCardQueue.some((card) => card.id === prev.cardId)
+        ) {
+          return prev;
+        }
+
+        return {
+          pane: 'card-review-queue',
+          ...emptySelection,
+          cardId: dueCardQueue[0]?.id ?? null,
+        };
       }
 
       if (prev.pane === 'review-queue') {
@@ -73,7 +104,7 @@ export function useCorpusSelection(
 
         return {
           pane: 'review-queue',
-          sourceKey: null,
+          ...emptySelection,
           snippetId: dueQueue[0]?.id ?? null,
         };
       }
@@ -112,6 +143,7 @@ export function useCorpusSelection(
           pane: 'inbox',
           sourceKey: nextSourceKey,
           snippetId: nextSnippet?.id ?? null,
+          cardId: null,
         };
       }
 
@@ -130,12 +162,21 @@ export function useCorpusSelection(
           pane: 'library',
           sourceKey: nextSourceKey,
           snippetId: group.snippets[0]?.id ?? null,
+          cardId: null,
         };
       }
 
-      return { pane: 'inbox', sourceKey: null, snippetId: null };
+      return { pane: 'inbox', ...emptySelection };
     });
-  }, [allGroups, dueQueue, inboxSourceGroups, librarySourceGroups, pendingQueue]);
+  }, [
+    allGroups,
+    dueCardQueue,
+    dueQueue,
+    inboxSourceGroups,
+    languageCards.length,
+    librarySourceGroups,
+    pendingQueue,
+  ]);
 
   const selectedGroup = useMemo(() => {
     if (selection.pane !== 'library' || !selection.sourceKey) return undefined;
@@ -162,6 +203,12 @@ export function useCorpusSelection(
     selection.snippetId,
   ]);
 
+  const selectedCard = useMemo(() => {
+    if (!selection.cardId) return undefined;
+    if (selection.pane !== 'card-review-queue') return undefined;
+    return dueCardQueue.find((card) => card.id === selection.cardId);
+  }, [dueCardQueue, selection.cardId, selection.pane]);
+
   const selectInboxSource = (sourceKeyValue: string): void => {
     const nextSnippet =
       firstPendingForSource(pendingQueue, sourceKeyValue) ?? pendingQueue[0];
@@ -169,6 +216,7 @@ export function useCorpusSelection(
       pane: 'inbox',
       sourceKey: sourceKeyValue,
       snippetId: nextSnippet?.id ?? null,
+      cardId: null,
     });
   };
 
@@ -178,30 +226,46 @@ export function useCorpusSelection(
       pane: 'library',
       sourceKey: sourceKeyValue,
       snippetId: group?.snippets[0]?.id ?? null,
+      cardId: null,
     });
   };
 
   const selectMyCards = (): void => {
     setSelection({
       pane: 'my-cards',
-      sourceKey: null,
-      snippetId: null,
+      ...emptySelection,
     });
   };
 
   const selectReviewQueue = (): void => {
     setSelection({
       pane: 'review-queue',
-      sourceKey: null,
+      ...emptySelection,
       snippetId: dueQueue[0]?.id ?? null,
+    });
+  };
+
+  const selectCardReviewQueue = (): void => {
+    setSelection({
+      pane: 'card-review-queue',
+      ...emptySelection,
+      cardId: dueCardQueue[0]?.id ?? null,
     });
   };
 
   const selectReviewQueueSnippet = (snippetId: string): void => {
     setSelection({
       pane: 'review-queue',
-      sourceKey: null,
+      ...emptySelection,
       snippetId,
+    });
+  };
+
+  const selectCardReviewQueueCard = (cardId: string): void => {
+    setSelection({
+      pane: 'card-review-queue',
+      ...emptySelection,
+      cardId,
     });
   };
 
@@ -209,13 +273,14 @@ export function useCorpusSelection(
     const snippet = findSnippet(allGroups, snippetId);
     if (!snippet) return;
 
-    const pane: CorpusPane =
+    const pane =
       effectiveTriageStatus(snippet) === 'pending' ? 'inbox' : 'library';
 
     setSelection({
       pane,
       sourceKey: sourceKey(snippet),
       snippetId,
+      cardId: null,
     });
   };
 
@@ -225,13 +290,17 @@ export function useCorpusSelection(
     librarySourceGroups,
     pendingQueue,
     dueQueue,
+    dueCardQueue,
     selectedGroup,
     selectedSnippet,
+    selectedCard,
     selectInboxSource,
     selectLibrarySource,
     selectMyCards,
     selectReviewQueue,
+    selectCardReviewQueue,
     selectReviewQueueSnippet,
+    selectCardReviewQueueCard,
     selectSnippet,
   };
 }

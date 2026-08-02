@@ -7,6 +7,7 @@ export function useLanguageCards(): {
   loading: boolean;
   refresh: () => Promise<void>;
   countForFragment: (fragmentId: string) => number;
+  cardsForFragment: (fragmentId: string) => LanguageCard[];
 } {
   const [cards, setCards] = useState<LanguageCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,10 @@ export function useLanguageCards(): {
 
   useEffect(() => {
     void refresh();
+    if (!corpusRepository.isLive()) return;
+    return corpusRepository.subscribe(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   const countForFragment = useCallback(
@@ -37,5 +42,11 @@ export function useLanguageCards(): {
     [cards],
   );
 
-  return { cards, loading, refresh, countForFragment };
+  const cardsForFragment = useCallback(
+    (fragmentId: string): LanguageCard[] =>
+      cards.filter((card) => card.sourceFragmentId === fragmentId),
+    [cards],
+  );
+
+  return { cards, loading, refresh, countForFragment, cardsForFragment };
 }

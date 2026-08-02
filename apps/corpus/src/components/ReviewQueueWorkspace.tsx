@@ -1,3 +1,4 @@
+import type { LanguageCard } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import { reviewScheduleMeta } from '../utils/corpusGrouping';
 import { NoteCard } from './NoteCard';
@@ -15,7 +16,9 @@ type ReviewQueueWorkspaceProps = {
   onStillLearning: (snippetId: string) => void;
   onMastered: (snippetId: string) => void;
   onOpenSettings?: () => void;
+  languageCards?: LanguageCard[];
   languageCardCount?: number;
+  onOpenLanguageCards?: () => void;
   onCreateLanguageCard?: () => void;
   createLanguageCardEnabled?: boolean;
 };
@@ -34,6 +37,7 @@ export function ReviewQueueWorkspace({
   contextWindowEnabled,
   onOpenSettings,
   languageCardCount,
+  onOpenLanguageCards,
   onCreateLanguageCard,
   createLanguageCardEnabled,
 }: ReviewQueueWorkspaceProps) {
@@ -111,6 +115,7 @@ export function ReviewQueueWorkspace({
               contextWindowEnabled={contextWindowEnabled}
               onOpenSettings={onOpenSettings}
               languageCardCount={languageCardCount}
+              onOpenLanguageCards={onOpenLanguageCards}
               onCreateLanguageCard={onCreateLanguageCard}
               createLanguageCardEnabled={createLanguageCardEnabled}
             />
@@ -132,8 +137,22 @@ export function ReviewQueueWorkspace({
               {(languageCardCount ?? 0) > 0 ? (
                 <>
                   {' '}
-                  · {languageCardCount} language card
-                  {languageCardCount === 1 ? '' : 's'}
+                  ·{' '}
+                  {onOpenLanguageCards ? (
+                    <button
+                      type="button"
+                      className="text-accent underline-offset-2 hover:underline"
+                      onClick={onOpenLanguageCards}
+                    >
+                      {languageCardCount} language card
+                      {languageCardCount === 1 ? '' : 's'}
+                    </button>
+                  ) : (
+                    <>
+                      {languageCardCount} language card
+                      {languageCardCount === 1 ? '' : 's'}
+                    </>
+                  )}
                 </>
               ) : null}
             </p>

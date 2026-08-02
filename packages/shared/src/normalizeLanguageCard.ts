@@ -1,3 +1,4 @@
+import { backfillCardReviewSchedule } from './cardReviewSchedule';
 import type { CardIntent, LanguageCard, LanguageCardExample } from './types';
 
 type LegacyLanguageCard = LanguageCard & {
@@ -59,7 +60,7 @@ export function normalizeLanguageCard(card: LegacyLanguageCard): LanguageCard {
     ...rest
   } = card;
 
-  return {
+  const normalized: LanguageCard = {
     ...rest,
     focus: rest.focus,
     meaning: rest.meaning,
@@ -70,4 +71,6 @@ export function normalizeLanguageCard(card: LegacyLanguageCard): LanguageCard {
         intent === 'speaking' || intent === 'writing',
     ),
   };
+
+  return backfillCardReviewSchedule(normalized);
 }

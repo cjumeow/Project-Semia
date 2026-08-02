@@ -22,11 +22,13 @@ type SemiaSidebarProps = {
   libraryGroups: SourceGroup[];
   myCardsCount: number;
   dueCount: number;
+  dueCardCount: number;
   selectedSourceKey: string | null;
   onSelectInboxSource: (sourceKey: string) => void;
   onSelectLibrarySource: (sourceKey: string) => void;
   onSelectMyCards: () => void;
   onSelectReviewQueue: () => void;
+  onSelectCardReviewQueue: () => void;
   onOpenSettings: () => void;
 };
 
@@ -36,11 +38,13 @@ export function SemiaSidebar({
   libraryGroups,
   myCardsCount,
   dueCount,
+  dueCardCount,
   selectedSourceKey,
   onSelectInboxSource,
   onSelectLibrarySource,
   onSelectMyCards,
   onSelectReviewQueue,
+  onSelectCardReviewQueue,
   onOpenSettings,
 }: SemiaSidebarProps) {
   const [inboxExpanded, setInboxExpanded] = useState(true);
@@ -210,7 +214,7 @@ export function SemiaSidebar({
           onToggle={() => setReviewQueueExpanded((value) => !value)}
           icon={<ReviewQueueIcon />}
           label="Review Queue"
-          count={dueCount}
+          count={dueCount + dueCardCount}
           ariaLabel="Review Queue"
           className="mt-2"
         />
@@ -230,7 +234,7 @@ export function SemiaSidebar({
               onClick={onSelectReviewQueue}
             >
               <span className="truncate text-xs font-medium leading-snug">
-                Due now
+                Snippets due
               </span>
               <span
                 className={[
@@ -239,6 +243,32 @@ export function SemiaSidebar({
                 ].join(' ')}
               >
                 {dueCount} snippet{dueCount === 1 ? '' : 's'}
+              </span>
+            </button>
+            <button
+              type="button"
+              className={[
+                rowBase,
+                rowHover,
+                'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
+                pane === 'card-review-queue'
+                  ? 'semia-margin-active text-accent shadow-sm'
+                  : 'text-text-secondary hover:text-text',
+              ].join(' ')}
+              onClick={onSelectCardReviewQueue}
+            >
+              <span className="truncate text-xs font-medium leading-snug">
+                Cards due
+              </span>
+              <span
+                className={[
+                  'mt-0.5 truncate text-[10px] tabular-nums',
+                  pane === 'card-review-queue'
+                    ? 'text-accent/70'
+                    : 'text-text-muted',
+                ].join(' ')}
+              >
+                {dueCardCount} card{dueCardCount === 1 ? '' : 's'}
               </span>
             </button>
           </div>

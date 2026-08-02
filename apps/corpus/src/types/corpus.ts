@@ -45,12 +45,18 @@ export type SourceGroup = {
 export type VideoGroup = SourceGroup;
 
 /** Top-level selection state for the three-column layout. */
-export type CorpusPane = 'inbox' | 'library' | 'my-cards' | 'review-queue';
+export type CorpusPane =
+  | 'inbox'
+  | 'library'
+  | 'my-cards'
+  | 'review-queue'
+  | 'card-review-queue';
 
 export type CorpusSelection = {
   pane: CorpusPane;
   sourceKey: string | null;
   snippetId: string | null;
+  cardId: string | null;
 };
 
 export function isGeneratedNote(note: SnippetNote): boolean {
