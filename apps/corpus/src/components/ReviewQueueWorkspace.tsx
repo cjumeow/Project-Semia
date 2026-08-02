@@ -14,7 +14,6 @@ type ReviewQueueWorkspaceProps = {
   onSelectSnippet: (snippetId: string) => void;
   onStillLearning: (snippetId: string) => void;
   onMastered: (snippetId: string) => void;
-  onGenerateContext?: () => void;
   onOpenSettings?: () => void;
 };
 
@@ -29,7 +28,6 @@ export function ReviewQueueWorkspace({
   onSelectSnippet,
   onStillLearning,
   onMastered,
-  onGenerateContext,
   contextWindowEnabled,
   onOpenSettings,
 }: ReviewQueueWorkspaceProps) {
@@ -105,7 +103,6 @@ export function ReviewQueueWorkspace({
               generatingContext={generatingContext}
               contextError={contextError}
               contextWindowEnabled={contextWindowEnabled}
-              onGenerateContext={onGenerateContext}
               onOpenSettings={onOpenSettings}
             />
           </div>

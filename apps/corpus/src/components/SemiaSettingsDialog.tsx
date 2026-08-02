@@ -51,20 +51,20 @@ export function SemiaSettingsDialog({
         </div>
 
         <div className="mt-5 space-y-4">
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-canvas/40 px-3 py-3">
+          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-canvas/40 px-4 py-4">
             <input
               type="checkbox"
-              className="mt-0.5 rounded border-border"
+              className="mt-1 h-4 w-4 rounded border-border"
               checked={contextWindowEnabled}
               onChange={(event) => {
                 onContextWindowEnabledChange(event.target.checked);
               }}
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-text">
+              <span className="block text-base font-medium text-text">
                 Context window
               </span>
-              <span className="mt-1 block text-xs leading-relaxed text-text-muted">
+              <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
                 After a snippet note is generated, automatically build a
                 bilingual context paragraph and show it collapsed on the note
                 card.

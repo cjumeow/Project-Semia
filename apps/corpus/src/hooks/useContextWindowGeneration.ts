@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
 import { isGeneratedNote } from '../types/corpus';
@@ -6,7 +6,6 @@ import { isGeneratedNote } from '../types/corpus';
 type UseContextWindowGenerationResult = {
   generating: boolean;
   error: string | null;
-  generate: () => Promise<void>;
 };
 
 export function useContextWindowGeneration(
@@ -17,23 +16,6 @@ export function useContextWindowGeneration(
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoAttemptedForId = useRef<string | null>(null);
-
-  const generate = useCallback(async (): Promise<void> => {
-    if (!snippet || !isGeneratedNote(snippet.note)) return;
-
-    setGenerating(true);
-    setError(null);
-    try {
-      await corpusRepository.generateContextWindow(snippet);
-      await onUpdated();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to generate context window.',
-      );
-    } finally {
-      setGenerating(false);
-    }
-  }, [snippet, onUpdated]);
 
   useEffect(() => {
     autoAttemptedForId.current = null;
@@ -51,15 +33,42 @@ export function useContextWindowGeneration(
     }
 
     autoAttemptedForId.current = snippet.id;
-    void generate();
+    let cancelled = false;
+
+    void (async () => {
+      setGenerating(true);
+      setError(null);
+      try {
+        await corpusRepository.generateContextWindow(snippet);
+        if (!cancelled) {
+          await onUpdated();
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to generate context window.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setGenerating(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     contextWindowEnabled,
-    generate,
+    onUpdated,
     snippet,
     snippet?.id,
     snippet?.note.dynamicContextBlock,
     snippet?.note.generatedAt,
   ]);
 
-  return { generating, error, generate };
+  return { generating, error };
 }

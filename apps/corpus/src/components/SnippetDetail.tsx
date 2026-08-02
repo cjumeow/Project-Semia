@@ -15,7 +15,6 @@ type SnippetDetailProps = {
   generatingContext?: boolean;
   contextError?: string | null;
   contextWindowEnabled?: boolean;
-  onGenerateContext?: () => void;
   onOpenSettings?: () => void;
   onMarkMastered?: () => void;
 };
@@ -28,7 +27,6 @@ export function SnippetDetail({
   onRegenerate,
   generatingContext,
   contextError,
-  onGenerateContext,
   contextWindowEnabled,
   onOpenSettings,
   onMarkMastered,
@@ -90,7 +88,6 @@ export function SnippetDetail({
           generatingContext={generatingContext}
           contextError={contextError}
           contextWindowEnabled={contextWindowEnabled}
-          onGenerateContext={onGenerateContext}
           onOpenSettings={onOpenSettings}
           onMarkMastered={
             onMarkMastered && effectiveTriageStatus(snippet) === 'review'

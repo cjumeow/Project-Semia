@@ -44,7 +44,6 @@ export default function App() {
   const {
     generating: generatingContext,
     error: contextError,
-    generate: generateContext,
   } = useContextWindowGeneration(
     selectedSnippet,
     refresh,
@@ -157,9 +156,6 @@ export default function App() {
         onMastered={(snippetId) => {
           void handleMarkTriage(snippetId, 'mastered');
         }}
-        onGenerateContext={() => {
-          void generateContext();
-        }}
         contextWindowEnabled={contextWindowEnabled}
         onOpenSettings={() => setSettingsOpen(true)}
       />
@@ -251,9 +247,6 @@ export default function App() {
               }}
               generatingContext={generatingContext}
               contextError={contextError}
-              onGenerateContext={() => {
-                void generateContext();
-              }}
               contextWindowEnabled={contextWindowEnabled}
               onOpenSettings={() => setSettingsOpen(true)}
               onMarkMastered={

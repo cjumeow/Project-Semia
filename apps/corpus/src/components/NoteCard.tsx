@@ -1,5 +1,5 @@
 import { effectiveSnippetUnitType } from '@semia/shared';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import type { SnippetNote } from '../types/corpus';
 import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
@@ -12,7 +12,6 @@ type NoteCardProps = {
   generatingContext?: boolean;
   contextError?: string | null;
   contextWindowEnabled?: boolean;
-  onGenerateContext?: () => void;
   onOpenSettings?: () => void;
   onMarkMastered?: () => void;
 };
@@ -35,7 +34,6 @@ export function NoteCard({
   generatingContext,
   contextError,
   contextWindowEnabled = true,
-  onGenerateContext,
   onOpenSettings,
   onMarkMastered,
 }: NoteCardProps) {
@@ -95,7 +93,6 @@ export function NoteCard({
             highlightSelection={highlightSelection}
             loading={generatingContext}
             error={contextError}
-            onGenerateContext={onGenerateContext}
             onOpenSettings={onOpenSettings}
           />
         ) : null}
@@ -111,7 +108,6 @@ function ContextWindowSection({
   highlightSelection,
   loading,
   error,
-  onGenerateContext,
   onOpenSettings,
 }: {
   value: string;
@@ -119,7 +115,6 @@ function ContextWindowSection({
   highlightSelection?: string;
   loading?: boolean;
   error?: string | null;
-  onGenerateContext?: () => void;
   onOpenSettings?: () => void;
 }) {
   const hasContent = Boolean(value.trim());
@@ -131,9 +126,9 @@ function ContextWindowSection({
 
   if (!enabled) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-canvas/40 px-3 py-3">
-        <p className="semia-section-label">Context window</p>
-        <p className="mt-1.5 text-sm text-text-muted">
+      <div className="rounded-lg border border-dashed border-border bg-canvas/40 px-4 py-4">
+        <p className="text-sm font-medium text-text-secondary">Context window</p>
+        <p className="mt-2 text-sm text-text-muted">
           Context window is turned off.{' '}
           {onOpenSettings ? (
             <button
@@ -152,102 +147,50 @@ function ContextWindowSection({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-canvas/50">
-      <div className="flex items-center justify-between gap-2 px-3 py-2">
-        <button
-          type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          onClick={() => {
-            if (hasContent) {
-              setExpanded((current) => !current);
-            }
-          }}
-          aria-expanded={hasContent ? expanded : undefined}
-          disabled={!hasContent && !loading}
-        >
-          <span className="semia-section-label">Context window</span>
-          {hasContent ? (
-            <span className="font-mono text-[10px] text-text-muted">
-              {expanded ? '▾' : '▸'}
-            </span>
-          ) : null}
-        </button>
-        {expanded && hasContent && onGenerateContext ? (
-          <ContextWindowRegenerateButton
-            onClick={onGenerateContext}
-            disabled={loading}
-          />
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas/50">
+      <button
+        type="button"
+        className={[
+          'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
+          hasContent ? 'hover:bg-canvas/80' : 'cursor-default',
+        ].join(' ')}
+        onClick={() => {
+          if (hasContent) {
+            setExpanded((current) => !current);
+          }
+        }}
+        aria-expanded={hasContent ? expanded : undefined}
+        disabled={!hasContent && !loading}
+      >
+        <span className="text-sm font-medium text-text">Context window</span>
+        {hasContent ? (
+          <span className="text-base leading-none text-text-muted" aria-hidden>
+            {expanded ? '▾' : '▸'}
+          </span>
         ) : null}
-      </div>
+      </button>
       {loading ? (
-        <div className="border-t border-border px-3 py-2 text-sm text-text-muted">
+        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
         </div>
       ) : expanded && hasContent ? (
-        <div className="border-t border-border px-3 py-3">
+        <div className="border-t border-border px-4 py-3">
           <BilingualBlock
             value={value}
             highlightSelection={highlightSelection}
           />
         </div>
       ) : !hasContent && !loading ? (
-        <div className="border-t border-border px-3 py-2 text-sm text-text-muted">
+        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
           Waiting for context window…
         </div>
       ) : null}
       {error ? (
-        <p className="border-t border-border px-3 py-2 text-sm text-red-700">
+        <p className="border-t border-border px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       ) : null}
     </div>
-  );
-}
-
-function ContextWindowRegenerateButton({
-  onClick,
-  disabled,
-}: {
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label="Regenerate context window"
-      title="Regenerate context window"
-    >
-      <PencilSparklesIcon />
-      Regenerate
-    </button>
-  );
-}
-
-function PencilSparklesIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M10 3H8" />
-      <path d="m15.007 5.008 3.987 3.986" />
-      <path d="M20 15v4" />
-      <path d="M21.174 6.813a2.82 2.82 0 0 0-3.986-3.987L3.842 16.175a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-      <path d="M22 17h-4" />
-      <path d="M4 5v4" />
-      <path d="M6 7H2" />
-      <path d="M9 2v2" />
-    </svg>
   );
 }
 
@@ -258,49 +201,31 @@ function hasBilingualSplit(value: string): boolean {
 type NoteFieldProps = {
   label: string;
   value: string;
-  isExample?: boolean;
   multiline?: boolean;
   splitBilingual?: boolean;
   highlightSelection?: string;
-  loading?: boolean;
-  headerAction?: ReactNode;
 };
 
 function NoteField({
   label,
   value,
-  isExample,
   multiline,
   splitBilingual,
   highlightSelection,
-  loading,
-  headerAction,
 }: NoteFieldProps) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <dt className="semia-section-label">
-          {label}
-        </dt>
-        {headerAction}
-      </div>
+      <dt className="semia-section-label">{label}</dt>
       <dd
         className={[
-          'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed',
+          'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed text-text',
           multiline || label === 'Original Speech' || label === 'Natural Translation'
             ? 'font-reading'
             : '',
           multiline ? 'whitespace-pre-line' : '',
-          'text-text',
         ].join(' ')}
       >
-        {loading ? (
-          <TextDots>Generating</TextDots>
-        ) : isExample ? (
-          <ul className="list-disc pl-4">
-            <li>{value}</li>
-          </ul>
-        ) : splitBilingual ? (
+        {splitBilingual ? (
           <BilingualBlock
             value={value}
             highlightSelection={highlightSelection}
