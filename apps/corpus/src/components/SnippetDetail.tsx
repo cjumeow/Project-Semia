@@ -14,8 +14,12 @@ type SnippetDetailProps = {
   onRegenerate?: () => void;
   generatingContext?: boolean;
   contextError?: string | null;
-  onGenerateContext?: () => void;
+  contextWindowEnabled?: boolean;
+  onOpenSettings?: () => void;
   onMarkMastered?: () => void;
+  languageCardCount?: number;
+  onCreateLanguageCard?: () => void;
+  createLanguageCardEnabled?: boolean;
 };
 
 export function SnippetDetail({
@@ -26,8 +30,12 @@ export function SnippetDetail({
   onRegenerate,
   generatingContext,
   contextError,
-  onGenerateContext,
+  contextWindowEnabled,
+  onOpenSettings,
   onMarkMastered,
+  languageCardCount,
+  onCreateLanguageCard,
+  createLanguageCardEnabled,
 }: SnippetDetailProps) {
   const { markdown, saving, save } = useCorpusNote(snippet?.id);
 
@@ -85,7 +93,11 @@ export function SnippetDetail({
           generating={generating}
           generatingContext={generatingContext}
           contextError={contextError}
-          onGenerateContext={onGenerateContext}
+          contextWindowEnabled={contextWindowEnabled}
+          onOpenSettings={onOpenSettings}
+          languageCardCount={languageCardCount}
+          onCreateLanguageCard={onCreateLanguageCard}
+          createLanguageCardEnabled={createLanguageCardEnabled}
           onMarkMastered={
             onMarkMastered && effectiveTriageStatus(snippet) === 'review'
               ? onMarkMastered

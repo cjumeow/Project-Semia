@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { effectiveSnippetUnitType } from '@semia/shared';
+import { useEffect, useState } from 'react';
 import type { SnippetNote } from '../types/corpus';
 import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
@@ -10,19 +11,17 @@ type NoteCardProps = {
   generating?: boolean;
   generatingContext?: boolean;
   contextError?: string | null;
-  onGenerateContext?: () => void;
+  contextWindowEnabled?: boolean;
+  onOpenSettings?: () => void;
   onMarkMastered?: () => void;
+  languageCardCount?: number;
+  onCreateLanguageCard?: () => void;
+  createLanguageCardEnabled?: boolean;
 };
 
 const NOTE_FIELDS = [
   { key: 'originalSpeech', label: 'Original Speech', multiline: false, splitBilingual: false },
   { key: 'naturalTranslation', label: 'Natural Translation', multiline: false, splitBilingual: false },
-  {
-    key: 'dynamicContextBlock',
-    label: 'Context Window',
-    multiline: true,
-    splitBilingual: true,
-  },
   { key: 'backgroundNote', label: 'Background Note', multiline: true, splitBilingual: false },
 ] as const satisfies ReadonlyArray<{
   key: keyof SnippetNote;
@@ -37,11 +36,17 @@ export function NoteCard({
   generating,
   generatingContext,
   contextError,
-  onGenerateContext,
+  contextWindowEnabled = true,
+  onOpenSettings,
   onMarkMastered,
+  languageCardCount = 0,
+  onCreateLanguageCard,
+  createLanguageCardEnabled = false,
 }: NoteCardProps) {
   const noteReady = Boolean(note.generatedAt);
-  const contextReady = Boolean(note.dynamicContextBlock?.trim());
+  const illustrativeValue = note.illustrativeExample ?? '';
+  const showIllustrativeExample =
+    noteReady && !generating && effectiveSnippetUnitType(note) === 'word';
 
   return (
     <div className="relative">
@@ -64,118 +69,151 @@ export function NoteCard({
           <TextDots>Generating</TextDots>
         </p>
       ) : null}
+      {createLanguageCardEnabled && onCreateLanguageCard && noteReady && !generating ? (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent-soft/80"
+            onClick={onCreateLanguageCard}
+          >
+            + Language card
+          </button>
+          {languageCardCount > 0 ? (
+            <span className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-text-muted">
+              {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       <dl className="flex flex-col gap-5">
         {NOTE_FIELDS.map(({ key, label, multiline, splitBilingual }) => {
-          const isContextField = key === 'dynamicContextBlock';
-          const raw = generating && !isContextField ? '' : (note[key] ?? '');
-          const value = formatFieldValue(key, raw, noteReady, generating ?? false);
-          const showContextAction =
-            isContextField && noteReady && onGenerateContext && !generating;
+          const raw = generating ? '' : (note[key] ?? '');
 
           return (
             <NoteField
               key={key}
               label={label}
-              value={value}
+              value={raw}
               multiline={multiline}
-              splitBilingual={splitBilingual && hasBilingualSplit(value)}
-              highlightSelection={
-                isContextField ? highlightSelection : undefined
-              }
-              loading={isContextField ? generatingContext : generating}
-              headerAction={
-                showContextAction ? (
-                  <ContextWindowButton
-                    onClick={onGenerateContext}
-                    disabled={generating || generatingContext}
-                    hasContent={contextReady}
-                  />
-                ) : undefined
-              }
+              splitBilingual={splitBilingual && hasBilingualSplit(raw)}
             />
           );
         })}
-        {!generating && note.example ? (
-          <NoteField label="Example" value={note.example} isExample />
+        {showIllustrativeExample ? (
+          <NoteField
+            label="Illustrative example"
+            value={illustrativeValue}
+            multiline
+            splitBilingual={hasBilingualSplit(illustrativeValue)}
+            highlightSelection={note.originalSpeech.trim() || highlightSelection}
+          />
+        ) : null}
+        {noteReady && !generating ? (
+          <ContextWindowSection
+            value={note.dynamicContextBlock ?? ''}
+            enabled={contextWindowEnabled}
+            highlightSelection={highlightSelection}
+            loading={generatingContext}
+            error={contextError}
+            onOpenSettings={onOpenSettings}
+          />
         ) : null}
       </dl>
-      {contextError ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {contextError}
-        </p>
-      ) : null}
       </article>
     </div>
   );
 }
 
-function ContextWindowButton({
-  onClick,
-  disabled,
-  hasContent,
+function ContextWindowSection({
+  value,
+  enabled,
+  highlightSelection,
+  loading,
+  error,
+  onOpenSettings,
 }: {
-  onClick: () => void;
-  disabled?: boolean;
-  hasContent: boolean;
+  value: string;
+  enabled: boolean;
+  highlightSelection?: string;
+  loading?: boolean;
+  error?: string | null;
+  onOpenSettings?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={hasContent ? 'Regenerate context window' : 'Generate context window'}
-      title={hasContent ? 'Regenerate context window' : 'Generate context window'}
-    >
-      <PencilSparklesIcon />
-      {hasContent ? 'Regenerate' : 'Generate'}
-    </button>
-  );
-}
+  const hasContent = Boolean(value.trim());
+  const [expanded, setExpanded] = useState(false);
 
-function PencilSparklesIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M10 3H8" />
-      <path d="m15.007 5.008 3.987 3.986" />
-      <path d="M20 15v4" />
-      <path d="M21.174 6.813a2.82 2.82 0 0 0-3.986-3.987L3.842 16.175a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-      <path d="M22 17h-4" />
-      <path d="M4 5v4" />
-      <path d="M6 7H2" />
-      <path d="M9 2v2" />
-    </svg>
-  );
-}
+  useEffect(() => {
+    setExpanded(false);
+  }, [value]);
 
-function formatFieldValue(
-  key: keyof SnippetNote,
-  raw: string,
-  noteReady: boolean,
-  generating: boolean,
-): string {
-  if (generating || raw.trim()) {
-    return raw;
+  if (!enabled) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-canvas/40 px-4 py-4">
+        <p className="text-sm font-medium text-text-secondary">Context window</p>
+        <p className="mt-2 text-sm text-text-muted">
+          Context window is turned off.{' '}
+          {onOpenSettings ? (
+            <button
+              type="button"
+              className="text-accent underline-offset-2 hover:underline"
+              onClick={onOpenSettings}
+            >
+              Enable in Settings
+            </button>
+          ) : (
+            'Enable it in Settings.'
+          )}
+        </p>
+      </div>
+    );
   }
 
-  if (key === 'dynamicContextBlock') {
-    if (!noteReady) {
-      return 'Available after the snippet note is generated.';
-    }
-    return 'Click Generate to build a bilingual context paragraph.';
-  }
-
-  return raw;
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas/50">
+      <button
+        type="button"
+        className={[
+          'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
+          hasContent ? 'hover:bg-canvas/80' : 'cursor-default',
+        ].join(' ')}
+        onClick={() => {
+          if (hasContent) {
+            setExpanded((current) => !current);
+          }
+        }}
+        aria-expanded={hasContent ? expanded : undefined}
+        disabled={!hasContent && !loading}
+      >
+        <span className="text-sm font-medium text-text">Context window</span>
+        {hasContent ? (
+          <span className="text-base leading-none text-text-muted" aria-hidden>
+            {expanded ? '▾' : '▸'}
+          </span>
+        ) : null}
+      </button>
+      {loading ? (
+        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
+          <TextDots>Generating</TextDots>
+        </div>
+      ) : expanded && hasContent ? (
+        <div className="border-t border-border px-4 py-3">
+          <BilingualBlock
+            value={value}
+            highlightSelection={highlightSelection}
+          />
+        </div>
+      ) : !hasContent && !loading ? (
+        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
+          Waiting for context window…
+        </div>
+      ) : null}
+      {error ? (
+        <p className="border-t border-border px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function hasBilingualSplit(value: string): boolean {
@@ -185,53 +223,31 @@ function hasBilingualSplit(value: string): boolean {
 type NoteFieldProps = {
   label: string;
   value: string;
-  isExample?: boolean;
   multiline?: boolean;
   splitBilingual?: boolean;
   highlightSelection?: string;
-  loading?: boolean;
-  headerAction?: ReactNode;
 };
 
 function NoteField({
   label,
   value,
-  isExample,
   multiline,
   splitBilingual,
   highlightSelection,
-  loading,
-  headerAction,
 }: NoteFieldProps) {
-  const isPlaceholder =
-    value === 'Click Generate to build a bilingual context paragraph.' ||
-    value === 'Available after the snippet note is generated.';
-
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <dt className="semia-section-label">
-          {label}
-        </dt>
-        {headerAction}
-      </div>
+      <dt className="semia-section-label">{label}</dt>
       <dd
         className={[
-          'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed',
+          'mt-1.5 min-h-[1.25rem] text-sm leading-relaxed text-text',
           multiline || label === 'Original Speech' || label === 'Natural Translation'
             ? 'font-reading'
             : '',
           multiline ? 'whitespace-pre-line' : '',
-          !loading && isPlaceholder ? 'text-text-muted' : 'text-text',
         ].join(' ')}
       >
-        {loading ? (
-          <TextDots>Generating</TextDots>
-        ) : isExample ? (
-          <ul className="list-disc pl-4">
-            <li>{value}</li>
-          </ul>
-        ) : splitBilingual ? (
+        {splitBilingual ? (
           <BilingualBlock
             value={value}
             highlightSelection={highlightSelection}
@@ -261,7 +277,7 @@ function BilingualBlock({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="m-0">
+      <p className="m-0 text-sm leading-relaxed text-text">
         {highlightSelection?.trim() ? (
           <HighlightSelection text={original} selection={highlightSelection} />
         ) : (
@@ -271,7 +287,9 @@ function BilingualBlock({
       {translation ? (
         <>
           <div className="border-t border-border" />
-          <p className="m-0 text-text-secondary">{translation}</p>
+          <p className="m-0 text-sm leading-relaxed text-text-secondary">
+            {translation}
+          </p>
         </>
       ) : null}
     </div>

@@ -31,19 +31,25 @@ Please strictly follow these rules to generate your analysis:
    - Ensure the translation aligns with the tone, meaning, and flow of the surrounding context.
    - Filter out unnecessary filler words (like "uh", "um", "you know") when appropriate.
 
-3. <background_note> (Context & Jargon Explanation):
-   Write this section in ${targetLang}. It must include:
-   - Part 1: A clear, contextual explanation of what the [USER'S CAPTURED SELECTION] intends to express within the 30-second context.
-   - Part 2 (If applicable): Identify and explain any idioms, slang, domain jargon, or fixed collocations in the selection.
-   - If there are no noteworthy idioms, slang, jargon, or collocations, provide only Part 1.
+3. <background_note> (Brief Context):
+   Write this section in ${targetLang}. Keep it short: **at most 5–6 lines** total.
+   - Explain what the selection means in the surrounding context.
+   - If one idiom, slang term, or jargon phrase matters, explain it briefly; otherwise skip.
+   - Do not repeat the translation or pad with generic commentary.
+
+4. <unit_type> (Capture classification):
+   Classify the [USER'S CAPTURED SELECTION] as exactly one value:
+   - \`word\` — a single word or very short lexical item the learner might study as vocabulary
+   - \`others\` — a phrase, clause, full sentence, or anything else
 
 Strict Output Format:
-Your response must only contain the following XML tags. All three inner tags are REQUIRED and must not be empty. Do not output conversational fluff or markdown headers.
+Your response must only contain the following XML tags. All four inner tags are REQUIRED and must not be empty. Do not output conversational fluff or markdown headers.
 
 <result>
   <original_speech>[Corrected original text here]</original_speech>
   <natural_translation>[Your natural translation here]</natural_translation>
   <background_note>[Your contextual and jargon explanation here]</background_note>
+  <unit_type>word|others</unit_type>
 </result>`;
 }
 
@@ -65,19 +71,25 @@ Please strictly follow these rules to generate your analysis:
    Translate the selection into natural, idiomatic ${targetLang}.
    - Ensure the translation aligns with the tone and meaning of the surrounding page context.
 
-3. <background_note> (Context & Jargon Explanation):
-   Write this section in ${targetLang}. It must include:
-   - Part 1: A clear, contextual explanation of what the selection means within the surrounding page context.
-   - Part 2 (If applicable): Identify and explain any idioms, slang, domain jargon, or fixed collocations in the selection.
-   - If there are no noteworthy idioms, slang, jargon, or collocations, provide only Part 1.
+3. <background_note> (Brief Context):
+   Write this section in ${targetLang}. Keep it short: **at most 5–6 lines** total.
+   - Explain what the selection means using [PAGE METADATA] and [PAGE CONTEXT].
+   - If one idiom, slang term, or jargon phrase matters, explain it briefly; otherwise skip.
+   - Do not repeat the translation or pad with generic commentary.
+
+4. <unit_type> (Capture classification):
+   Classify the [USER'S CAPTURED SELECTION] as exactly one value:
+   - \`word\` — a single word or very short lexical item the learner might study as vocabulary
+   - \`others\` — a phrase, clause, full sentence, or anything else
 
 Strict Output Format:
-Your response must only contain the following XML tags. All three inner tags are REQUIRED and must not be empty. Do not output conversational fluff or markdown headers.
+Your response must only contain the following XML tags. All four inner tags are REQUIRED and must not be empty. Do not output conversational fluff or markdown headers.
 
 <result>
   <original_speech>[Original text here]</original_speech>
   <natural_translation>[Your natural translation here]</natural_translation>
   <background_note>[Your contextual and jargon explanation here]</background_note>
+  <unit_type>word|others</unit_type>
 </result>`;
 }
 

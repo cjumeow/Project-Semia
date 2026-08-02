@@ -1,7 +1,14 @@
-import type { LanguageFragment, SnippetTriageStatus, StoredTranscript } from '@semia/shared';
+import type {
+  CardIntent,
+  LanguageFragment,
+  SnippetTriageStatus,
+  StoredTranscript,
+} from '@semia/shared';
 
 export type {
+  CardIntent,
   FocusRef,
+  LanguageCard,
   LanguageFragment,
   SelectionRange,
   SnippetNote,
@@ -27,8 +34,16 @@ export type BackgroundMessage =
   | { type: 'LIST_FRAGMENTS' }
   | { type: 'LIST_TRANSCRIPTS' }
   | { type: 'LIST_SNIPPET_NOTES' }
+  | { type: 'LIST_LANGUAGE_CARDS' }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
+  | {
+      type: 'CREATE_LANGUAGE_CARD';
+      fragment: LanguageFragment;
+      focusText: string;
+      intents: CardIntent[];
+      learnerNote?: string;
+    }
   | { type: 'OPEN_WEB_CAPTURE'; fragment: LanguageFragment }
   | { type: 'DELETE_FRAGMENT'; fragmentId: string }
   | { type: 'DELETE_SOURCE'; sourceUrl: string }

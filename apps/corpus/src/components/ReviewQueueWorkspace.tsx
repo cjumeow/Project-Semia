@@ -10,10 +10,14 @@ type ReviewQueueWorkspaceProps = {
   noteError?: string | null;
   generatingContext?: boolean;
   contextError?: string | null;
+  contextWindowEnabled?: boolean;
   onSelectSnippet: (snippetId: string) => void;
   onStillLearning: (snippetId: string) => void;
   onMastered: (snippetId: string) => void;
-  onGenerateContext?: () => void;
+  onOpenSettings?: () => void;
+  languageCardCount?: number;
+  onCreateLanguageCard?: () => void;
+  createLanguageCardEnabled?: boolean;
 };
 
 export function ReviewQueueWorkspace({
@@ -27,7 +31,11 @@ export function ReviewQueueWorkspace({
   onSelectSnippet,
   onStillLearning,
   onMastered,
-  onGenerateContext,
+  contextWindowEnabled,
+  onOpenSettings,
+  languageCardCount,
+  onCreateLanguageCard,
+  createLanguageCardEnabled,
 }: ReviewQueueWorkspaceProps) {
   const now = new Date().toISOString();
   const focusIndex = selectedSnippet
@@ -100,7 +108,11 @@ export function ReviewQueueWorkspace({
               generating={generating}
               generatingContext={generatingContext}
               contextError={contextError}
-              onGenerateContext={onGenerateContext}
+              contextWindowEnabled={contextWindowEnabled}
+              onOpenSettings={onOpenSettings}
+              languageCardCount={languageCardCount}
+              onCreateLanguageCard={onCreateLanguageCard}
+              createLanguageCardEnabled={createLanguageCardEnabled}
             />
           </div>
         </div>
@@ -117,6 +129,13 @@ export function ReviewQueueWorkspace({
               {schedule.overdueDays
                 ? ` · ${schedule.overdueDays}d overdue`
                 : ''}
+              {(languageCardCount ?? 0) > 0 ? (
+                <>
+                  {' '}
+                  · {languageCardCount} language card
+                  {languageCardCount === 1 ? '' : 's'}
+                </>
+              ) : null}
             </p>
           </div>
           <div className="flex w-[min(20rem,48vw)] shrink-0 gap-3">

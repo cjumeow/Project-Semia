@@ -5,6 +5,8 @@ import {
   TRANSCRIPTS_STORAGE_KEY,
   WEB_RESTORE_STATUS_STORAGE_KEY,
   type CorpusNotesMap,
+  type CardIntent,
+  type LanguageCard,
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
@@ -19,12 +21,22 @@ import { isExtensionContext } from '../utils/extensionContext';
 type OkResponse<T> = { ok: true } & T;
 type ErrResponse = { ok: false; error: string };
 
+export type CreateLanguageCardRequest = {
+  fragment: LanguageFragment;
+  focusText: string;
+  intents: CardIntent[];
+  learnerNote?: string;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
   getSnippetNotes(): Promise<SnippetNotesMap>;
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
   generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
+  getLanguageCards(): Promise<LanguageCard[]>;
+  getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
+  createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -117,6 +129,45 @@ class ChromeCorpusRepository implements CorpusRepository {
       response && !response.ok
         ? response.error
         : 'Failed to generate context window.';
+    throw new Error(message);
+  }
+
+  async getLanguageCards(): Promise<LanguageCard[]> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'LIST_LANGUAGE_CARDS',
+    })) as OkResponse<{ cards: LanguageCard[] }> | ErrResponse | undefined;
+
+    if (response?.ok) {
+      return response.cards ?? [];
+    }
+
+    throw new Error(response?.error ?? 'Failed to load language cards.');
+  }
+
+  async getCardsForFragment(fragmentId: string): Promise<LanguageCard[]> {
+    const cards = await this.getLanguageCards();
+    return cards.filter((card) => card.sourceFragmentId === fragmentId);
+  }
+
+  async createLanguageCard(
+    request: CreateLanguageCardRequest,
+  ): Promise<LanguageCard> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'CREATE_LANGUAGE_CARD',
+      fragment: request.fragment,
+      focusText: request.focusText,
+      intents: request.intents,
+      learnerNote: request.learnerNote,
+    })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
+
+    if (response?.ok && response.card) {
+      return response.card;
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to create language card.';
     throw new Error(message);
   }
 
@@ -255,6 +306,18 @@ class MockCorpusRepository implements CorpusRepository {
 
   async generateContextWindow(): Promise<SnippetNote> {
     throw new Error('AI generation requires the Chrome extension.');
+  }
+
+  async getLanguageCards(): Promise<LanguageCard[]> {
+    return [];
+  }
+
+  async getCardsForFragment(): Promise<LanguageCard[]> {
+    return [];
+  }
+
+  async createLanguageCard(): Promise<LanguageCard> {
+    throw new Error('Language card creation requires the Chrome extension.');
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {

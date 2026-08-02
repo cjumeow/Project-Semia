@@ -6,6 +6,7 @@ import {
 const DEFAULT_SETTINGS: SemiaSettings = {
   aiProvider: 'deepseek',
   nativeLanguage: 'zh-TW',
+  contextWindowEnabled: true,
 };
 
 export async function getSemiaSettings(): Promise<SemiaSettings> {
@@ -26,6 +27,8 @@ export async function saveSemiaSettings(
       aiProvider: settings.aiProvider ?? 'deepseek',
       aiApiKey: settings.aiApiKey?.trim() || undefined,
       nativeLanguage: settings.nativeLanguage ?? 'zh-TW',
+      contextWindowEnabled: settings.contextWindowEnabled !== false,
+      languageCardsProEnabled: settings.languageCardsProEnabled === true,
     },
   });
 }

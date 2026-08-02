@@ -36,6 +36,7 @@ describe('placeholderNote', () => {
     expect(note.originalSpeech).toBe('break a leg');
     expect(note.backgroundNote).toContain('Good luck out there. Break a leg!');
     expect(note.backgroundNote).toContain('not generated yet');
+    expect(note.unitType).toBe('others');
   });
 
   it('still reads sensibly when no context was captured', () => {
@@ -57,17 +58,22 @@ describe('fragmentToSnippet', () => {
     expect(snippet.note.generatedAt).toBeUndefined();
   });
 
-  it('prefers the saved note when one exists', () => {
+  it('normalizes saved notes including legacy example migration', () => {
     const saved: SnippetNote = {
       originalSpeech: 'break a leg',
       naturalTranslation: '祝你好運',
       dynamicContextBlock: 'context',
       backgroundNote: 'Theatre idiom.',
+      unitType: 'word',
       example: 'Break a leg tonight!',
       generatedAt: '2026-07-29T01:00:00.000Z',
     };
 
-    expect(fragmentToSnippet(fragment, saved).note).toEqual(saved);
+    expect(fragmentToSnippet(fragment, saved).note).toMatchObject({
+      unitType: 'word',
+      illustrativeExample: 'Break a leg tonight!',
+      dynamicContextBlock: 'context',
+    });
   });
 
   it('backfills fields added after older notes were stored', () => {
@@ -80,7 +86,8 @@ describe('fragmentToSnippet', () => {
 
     const { note } = fragmentToSnippet(fragment, legacyNote);
 
+    expect(note.unitType).toBe('others');
     expect(note.dynamicContextBlock).toBe('');
-    expect(note.example).toBe('');
+    expect(note.illustrativeExample).toBeUndefined();
   });
 });

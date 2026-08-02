@@ -1,9 +1,15 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
 import { InboxWorkspace } from './components/InboxWorkspace';
+import { MyCardsWorkspace } from './components/MyCardsWorkspace';
 import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
+import { SemiaSettingsDialog } from './components/SemiaSettingsDialog';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
+import { useLanguageCardOnboarding } from './hooks/useLanguageCardOnboarding';
+import { useLanguageCards } from './hooks/useLanguageCards';
+import { useSemiaSettings } from './hooks/useSemiaSettings';
 import { useSnippetNoteGeneration } from './hooks/useSnippetNoteGeneration';
 import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
@@ -11,10 +17,25 @@ import { SemiaSidebar } from './components/SemiaSidebar';
 import { SnippetDetail } from './components/SnippetDetail';
 import { SourceWorkspace } from './components/SourceWorkspace';
 import { corpusRepository } from './data/corpusRepository';
+import { isGeneratedNote } from './types/corpus';
 import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGrouping';
 import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [createCardOpen, setCreateCardOpen] = useState(false);
+  const {
+    contextWindowEnabled,
+    languageCardsProEnabled,
+    setContextWindowEnabled,
+    setLanguageCardsProEnabled,
+  } = useSemiaSettings();
+  const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
+  const {
+    cards: languageCards,
+    refresh: refreshLanguageCards,
+    countForFragment,
+  } = useLanguageCards();
   const { groups, snippets, loading, error, fragmentCount, isLive, refresh } =
     useCorpusData();
   const {
@@ -27,6 +48,7 @@ export default function App() {
     selectedSnippet,
     selectInboxSource,
     selectLibrarySource,
+    selectMyCards,
     selectReviewQueue,
     selectReviewQueueSnippet,
     selectSnippet,
@@ -40,8 +62,11 @@ export default function App() {
   const {
     generating: generatingContext,
     error: contextError,
-    generate: generateContext,
-  } = useContextWindowGeneration(selectedSnippet, refresh);
+  } = useContextWindowGeneration(
+    selectedSnippet,
+    refresh,
+    contextWindowEnabled,
+  );
 
   const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
     useResizableWidth({
@@ -62,6 +87,41 @@ export default function App() {
     });
 
   const showEmpty = !loading && !error && groups.length === 0;
+  const languageCardCount = selectedSnippet
+    ? countForFragment(selectedSnippet.id)
+    : 0;
+  const createLanguageCardEnabled =
+    isLive && Boolean(selectedSnippet && isGeneratedNote(selectedSnippet.note));
+
+  const handleCreateLanguageCard = useCallback(
+    async (input: {
+      focusText: string;
+      intents: ('speaking' | 'writing')[];
+      learnerNote?: string;
+    }) => {
+      if (!selectedSnippet) {
+        throw new Error('Select a snippet first.');
+      }
+
+      const card = await corpusRepository.createLanguageCard({
+        fragment: selectedSnippet,
+        focusText: input.focusText,
+        intents: input.intents,
+        learnerNote: input.learnerNote,
+      });
+      await Promise.all([refresh(), refreshLanguageCards()]);
+      return card;
+    },
+    [refresh, refreshLanguageCards, selectedSnippet],
+  );
+
+  const languageCardProps = {
+    languageCardCount,
+    onCreateLanguageCard: createLanguageCardEnabled
+      ? () => setCreateCardOpen(true)
+      : undefined,
+    createLanguageCardEnabled,
+  };
 
   const handleMarkTriage = useCallback(
     async (snippetId: string, status: 'review' | 'mastered'): Promise<void> => {
@@ -149,9 +209,15 @@ export default function App() {
         onMastered={(snippetId) => {
           void handleMarkTriage(snippetId, 'mastered');
         }}
-        onGenerateContext={() => {
-          void generateContext();
-        }}
+        contextWindowEnabled={contextWindowEnabled}
+        onOpenSettings={() => setSettingsOpen(true)}
+        {...languageCardProps}
+      />
+    ) : selection.pane === 'my-cards' ? (
+      <MyCardsWorkspace
+        cards={languageCards}
+        snippets={snippets}
+        contextWindowEnabled={contextWindowEnabled}
       />
     ) : (
       <SourceWorkspace
@@ -162,10 +228,12 @@ export default function App() {
         }
         onSelectSnippet={selectSnippet}
         onDeleteSource={isLive ? () => void handleDeleteSource() : undefined}
+        cardCountForSnippet={countForFragment}
       />
     );
 
-  const showDetailPanel = selection.pane !== 'review-queue';
+  const showDetailPanel =
+    selection.pane !== 'review-queue' && selection.pane !== 'my-cards';
 
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
@@ -177,11 +245,14 @@ export default function App() {
           pane={selection.pane}
           inboxGroups={inboxSourceGroups}
           libraryGroups={librarySourceGroups}
+          myCardsCount={languageCards.length}
           dueCount={dueQueue.length}
           selectedSourceKey={selection.sourceKey}
           onSelectInboxSource={selectInboxSource}
           onSelectLibrarySource={selectLibrarySource}
+          onSelectMyCards={selectMyCards}
           onSelectReviewQueue={selectReviewQueue}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
 
@@ -240,9 +311,9 @@ export default function App() {
               }}
               generatingContext={generatingContext}
               contextError={contextError}
-              onGenerateContext={() => {
-                void generateContext();
-              }}
+              contextWindowEnabled={contextWindowEnabled}
+              onOpenSettings={() => setSettingsOpen(true)}
+              {...languageCardProps}
               onMarkMastered={
                 isLive &&
                 selectedSnippet &&
@@ -256,6 +327,31 @@ export default function App() {
           </div>
         </>
       ) : null}
+      <SemiaSettingsDialog
+        open={settingsOpen}
+        contextWindowEnabled={contextWindowEnabled}
+        languageCardsProEnabled={languageCardsProEnabled}
+        onClose={() => setSettingsOpen(false)}
+        onContextWindowEnabledChange={(enabled) => {
+          void setContextWindowEnabled(enabled);
+        }}
+        onLanguageCardsProEnabledChange={(enabled) => {
+          void setLanguageCardsProEnabled(enabled);
+        }}
+      />
+      <CreateLanguageCardModal
+        open={createCardOpen}
+        snippet={selectedSnippet}
+        languageCardsProEnabled={languageCardsProEnabled}
+        showOnboarding={showOnboarding}
+        onClose={() => setCreateCardOpen(false)}
+        onOpenSettings={() => {
+          setCreateCardOpen(false);
+          setSettingsOpen(true);
+        }}
+        onMarkOnboardingSeen={markOnboardingSeen}
+        onCreate={handleCreateLanguageCard}
+      />
     </main>
   );
 }
