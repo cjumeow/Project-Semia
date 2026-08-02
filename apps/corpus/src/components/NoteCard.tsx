@@ -287,7 +287,7 @@ function BilingualBlock({
       {translation ? (
         <>
           <div className="border-t border-border" />
-          <p className="m-0 text-sm leading-relaxed text-text-secondary">
+          <p className="semia-field-zh m-0 text-text-secondary">
             {translation}
           </p>
         </>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { LanguageCard } from '@semia/shared';
 import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
 import { InboxWorkspace } from './components/InboxWorkspace';
 import { MyCardsWorkspace } from './components/MyCardsWorkspace';
@@ -16,6 +17,7 @@ import { ResizeHandle } from './components/ResizeHandle';
 import { SemiaSidebar } from './components/SemiaSidebar';
 import { SnippetDetail } from './components/SnippetDetail';
 import { SourceWorkspace } from './components/SourceWorkspace';
+import { LanguageCardPreviewModal } from './components/LanguageCardPreviewModal';
 import { corpusRepository } from './data/corpusRepository';
 import { isGeneratedNote } from './types/corpus';
 import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGrouping';
@@ -24,6 +26,7 @@ import { isEditableTarget } from './utils/isEditableTarget';
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createCardOpen, setCreateCardOpen] = useState(false);
+  const [previewCard, setPreviewCard] = useState<LanguageCard | null>(null);
   const {
     contextWindowEnabled,
     languageCardsProEnabled,
@@ -98,6 +101,7 @@ export default function App() {
       focusText: string;
       intents: ('speaking' | 'writing')[];
       learnerNote?: string;
+      includeScenario?: boolean;
     }) => {
       if (!selectedSnippet) {
         throw new Error('Select a snippet first.');
@@ -108,8 +112,11 @@ export default function App() {
         focusText: input.focusText,
         intents: input.intents,
         learnerNote: input.learnerNote,
+        includeScenario: input.includeScenario,
       });
       await Promise.all([refresh(), refreshLanguageCards()]);
+      setCreateCardOpen(false);
+      setPreviewCard(card);
       return card;
     },
     [refresh, refreshLanguageCards, selectedSnippet],
@@ -351,6 +358,10 @@ export default function App() {
         }}
         onMarkOnboardingSeen={markOnboardingSeen}
         onCreate={handleCreateLanguageCard}
+      />
+      <LanguageCardPreviewModal
+        card={previewCard}
+        onClose={() => setPreviewCard(null)}
       />
     </main>
   );

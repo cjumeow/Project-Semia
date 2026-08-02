@@ -7,6 +7,7 @@ import {
   webGroups,
   youtubeGroups,
 } from '../utils/corpusGrouping';
+import { SemiaLogo } from './SemiaLogo';
 import {
   InboxIcon,
   LibraryIcon,
@@ -54,10 +55,8 @@ export function SemiaSidebar({
   return (
     <aside className="flex h-full flex-col bg-shelf">
       <header className="shrink-0 border-b border-border/80 px-4 pb-4 pt-5">
-        <h1 className="font-display text-[1.35rem] font-semibold tracking-tight text-text">
-          SEMIA
-        </h1>
-        <p className="mt-1 text-xs text-text-muted">
+        <SemiaLogo size="md" />
+        <p className="mt-2 text-xs text-text-muted">
           Snippets from your immersion
         </p>
       </header>

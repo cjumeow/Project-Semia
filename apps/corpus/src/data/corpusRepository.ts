@@ -15,6 +15,7 @@ import {
   type WebRestoreStatus,
   type WebRestoreStatusMap,
   normalizeFragments,
+  normalizeLanguageCard,
 } from '@semia/shared';
 import { isExtensionContext } from '../utils/extensionContext';
 
@@ -26,6 +27,7 @@ export type CreateLanguageCardRequest = {
   focusText: string;
   intents: CardIntent[];
   learnerNote?: string;
+  includeScenario?: boolean;
 };
 
 export interface CorpusRepository {
@@ -138,7 +140,7 @@ class ChromeCorpusRepository implements CorpusRepository {
     })) as OkResponse<{ cards: LanguageCard[] }> | ErrResponse | undefined;
 
     if (response?.ok) {
-      return response.cards ?? [];
+      return (response.cards ?? []).map((card) => normalizeLanguageCard(card));
     }
 
     throw new Error(response?.error ?? 'Failed to load language cards.');
@@ -158,10 +160,11 @@ class ChromeCorpusRepository implements CorpusRepository {
       focusText: request.focusText,
       intents: request.intents,
       learnerNote: request.learnerNote,
+      includeScenario: request.includeScenario,
     })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
 
     if (response?.ok && response.card) {
-      return response.card;
+      return normalizeLanguageCard(response.card);
     }
 
     const message =

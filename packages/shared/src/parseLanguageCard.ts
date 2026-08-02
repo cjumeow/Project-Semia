@@ -1,4 +1,9 @@
-import type { CardIntent } from './types';
+import type { CardIntent, LanguageCardExample } from './types';
+
+export type LanguageCardPromptOptions = {
+  includeScenario: boolean;
+  includeMeaning: boolean;
+};
 
 function normalizeAiContent(content: string): string {
   const trimmed = content.trim();
@@ -21,48 +26,94 @@ function extractXmlTag(content: string, tag: string): string {
   return match?.[1]?.trim() ?? '';
 }
 
-export function requiredCardSections(intents: CardIntent[]): string[] {
-  const sections = ['focus', 'meaning', 'scenario_1', 'scenario_2'];
-  if (intents.includes('speaking')) {
-    sections.push('speaking_example');
+function extractExamples(
+  content: string,
+  intents: CardIntent[],
+): LanguageCardExample[] {
+  const pattern =
+    /<example\s+kind="(speaking|writing)">\s*<text>([\s\S]*?)<\/text>\s*<translation>([\s\S]*?)<\/translation>\s*<\/example>/gi;
+  const examples: LanguageCardExample[] = [];
+  let match = pattern.exec(content);
+
+  while (match) {
+    examples.push({
+      kind: match[1] as CardIntent,
+      text: match[2].trim(),
+      translation: match[3].trim(),
+    });
+    match = pattern.exec(content);
   }
-  if (intents.includes('writing')) {
-    sections.push('writing_example');
+
+  for (const intent of intents) {
+    if (!examples.some((example) => example.kind === intent)) {
+      throw new Error(
+        `AI returned invalid language card XML (missing <example kind="${intent}">).`,
+      );
+    }
   }
+
+  return examples;
+}
+
+export function requiredCardSections(
+  intents: CardIntent[],
+  options: LanguageCardPromptOptions,
+): string[] {
+  const sections = ['focus'];
+  if (options.includeMeaning) {
+    sections.push('meaning');
+  }
+  if (options.includeScenario) {
+    sections.push('scenario');
+  }
+
+  for (const intent of intents) {
+    sections.push(`example kind="${intent}"`);
+  }
+
   return sections;
 }
 
 export type ParsedLanguageCardContent = {
   focus: string;
-  meaning: string;
-  scenario1: string;
-  scenario2: string;
-  speakingExample?: string;
-  writingExample?: string;
+  meaning?: string;
+  scenario?: string;
+  examples: LanguageCardExample[];
 };
 
 export function parseLanguageCardXml(
   content: string,
   intents: CardIntent[],
+  options: LanguageCardPromptOptions,
 ): ParsedLanguageCardContent {
   const normalized = normalizeAiContent(content);
-  const required = requiredCardSections(intents);
-  const values: Record<string, string> = {};
-
-  for (const tag of required) {
-    const value = extractXmlTag(normalized, tag);
-    if (!value) {
-      throw new Error(`AI returned invalid language card XML (missing <${tag}>).`);
-    }
-    values[tag] = value;
+  const focus = extractXmlTag(normalized, 'focus');
+  if (!focus) {
+    throw new Error('AI returned invalid language card XML (missing <focus>).');
   }
 
+  let meaning: string | undefined;
+  if (options.includeMeaning) {
+    meaning = extractXmlTag(normalized, 'meaning');
+    if (!meaning) {
+      throw new Error('AI returned invalid language card XML (missing <meaning>).');
+    }
+  }
+
+  let scenario: string | undefined;
+  if (options.includeScenario) {
+    scenario = extractXmlTag(normalized, 'scenario');
+    if (!scenario) {
+      throw new Error('AI returned invalid language card XML (missing <scenario>).');
+    }
+  }
+
+  const examples = extractExamples(normalized, intents);
+
   return {
-    focus: values.focus,
-    meaning: values.meaning,
-    scenario1: values.scenario_1,
-    scenario2: values.scenario_2,
-    speakingExample: values.speaking_example,
-    writingExample: values.writing_example,
+    focus,
+    meaning,
+    scenario,
+    examples,
   };
 }

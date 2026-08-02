@@ -43,6 +43,7 @@ export type BackgroundMessage =
       focusText: string;
       intents: CardIntent[];
       learnerNote?: string;
+      includeScenario?: boolean;
     }
   | { type: 'OPEN_WEB_CAPTURE'; fragment: LanguageFragment }
   | { type: 'DELETE_FRAGMENT'; fragmentId: string }

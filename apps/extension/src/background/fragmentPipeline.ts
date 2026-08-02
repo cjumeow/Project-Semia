@@ -107,6 +107,7 @@ export async function handleFragmentMessage(
         focusText: message.focusText,
         intents: message.intents,
         learnerNote: message.learnerNote,
+        includeScenario: message.includeScenario ?? true,
       });
       return { ok: true, card };
     }

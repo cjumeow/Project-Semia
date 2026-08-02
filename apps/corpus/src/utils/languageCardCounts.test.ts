@@ -9,8 +9,7 @@ const card = (id: string, fragmentId: string): LanguageCard => ({
   intents: ['speaking'],
   focus: 'focus',
   meaning: 'meaning',
-  scenario1: 's1',
-  scenario2: 's2',
+  examples: [],
   createdAt: '2026-08-02T00:00:00.000Z',
   generatedAt: '2026-08-02T00:00:00.000Z',
 });
