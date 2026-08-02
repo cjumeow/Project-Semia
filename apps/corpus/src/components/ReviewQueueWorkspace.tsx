@@ -129,6 +129,13 @@ export function ReviewQueueWorkspace({
               {schedule.overdueDays
                 ? ` · ${schedule.overdueDays}d overdue`
                 : ''}
+              {(languageCardCount ?? 0) > 0 ? (
+                <>
+                  {' '}
+                  · {languageCardCount} language card
+                  {languageCardCount === 1 ? '' : 's'}
+                </>
+              ) : null}
             </p>
           </div>
           <div className="flex w-[min(20rem,48vw)] shrink-0 gap-3">
