@@ -3,6 +3,7 @@ import {
   removeFragmentsBySourceUrl,
 } from '@semia/shared';
 import { deleteCorpusNotes } from './corpusNotesStorage';
+import { deleteLanguageCards } from './languageCardsStorage';
 import { listFragments, replaceFragments } from './fragmentsStorage';
 import { deleteSnippetNotes } from './snippetNotesStorage';
 
@@ -10,6 +11,7 @@ async function purgeFragmentData(fragmentIds: string[]): Promise<void> {
   await Promise.all([
     deleteSnippetNotes(fragmentIds),
     deleteCorpusNotes(fragmentIds),
+    deleteLanguageCards(fragmentIds),
   ]);
 }
 

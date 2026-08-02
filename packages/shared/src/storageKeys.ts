@@ -7,3 +7,4 @@ export const SEMIA_SETTINGS_STORAGE_KEY = 'semiaSettings';
 export const WEB_RESTORE_STATUS_STORAGE_KEY = 'webRestoreStatus';
 /** Library Selection list: sort review snippets by next due date. */
 export const LIBRARY_SORT_BY_REVIEW_STORAGE_KEY = 'semia.library.sortByReview';
+export const LANGUAGE_CARDS_STORAGE_KEY = 'languageCards';

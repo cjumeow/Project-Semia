@@ -127,6 +127,27 @@ export type SnippetNote = {
 
 export type SnippetNotesMap = Record<string, SnippetNote>;
 
+export type CardIntent = 'speaking' | 'writing';
+
+/** Permanent learner-focused study card linked to a capture. */
+export type LanguageCard = {
+  id: string;
+  sourceFragmentId: string;
+  focusText: string;
+  intents: CardIntent[];
+  learnerNote?: string;
+  focus: string;
+  meaning: string;
+  scenario1: string;
+  scenario2: string;
+  speakingExample?: string;
+  writingExample?: string;
+  createdAt: string;
+  generatedAt: string;
+};
+
+export type LanguageCardsMap = Record<string, LanguageCard>;
+
 export type AiProvider = 'deepseek' | 'openai';
 
 export type SemiaSettings = {
