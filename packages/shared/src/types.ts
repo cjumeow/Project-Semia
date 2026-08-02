@@ -160,4 +160,6 @@ export type SemiaSettings = {
   nativeLanguage?: string;
   /** When false, skip auto context window generation and show a settings hint. Default: on. */
   contextWindowEnabled?: boolean;
+  /** Dev/billing stub: allow language card creation when true. */
+  languageCardsProEnabled?: boolean;
 };

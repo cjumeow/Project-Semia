@@ -1,15 +1,19 @@
 type SemiaSettingsDialogProps = {
   open: boolean;
   contextWindowEnabled: boolean;
+  languageCardsProEnabled: boolean;
   onClose: () => void;
   onContextWindowEnabledChange: (enabled: boolean) => void;
+  onLanguageCardsProEnabledChange: (enabled: boolean) => void;
 };
 
 export function SemiaSettingsDialog({
   open,
   contextWindowEnabled,
+  languageCardsProEnabled,
   onClose,
   onContextWindowEnabledChange,
+  onLanguageCardsProEnabledChange,
 }: SemiaSettingsDialogProps) {
   if (!open) {
     return null;
@@ -68,6 +72,25 @@ export function SemiaSettingsDialog({
                 After a snippet note is generated, automatically build a
                 bilingual context paragraph and show it collapsed on the note
                 card.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-canvas/40 px-4 py-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-border"
+              checked={languageCardsProEnabled}
+              onChange={(event) => {
+                onLanguageCardsProEnabledChange(event.target.checked);
+              }}
+            />
+            <span className="min-w-0">
+              <span className="block text-base font-medium text-text">
+                Language cards (Pro preview)
+              </span>
+              <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
+                Enable local language card creation while Pro billing is not
+                wired yet.
               </span>
             </span>
           </label>

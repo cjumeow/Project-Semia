@@ -14,6 +14,9 @@ type NoteCardProps = {
   contextWindowEnabled?: boolean;
   onOpenSettings?: () => void;
   onMarkMastered?: () => void;
+  languageCardCount?: number;
+  onCreateLanguageCard?: () => void;
+  createLanguageCardEnabled?: boolean;
 };
 
 const NOTE_FIELDS = [
@@ -36,6 +39,9 @@ export function NoteCard({
   contextWindowEnabled = true,
   onOpenSettings,
   onMarkMastered,
+  languageCardCount = 0,
+  onCreateLanguageCard,
+  createLanguageCardEnabled = false,
 }: NoteCardProps) {
   const noteReady = Boolean(note.generatedAt);
   const illustrativeValue = note.illustrativeExample ?? '';
@@ -62,6 +68,22 @@ export function NoteCard({
         <p className="mb-4 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
         </p>
+      ) : null}
+      {createLanguageCardEnabled && onCreateLanguageCard && noteReady && !generating ? (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent-soft/80"
+            onClick={onCreateLanguageCard}
+          >
+            + Language card
+          </button>
+          {languageCardCount > 0 ? (
+            <span className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-text-muted">
+              {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
+            </span>
+          ) : null}
+        </div>
       ) : null}
       <dl className="flex flex-col gap-5">
         {NOTE_FIELDS.map(({ key, label, multiline, splitBilingual }) => {

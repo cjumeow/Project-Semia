@@ -15,6 +15,9 @@ type ReviewQueueWorkspaceProps = {
   onStillLearning: (snippetId: string) => void;
   onMastered: (snippetId: string) => void;
   onOpenSettings?: () => void;
+  languageCardCount?: number;
+  onCreateLanguageCard?: () => void;
+  createLanguageCardEnabled?: boolean;
 };
 
 export function ReviewQueueWorkspace({
@@ -30,6 +33,9 @@ export function ReviewQueueWorkspace({
   onMastered,
   contextWindowEnabled,
   onOpenSettings,
+  languageCardCount,
+  onCreateLanguageCard,
+  createLanguageCardEnabled,
 }: ReviewQueueWorkspaceProps) {
   const now = new Date().toISOString();
   const focusIndex = selectedSnippet
@@ -104,6 +110,9 @@ export function ReviewQueueWorkspace({
               contextError={contextError}
               contextWindowEnabled={contextWindowEnabled}
               onOpenSettings={onOpenSettings}
+              languageCardCount={languageCardCount}
+              onCreateLanguageCard={onCreateLanguageCard}
+              createLanguageCardEnabled={createLanguageCardEnabled}
             />
           </div>
         </div>

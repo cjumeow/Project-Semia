@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isContextWindowEnabled } from './semiaSettings';
+import { isContextWindowEnabled, isLanguageCardsProEnabled } from './semiaSettings';
 
 describe('isContextWindowEnabled', () => {
   it('defaults to enabled when setting is missing', () => {
@@ -13,5 +13,21 @@ describe('isContextWindowEnabled', () => {
 
   it('respects explicit true', () => {
     expect(isContextWindowEnabled({ contextWindowEnabled: true })).toBe(true);
+  });
+});
+
+describe('isLanguageCardsProEnabled', () => {
+  it('defaults to disabled when setting is missing', () => {
+    expect(isLanguageCardsProEnabled()).toBe(false);
+    expect(isLanguageCardsProEnabled({})).toBe(false);
+  });
+
+  it('is enabled only when explicitly true', () => {
+    expect(isLanguageCardsProEnabled({ languageCardsProEnabled: true })).toBe(
+      true,
+    );
+    expect(isLanguageCardsProEnabled({ languageCardsProEnabled: false })).toBe(
+      false,
+    );
   });
 });

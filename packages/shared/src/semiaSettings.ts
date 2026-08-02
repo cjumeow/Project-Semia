@@ -4,3 +4,8 @@ import type { SemiaSettings } from './types';
 export function isContextWindowEnabled(settings?: SemiaSettings): boolean {
   return settings?.contextWindowEnabled !== false;
 }
+
+/** Language cards require Pro; stub flag must be explicitly enabled. */
+export function isLanguageCardsProEnabled(settings?: SemiaSettings): boolean {
+  return settings?.languageCardsProEnabled === true;
+}

@@ -28,6 +28,7 @@ export async function saveSemiaSettings(
       aiApiKey: settings.aiApiKey?.trim() || undefined,
       nativeLanguage: settings.nativeLanguage ?? 'zh-TW',
       contextWindowEnabled: settings.contextWindowEnabled !== false,
+      languageCardsProEnabled: settings.languageCardsProEnabled === true,
     },
   });
 }

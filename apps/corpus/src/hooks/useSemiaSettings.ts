@@ -1,5 +1,6 @@
 import {
   isContextWindowEnabled,
+  isLanguageCardsProEnabled,
   SEMIA_SETTINGS_STORAGE_KEY,
   type SemiaSettings,
 } from '@semia/shared';
@@ -8,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 const DEFAULT_SETTINGS: SemiaSettings = {
   nativeLanguage: 'zh-TW',
   contextWindowEnabled: true,
+  languageCardsProEnabled: false,
 };
 
 function readStoredSettings(): SemiaSettings {
@@ -49,7 +51,9 @@ export function useSemiaSettings(): {
   settings: SemiaSettings;
   loading: boolean;
   contextWindowEnabled: boolean;
+  languageCardsProEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
+  setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
 } {
   const [settings, setSettings] = useState<SemiaSettings>(readStoredSettings);
   const [loading, setLoading] = useState(true);
@@ -91,19 +95,35 @@ export function useSemiaSettings(): {
     };
   }, []);
 
-  const setContextWindowEnabled = useCallback(
-    async (enabled: boolean): Promise<void> => {
-      const next = { ...settings, contextWindowEnabled: enabled };
+  const updateSettings = useCallback(
+    async (patch: Partial<SemiaSettings>): Promise<void> => {
+      const next = { ...settings, ...patch };
       setSettings(next);
       await persistSettings(next);
     },
     [settings],
   );
 
+  const setContextWindowEnabled = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      await updateSettings({ contextWindowEnabled: enabled });
+    },
+    [updateSettings],
+  );
+
+  const setLanguageCardsProEnabled = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      await updateSettings({ languageCardsProEnabled: enabled });
+    },
+    [updateSettings],
+  );
+
   return {
     settings,
     loading,
     contextWindowEnabled: isContextWindowEnabled(settings),
+    languageCardsProEnabled: isLanguageCardsProEnabled(settings),
     setContextWindowEnabled,
+    setLanguageCardsProEnabled,
   };
 }
