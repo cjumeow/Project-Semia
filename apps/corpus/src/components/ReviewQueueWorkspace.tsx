@@ -10,10 +10,12 @@ type ReviewQueueWorkspaceProps = {
   noteError?: string | null;
   generatingContext?: boolean;
   contextError?: string | null;
+  contextWindowEnabled?: boolean;
   onSelectSnippet: (snippetId: string) => void;
   onStillLearning: (snippetId: string) => void;
   onMastered: (snippetId: string) => void;
   onGenerateContext?: () => void;
+  onOpenSettings?: () => void;
 };
 
 export function ReviewQueueWorkspace({
@@ -28,6 +30,8 @@ export function ReviewQueueWorkspace({
   onStillLearning,
   onMastered,
   onGenerateContext,
+  contextWindowEnabled,
+  onOpenSettings,
 }: ReviewQueueWorkspaceProps) {
   const now = new Date().toISOString();
   const focusIndex = selectedSnippet
@@ -100,7 +104,9 @@ export function ReviewQueueWorkspace({
               generating={generating}
               generatingContext={generatingContext}
               contextError={contextError}
+              contextWindowEnabled={contextWindowEnabled}
               onGenerateContext={onGenerateContext}
+              onOpenSettings={onOpenSettings}
             />
           </div>
         </div>

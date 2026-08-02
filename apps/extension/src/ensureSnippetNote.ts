@@ -1,3 +1,4 @@
+import { finalizeSnippetNote } from './ai/finalizeSnippetNote';
 import { generateSnippetNote } from './ai/generateSnippetNote';
 import type { LanguageFragment } from './types';
 import { getSnippetNote, saveSnippetNote } from './snippetNotesStorage';
@@ -20,7 +21,10 @@ export async function ensureSnippetNote(
 
   const job = (async (): Promise<void> => {
     try {
-      const note = await generateSnippetNote(fragment);
+      const note = await finalizeSnippetNote(
+        fragment,
+        await generateSnippetNote(fragment),
+      );
       await saveSnippetNote(fragment.id, note);
     } finally {
       inFlight.delete(fragment.id);

@@ -1,5 +1,5 @@
 import { effectiveSnippetUnitType } from '@semia/shared';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { SnippetNote } from '../types/corpus';
 import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
@@ -11,24 +11,15 @@ type NoteCardProps = {
   generating?: boolean;
   generatingContext?: boolean;
   contextError?: string | null;
+  contextWindowEnabled?: boolean;
   onGenerateContext?: () => void;
+  onOpenSettings?: () => void;
   onMarkMastered?: () => void;
-  generatingIllustrative?: boolean;
-  savingIllustrative?: boolean;
-  illustrativeError?: string | null;
-  onGenerateIllustrativeExample?: () => void;
-  onSaveIllustrativeExample?: (text: string) => void;
 };
 
 const NOTE_FIELDS = [
   { key: 'originalSpeech', label: 'Original Speech', multiline: false, splitBilingual: false },
   { key: 'naturalTranslation', label: 'Natural Translation', multiline: false, splitBilingual: false },
-  {
-    key: 'dynamicContextBlock',
-    label: 'Context Window',
-    multiline: true,
-    splitBilingual: true,
-  },
   { key: 'backgroundNote', label: 'Background Note', multiline: true, splitBilingual: false },
 ] as const satisfies ReadonlyArray<{
   key: keyof SnippetNote;
@@ -43,16 +34,13 @@ export function NoteCard({
   generating,
   generatingContext,
   contextError,
+  contextWindowEnabled = true,
   onGenerateContext,
+  onOpenSettings,
   onMarkMastered,
-  generatingIllustrative,
-  savingIllustrative,
-  illustrativeError,
-  onGenerateIllustrativeExample,
-  onSaveIllustrativeExample,
 }: NoteCardProps) {
   const noteReady = Boolean(note.generatedAt);
-  const contextReady = Boolean(note.dynamicContextBlock?.trim());
+  const illustrativeValue = note.illustrativeExample ?? '';
   const showIllustrativeExample =
     noteReady && !generating && effectiveSnippetUnitType(note) === 'word';
 
@@ -79,146 +67,161 @@ export function NoteCard({
       ) : null}
       <dl className="flex flex-col gap-5">
         {NOTE_FIELDS.map(({ key, label, multiline, splitBilingual }) => {
-          const isContextField = key === 'dynamicContextBlock';
-          const raw = generating && !isContextField ? '' : (note[key] ?? '');
-          const value = formatFieldValue(key, raw, noteReady, generating ?? false);
-          const showContextAction =
-            isContextField && noteReady && onGenerateContext && !generating;
+          const raw = generating ? '' : (note[key] ?? '');
 
           return (
             <NoteField
               key={key}
               label={label}
-              value={value}
+              value={raw}
               multiline={multiline}
-              splitBilingual={splitBilingual && hasBilingualSplit(value)}
-              highlightSelection={
-                isContextField ? highlightSelection : undefined
-              }
-              loading={isContextField ? generatingContext : generating}
-              headerAction={
-                showContextAction ? (
-                  <ContextWindowButton
-                    onClick={onGenerateContext}
-                    disabled={generating || generatingContext}
-                    hasContent={contextReady}
-                  />
-                ) : undefined
-              }
+              splitBilingual={splitBilingual && hasBilingualSplit(raw)}
             />
           );
         })}
         {showIllustrativeExample ? (
-          <IllustrativeExampleField
-            value={note.illustrativeExample ?? ''}
-            generating={generatingIllustrative}
-            saving={savingIllustrative}
-            onGenerate={onGenerateIllustrativeExample}
-            onSave={onSaveIllustrativeExample}
+          <NoteField
+            label="Illustrative example"
+            value={illustrativeValue}
+            multiline
+            splitBilingual={hasBilingualSplit(illustrativeValue)}
+            highlightSelection={note.originalSpeech.trim() || highlightSelection}
+          />
+        ) : null}
+        {noteReady && !generating ? (
+          <ContextWindowSection
+            value={note.dynamicContextBlock ?? ''}
+            enabled={contextWindowEnabled}
+            highlightSelection={highlightSelection}
+            loading={generatingContext}
+            error={contextError}
+            onGenerateContext={onGenerateContext}
+            onOpenSettings={onOpenSettings}
           />
         ) : null}
       </dl>
-      {illustrativeError ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {illustrativeError}
-        </p>
-      ) : null}
-      {contextError ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {contextError}
-        </p>
-      ) : null}
       </article>
     </div>
   );
 }
 
-function IllustrativeExampleField({
+function ContextWindowSection({
   value,
-  generating,
-  saving,
-  onGenerate,
-  onSave,
+  enabled,
+  highlightSelection,
+  loading,
+  error,
+  onGenerateContext,
+  onOpenSettings,
 }: {
   value: string;
-  generating?: boolean;
-  saving?: boolean;
-  onGenerate?: () => void;
-  onSave?: (text: string) => void;
+  enabled: boolean;
+  highlightSelection?: string;
+  loading?: boolean;
+  error?: string | null;
+  onGenerateContext?: () => void;
+  onOpenSettings?: () => void;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasContent = Boolean(value.trim());
+  const [expanded, setExpanded] = useState(false);
 
-  const handleGenerate = () => {
-    if (textareaRef.current && onSave) {
-      onSave(textareaRef.current.value);
-    }
-    onGenerate?.();
-  };
+  useEffect(() => {
+    setExpanded(false);
+  }, [value]);
+
+  if (!enabled) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-canvas/40 px-3 py-3">
+        <p className="semia-section-label">Context window</p>
+        <p className="mt-1.5 text-sm text-text-muted">
+          Context window is turned off.{' '}
+          {onOpenSettings ? (
+            <button
+              type="button"
+              className="text-accent underline-offset-2 hover:underline"
+              onClick={onOpenSettings}
+            >
+              Enable in Settings
+            </button>
+          ) : (
+            'Enable it in Settings.'
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <dt className="semia-section-label">Illustrative example</dt>
-        {onGenerate ? (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={handleGenerate}
-            disabled={generating || saving}
-          >
-            {value.trim() ? 'Regenerate' : 'Generate'}
-          </button>
+    <div className="rounded-lg border border-border bg-canvas/50">
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onClick={() => {
+            if (hasContent) {
+              setExpanded((current) => !current);
+            }
+          }}
+          aria-expanded={hasContent ? expanded : undefined}
+          disabled={!hasContent && !loading}
+        >
+          <span className="semia-section-label">Context window</span>
+          {hasContent ? (
+            <span className="font-mono text-[10px] text-text-muted">
+              {expanded ? '▾' : '▸'}
+            </span>
+          ) : null}
+        </button>
+        {expanded && hasContent && onGenerateContext ? (
+          <ContextWindowRegenerateButton
+            onClick={onGenerateContext}
+            disabled={loading}
+          />
         ) : null}
       </div>
-      <dd className="mt-1.5">
-        {generating ? (
-          <p className="text-sm text-text-muted">
-            <TextDots>Generating</TextDots>
-          </p>
-        ) : onSave ? (
-          <textarea
-            ref={textareaRef}
-            key={value}
-            className="w-full rounded-md border border-border bg-canvas px-3 py-2 font-reading text-sm leading-relaxed text-text"
-            rows={3}
-            placeholder="Optional — generate or type your own example sentence"
-            defaultValue={value}
-            disabled={saving}
-            onBlur={(event) => {
-              const next = event.target.value;
-              if (next !== value) {
-                onSave(next);
-              }
-            }}
+      {loading ? (
+        <div className="border-t border-border px-3 py-2 text-sm text-text-muted">
+          <TextDots>Generating</TextDots>
+        </div>
+      ) : expanded && hasContent ? (
+        <div className="border-t border-border px-3 py-3">
+          <BilingualBlock
+            value={value}
+            highlightSelection={highlightSelection}
           />
-        ) : (
-          <p className="text-sm text-text-secondary">{value || '—'}</p>
-        )}
-      </dd>
+        </div>
+      ) : !hasContent && !loading ? (
+        <div className="border-t border-border px-3 py-2 text-sm text-text-muted">
+          Waiting for context window…
+        </div>
+      ) : null}
+      {error ? (
+        <p className="border-t border-border px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function ContextWindowButton({
+function ContextWindowRegenerateButton({
   onClick,
   disabled,
-  hasContent,
 }: {
   onClick: () => void;
   disabled?: boolean;
-  hasContent: boolean;
 }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
       onClick={onClick}
       disabled={disabled}
-      aria-label={hasContent ? 'Regenerate context window' : 'Generate context window'}
-      title={hasContent ? 'Regenerate context window' : 'Generate context window'}
+      aria-label="Regenerate context window"
+      title="Regenerate context window"
     >
       <PencilSparklesIcon />
-      {hasContent ? 'Regenerate' : 'Generate'}
+      Regenerate
     </button>
   );
 }
@@ -248,26 +251,6 @@ function PencilSparklesIcon() {
   );
 }
 
-function formatFieldValue(
-  key: keyof SnippetNote,
-  raw: string,
-  noteReady: boolean,
-  generating: boolean,
-): string {
-  if (generating || raw.trim()) {
-    return raw;
-  }
-
-  if (key === 'dynamicContextBlock') {
-    if (!noteReady) {
-      return 'Available after the snippet note is generated.';
-    }
-    return 'Click Generate to build a bilingual context paragraph.';
-  }
-
-  return raw;
-}
-
 function hasBilingualSplit(value: string): boolean {
   return /\s*---\s*/.test(value);
 }
@@ -293,10 +276,6 @@ function NoteField({
   loading,
   headerAction,
 }: NoteFieldProps) {
-  const isPlaceholder =
-    value === 'Click Generate to build a bilingual context paragraph.' ||
-    value === 'Available after the snippet note is generated.';
-
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
@@ -312,7 +291,7 @@ function NoteField({
             ? 'font-reading'
             : '',
           multiline ? 'whitespace-pre-line' : '',
-          !loading && isPlaceholder ? 'text-text-muted' : 'text-text',
+          'text-text',
         ].join(' ')}
       >
         {loading ? (
@@ -351,7 +330,7 @@ function BilingualBlock({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="m-0">
+      <p className="m-0 text-sm leading-relaxed text-text">
         {highlightSelection?.trim() ? (
           <HighlightSelection text={original} selection={highlightSelection} />
         ) : (
@@ -361,7 +340,9 @@ function BilingualBlock({
       {translation ? (
         <>
           <div className="border-t border-border" />
-          <p className="m-0 text-text-secondary">{translation}</p>
+          <p className="m-0 text-sm leading-relaxed text-text-secondary">
+            {translation}
+          </p>
         </>
       ) : null}
     </div>

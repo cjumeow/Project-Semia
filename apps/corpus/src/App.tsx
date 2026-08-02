@@ -1,10 +1,11 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { InboxWorkspace } from './components/InboxWorkspace';
 import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
+import { SemiaSettingsDialog } from './components/SemiaSettingsDialog';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
-import { useIllustrativeExample } from './hooks/useIllustrativeExample';
+import { useSemiaSettings } from './hooks/useSemiaSettings';
 import { useSnippetNoteGeneration } from './hooks/useSnippetNoteGeneration';
 import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
@@ -16,6 +17,8 @@ import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGroupin
 import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { contextWindowEnabled, setContextWindowEnabled } = useSemiaSettings();
   const { groups, snippets, loading, error, fragmentCount, isLive, refresh } =
     useCorpusData();
   const {
@@ -42,15 +45,11 @@ export default function App() {
     generating: generatingContext,
     error: contextError,
     generate: generateContext,
-  } = useContextWindowGeneration(selectedSnippet, refresh);
-
-  const {
-    generating: generatingIllustrative,
-    saving: savingIllustrative,
-    error: illustrativeError,
-    generate: generateIllustrative,
-    save: saveIllustrative,
-  } = useIllustrativeExample(selectedSnippet, refresh);
+  } = useContextWindowGeneration(
+    selectedSnippet,
+    refresh,
+    contextWindowEnabled,
+  );
 
   const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
     useResizableWidth({
@@ -161,6 +160,8 @@ export default function App() {
         onGenerateContext={() => {
           void generateContext();
         }}
+        contextWindowEnabled={contextWindowEnabled}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
     ) : (
       <SourceWorkspace
@@ -191,6 +192,7 @@ export default function App() {
           onSelectInboxSource={selectInboxSource}
           onSelectLibrarySource={selectLibrarySource}
           onSelectReviewQueue={selectReviewQueue}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
 
@@ -252,15 +254,8 @@ export default function App() {
               onGenerateContext={() => {
                 void generateContext();
               }}
-              generatingIllustrative={generatingIllustrative}
-              savingIllustrative={savingIllustrative}
-              illustrativeError={illustrativeError}
-              onGenerateIllustrativeExample={() => {
-                void generateIllustrative();
-              }}
-              onSaveIllustrativeExample={(text) => {
-                void saveIllustrative(text);
-              }}
+              contextWindowEnabled={contextWindowEnabled}
+              onOpenSettings={() => setSettingsOpen(true)}
               onMarkMastered={
                 isLive &&
                 selectedSnippet &&
@@ -274,6 +269,14 @@ export default function App() {
           </div>
         </>
       ) : null}
+      <SemiaSettingsDialog
+        open={settingsOpen}
+        contextWindowEnabled={contextWindowEnabled}
+        onClose={() => setSettingsOpen(false)}
+        onContextWindowEnabledChange={(enabled) => {
+          void setContextWindowEnabled(enabled);
+        }}
+      />
     </main>
   );
 }

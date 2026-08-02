@@ -117,7 +117,7 @@ export type SnippetNote = {
   backgroundNote: string;
   /** AI classification: word-level capture vs everything else. */
   unitType?: SnippetUnitType;
-  /** Word-level example; not auto-generated in initial snip call. */
+  /** Auto-generated bilingual example for word-level captures. */
   illustrativeExample?: string;
   /** @deprecated Migrated to illustrativeExample on read. */
   example?: string;
@@ -137,4 +137,6 @@ export type SemiaSettings = {
   openAiApiKey?: string;
   /** BCP-47-ish tag used for background explanations, e.g. zh-TW */
   nativeLanguage?: string;
+  /** When false, skip auto context window generation and show a settings hint. Default: on. */
+  contextWindowEnabled?: boolean;
 };

@@ -1,5 +1,5 @@
+import { finalizeSnippetNote } from '../ai/finalizeSnippetNote';
 import { generateContextWindow } from '../ai/generateContextWindow';
-import { generateIllustrativeExample } from '../ai/generateIllustrativeExample';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
 import { saveCorpusNote } from '../corpusNotesStorage';
 import { deleteFragment, deleteSource } from '../deleteCaptures';
@@ -26,8 +26,6 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'LIST_SNIPPET_NOTES' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_SNIPPET_NOTE' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
-  | Extract<BackgroundMessage, { type: 'GENERATE_ILLUSTRATIVE_EXAMPLE' }>
-  | Extract<BackgroundMessage, { type: 'SAVE_ILLUSTRATIVE_EXAMPLE' }>
   | Extract<BackgroundMessage, { type: 'OPEN_WEB_CAPTURE' }>
   | Extract<BackgroundMessage, { type: 'DELETE_FRAGMENT' }>
   | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>
@@ -44,8 +42,6 @@ export function isFragmentMessage(
     message.type === 'LIST_SNIPPET_NOTES' ||
     message.type === 'GENERATE_SNIPPET_NOTE' ||
     message.type === 'GENERATE_CONTEXT_WINDOW' ||
-    message.type === 'GENERATE_ILLUSTRATIVE_EXAMPLE' ||
-    message.type === 'SAVE_ILLUSTRATIVE_EXAMPLE' ||
     message.type === 'OPEN_WEB_CAPTURE' ||
     message.type === 'DELETE_FRAGMENT' ||
     message.type === 'DELETE_SOURCE' ||
@@ -73,14 +69,12 @@ export async function handleFragmentMessage(
       return { ok: true, notes: await getSnippetNotes() };
 
     case 'GENERATE_SNIPPET_NOTE': {
-      const existing = await getSnippetNote(message.fragment.id);
-      const note = await generateSnippetNote(message.fragment);
-      const merged =
-        note.unitType === 'word' && existing?.illustrativeExample
-          ? { ...note, illustrativeExample: existing.illustrativeExample }
-          : note;
-      await saveSnippetNote(message.fragment.id, merged);
-      return { ok: true, note: merged };
+      const note = await finalizeSnippetNote(
+        message.fragment,
+        await generateSnippetNote(message.fragment),
+      );
+      await saveSnippetNote(message.fragment.id, note);
+      return { ok: true, note };
     }
 
     case 'GENERATE_CONTEXT_WINDOW': {
@@ -95,49 +89,6 @@ export async function handleFragmentMessage(
       const dynamicContextBlock = await generateContextWindow(message.fragment);
       const note = { ...existing, dynamicContextBlock };
       await saveSnippetNote(message.fragment.id, note);
-      return { ok: true, note };
-    }
-
-    case 'GENERATE_ILLUSTRATIVE_EXAMPLE': {
-      const existing = await getSnippetNote(message.fragment.id);
-      if (!existing?.generatedAt) {
-        return {
-          ok: false,
-          error: 'Generate the snippet note before an illustrative example.',
-        };
-      }
-      if (existing.unitType !== 'word') {
-        return {
-          ok: false,
-          error: 'Illustrative examples are only for word-level captures.',
-        };
-      }
-
-      const illustrativeExample = await generateIllustrativeExample(
-        message.fragment,
-      );
-      const note = { ...existing, illustrativeExample };
-      await saveSnippetNote(message.fragment.id, note);
-      return { ok: true, note };
-    }
-
-    case 'SAVE_ILLUSTRATIVE_EXAMPLE': {
-      const existing = await getSnippetNote(message.fragmentId);
-      if (!existing) {
-        return { ok: false, error: 'Snippet note not found.' };
-      }
-      if (existing.unitType !== 'word') {
-        return {
-          ok: false,
-          error: 'Illustrative examples are only for word-level captures.',
-        };
-      }
-
-      const note = {
-        ...existing,
-        illustrativeExample: message.illustrativeExample.trim(),
-      };
-      await saveSnippetNote(message.fragmentId, note);
       return { ok: true, note };
     }
 

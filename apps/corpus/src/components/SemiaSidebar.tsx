@@ -24,6 +24,7 @@ type SemiaSidebarProps = {
   onSelectInboxSource: (sourceKey: string) => void;
   onSelectLibrarySource: (sourceKey: string) => void;
   onSelectReviewQueue: () => void;
+  onOpenSettings: () => void;
 };
 
 export function SemiaSidebar({
@@ -35,6 +36,7 @@ export function SemiaSidebar({
   onSelectInboxSource,
   onSelectLibrarySource,
   onSelectReviewQueue,
+  onOpenSettings,
 }: SemiaSidebarProps) {
   const [inboxExpanded, setInboxExpanded] = useState(true);
   const [libraryExpanded, setLibraryExpanded] = useState(true);
@@ -211,8 +213,17 @@ export function SemiaSidebar({
         ) : null}
       </div>
 
-      <footer className="shrink-0 px-4 py-2.5">
-        <p className="font-mono text-[10px] text-text-muted">{SEMIA_BUILD_ID}</p>
+      <footer className="shrink-0 border-t border-border/60 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            className="rounded-md px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-canvas hover:text-text"
+            onClick={onOpenSettings}
+          >
+            Settings
+          </button>
+          <p className="font-mono text-[10px] text-text-muted">{SEMIA_BUILD_ID}</p>
+        </div>
       </footer>
     </aside>
   );
