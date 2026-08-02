@@ -135,19 +135,27 @@ export type LanguageCardExample = {
   translation: string;
 };
 
+/** Max language cards per capture (roadmap: replace My notes sidebar). */
+export const MAX_LANGUAGE_CARDS_PER_FRAGMENT = 3;
+
 /** Permanent learner-focused study card linked to a capture. */
 export type LanguageCard = {
   id: string;
   sourceFragmentId: string;
   focusText: string;
   intents: CardIntent[];
-  learnerNote?: string;
   focus: string;
   meaning: string;
   scenario?: string;
   examples: LanguageCardExample[];
   createdAt: string;
   generatedAt: string;
+  /** Cards enter review on create; absent on legacy rows until normalizeLanguageCard. */
+  triageStatus?: Exclude<SnippetTriageStatus, 'pending'>;
+  reviewStage?: ReviewStage;
+  dueAt?: string;
+  enteredReviewAt?: string;
+  lastReviewedAt?: string;
 };
 
 export type LanguageCardsMap = Record<string, LanguageCard>;

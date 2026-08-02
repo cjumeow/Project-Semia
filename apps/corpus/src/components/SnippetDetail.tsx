@@ -1,9 +1,9 @@
 import { isYouTubeAnchor } from '@semia/shared';
+import type { LanguageCard } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
-import { useCorpusNote } from '../hooks/useCorpusNote';
 import { effectiveTriageStatus, snippetSeekSeconds } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
-import { MarkdownNote } from './MarkdownNote';
+import { LinkedLanguageCards } from './LinkedLanguageCards';
 import { NoteCard } from './NoteCard';
 
 type SnippetDetailProps = {
@@ -17,9 +17,12 @@ type SnippetDetailProps = {
   contextWindowEnabled?: boolean;
   onOpenSettings?: () => void;
   onMarkMastered?: () => void;
+  languageCards?: LanguageCard[];
   languageCardCount?: number;
   onCreateLanguageCard?: () => void;
   createLanguageCardEnabled?: boolean;
+  onPreviewLanguageCard?: (card: LanguageCard) => void;
+  onOpenLanguageCards?: () => void;
 };
 
 export function SnippetDetail({
@@ -33,12 +36,13 @@ export function SnippetDetail({
   contextWindowEnabled,
   onOpenSettings,
   onMarkMastered,
+  languageCards = [],
   languageCardCount,
   onCreateLanguageCard,
   createLanguageCardEnabled,
+  onPreviewLanguageCard,
+  onOpenLanguageCards,
 }: SnippetDetailProps) {
-  const { markdown, saving, save } = useCorpusNote(snippet?.id);
-
   if (!snippet) {
     return (
       <section
@@ -96,6 +100,7 @@ export function SnippetDetail({
           contextWindowEnabled={contextWindowEnabled}
           onOpenSettings={onOpenSettings}
           languageCardCount={languageCardCount}
+          onOpenLanguageCards={onOpenLanguageCards}
           onCreateLanguageCard={onCreateLanguageCard}
           createLanguageCardEnabled={createLanguageCardEnabled}
           onMarkMastered={
@@ -104,12 +109,12 @@ export function SnippetDetail({
               : undefined
           }
         />
-        <MarkdownNote
-          key={snippet.id}
-          markdown={markdown}
-          saving={saving}
-          onSave={save}
-        />
+        {onPreviewLanguageCard ? (
+          <LinkedLanguageCards
+            cards={languageCards}
+            onPreviewCard={onPreviewLanguageCard}
+          />
+        ) : null}
       </div>
     </section>
   );

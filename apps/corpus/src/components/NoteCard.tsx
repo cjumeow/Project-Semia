@@ -15,6 +15,7 @@ type NoteCardProps = {
   onOpenSettings?: () => void;
   onMarkMastered?: () => void;
   languageCardCount?: number;
+  onOpenLanguageCards?: () => void;
   onCreateLanguageCard?: () => void;
   createLanguageCardEnabled?: boolean;
 };
@@ -40,6 +41,7 @@ export function NoteCard({
   onOpenSettings,
   onMarkMastered,
   languageCardCount = 0,
+  onOpenLanguageCards,
   onCreateLanguageCard,
   createLanguageCardEnabled = false,
 }: NoteCardProps) {
@@ -48,42 +50,64 @@ export function NoteCard({
   const showIllustrativeExample =
     noteReady && !generating && effectiveSnippetUnitType(note) === 'word';
 
+  const showLanguageCardRow =
+    createLanguageCardEnabled && onCreateLanguageCard && noteReady && !generating;
+  const showCardCount = languageCardCount > 0;
+  const showToolbar = showLanguageCardRow || onMarkMastered || showCardCount;
+
   return (
-    <div className="relative">
-      {onMarkMastered ? (
-        <button
-          type="button"
-          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary shadow-sm transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
-          aria-label="Mark as mastered"
-          title="Mark as mastered"
-          onClick={onMarkMastered}
-        >
-          <TriageStatusIcon status="review" size={12} />
-          <span aria-hidden>→</span>
-          <TriageStatusIcon status="mastered" size={12} />
-        </button>
+    <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
+      {showToolbar ? (
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0 pt-0.5">
+            {showLanguageCardRow ? (
+              <button
+                type="button"
+                className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent-soft/80"
+                onClick={onCreateLanguageCard}
+              >
+                + Language card
+              </button>
+            ) : null}
+          </div>
+          {showCardCount || onMarkMastered ? (
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {showCardCount ? (
+                onOpenLanguageCards ? (
+                  <button
+                    type="button"
+                    className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-accent underline-offset-2 hover:underline"
+                    onClick={onOpenLanguageCards}
+                  >
+                    {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
+                  </button>
+                ) : (
+                  <span className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-text-muted">
+                    {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
+                  </span>
+                )
+              ) : null}
+              {onMarkMastered ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary shadow-sm transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
+                  aria-label="Mark as mastered"
+                  title="Mark as mastered"
+                  onClick={onMarkMastered}
+                >
+                  <TriageStatusIcon status="review" size={12} />
+                  <span aria-hidden>→</span>
+                  <TriageStatusIcon status="mastered" size={12} />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       ) : null}
-      <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
       {generating ? (
         <p className="mb-4 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
         </p>
-      ) : null}
-      {createLanguageCardEnabled && onCreateLanguageCard && noteReady && !generating ? (
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent-soft/80"
-            onClick={onCreateLanguageCard}
-          >
-            + Language card
-          </button>
-          {languageCardCount > 0 ? (
-            <span className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-text-muted">
-              {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
-            </span>
-          ) : null}
-        </div>
       ) : null}
       <dl className="flex flex-col gap-5">
         {NOTE_FIELDS.map(({ key, label, multiline, splitBilingual }) => {
@@ -119,8 +143,7 @@ export function NoteCard({
           />
         ) : null}
       </dl>
-      </article>
-    </div>
+    </article>
   );
 }
 

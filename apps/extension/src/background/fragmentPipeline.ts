@@ -13,6 +13,11 @@ import {
   recordStillLearning as persistStillLearning,
 } from '../fragmentsStorage';
 import { listLanguageCards } from '../languageCardsStorage';
+import {
+  markCardMasteredInReview,
+  recordCardStillLearning,
+  setCardTriageStatus,
+} from '../updateLanguageCardReview';
 import { openWebCapture } from '../pendingWebRestore';
 import {
   getSnippetNote,
@@ -34,7 +39,10 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'DELETE_FRAGMENT' }>
   | Extract<BackgroundMessage, { type: 'DELETE_SOURCE' }>
   | Extract<BackgroundMessage, { type: 'SET_SNIPPET_TRIAGE_STATUS' }>
-  | Extract<BackgroundMessage, { type: 'RECORD_STILL_LEARNING' }>;
+  | Extract<BackgroundMessage, { type: 'RECORD_STILL_LEARNING' }>
+  | Extract<BackgroundMessage, { type: 'RECORD_CARD_STILL_LEARNING' }>
+  | Extract<BackgroundMessage, { type: 'MARK_CARD_MASTERED' }>
+  | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -52,7 +60,10 @@ export function isFragmentMessage(
     message.type === 'DELETE_FRAGMENT' ||
     message.type === 'DELETE_SOURCE' ||
     message.type === 'SET_SNIPPET_TRIAGE_STATUS' ||
-    message.type === 'RECORD_STILL_LEARNING'
+    message.type === 'RECORD_STILL_LEARNING' ||
+    message.type === 'RECORD_CARD_STILL_LEARNING' ||
+    message.type === 'MARK_CARD_MASTERED' ||
+    message.type === 'SET_CARD_MASTERED'
   );
 }
 
@@ -130,6 +141,18 @@ export async function handleFragmentMessage(
 
     case 'RECORD_STILL_LEARNING':
       await persistStillLearning(message.fragmentId);
+      return { ok: true };
+
+    case 'RECORD_CARD_STILL_LEARNING':
+      await recordCardStillLearning(message.cardId);
+      return { ok: true };
+
+    case 'MARK_CARD_MASTERED':
+      await markCardMasteredInReview(message.cardId);
+      return { ok: true };
+
+    case 'SET_CARD_MASTERED':
+      await setCardTriageStatus(message.cardId, 'mastered');
       return { ok: true };
   }
 }

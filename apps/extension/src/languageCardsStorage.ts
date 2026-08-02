@@ -32,6 +32,20 @@ export async function saveLanguageCard(card: LanguageCard): Promise<void> {
   });
 }
 
+export async function updateLanguageCards(
+  updater: (cards: LanguageCard[]) => LanguageCard[],
+): Promise<void> {
+  const map = await getLanguageCardsMap();
+  const updated = updater(Object.values(map).map((card) => normalizeLanguageCard(card)));
+  const nextMap: LanguageCardsMap = {};
+  for (const card of updated) {
+    nextMap[card.id] = card;
+  }
+  await chrome.storage.local.set({
+    [LANGUAGE_CARDS_STORAGE_KEY]: nextMap,
+  });
+}
+
 export async function deleteLanguageCards(fragmentIds: string[]): Promise<void> {
   if (fragmentIds.length === 0) return;
 

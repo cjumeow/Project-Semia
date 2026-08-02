@@ -32,9 +32,6 @@ export function LanguageCardView({ card }: LanguageCardViewProps) {
           </ul>
         </div>
       ) : null}
-      {card.learnerNote ? (
-        <CardField label="Your note" value={card.learnerNote} multiline />
-      ) : null}
     </div>
   );
 }

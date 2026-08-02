@@ -219,7 +219,10 @@ export function CreateLanguageCardModal({
                 </div>
               </fieldset>
               <label className="block">
-                <span className="semia-section-label">Note (optional)</span>
+                <span className="semia-section-label">Note for AI (optional)</span>
+                <p className="mt-1 text-[11px] text-text-muted">
+                  Guides generation only — not saved on the card.
+                </p>
                 <input
                   className="mt-1.5 w-full rounded-md border border-border bg-canvas px-3 py-2.5 text-sm text-text"
                   placeholder="One sentence about your goal"

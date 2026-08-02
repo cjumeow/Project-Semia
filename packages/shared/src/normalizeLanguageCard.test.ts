@@ -36,7 +36,7 @@ describe('normalizeLanguageCard', () => {
     ]);
   });
 
-  it('keeps v2 cards unchanged', () => {
+  it('backfills review schedule for v2 cards missing schedule fields', () => {
     const card: LanguageCard = {
       ...base,
       intents: ['writing'],
@@ -46,6 +46,10 @@ describe('normalizeLanguageCard', () => {
       ],
     };
 
-    expect(normalizeLanguageCard(card)).toEqual(card);
+    expect(normalizeLanguageCard(card)).toEqual({
+      ...card,
+      reviewStage: 0,
+      dueAt: card.createdAt,
+    });
   });
 });

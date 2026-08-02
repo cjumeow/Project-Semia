@@ -1,19 +1,25 @@
 import type { LanguageCard } from '@semia/shared';
+import { effectiveCardTriageStatus } from '@semia/shared';
 import { useEffect, useMemo, useState } from 'react';
 import type { CorpusSnippet } from '../types/corpus';
 import { LanguageCardView, intentLabel } from './LanguageCardView';
 import { SourceSnipModal } from './SourceSnipModal';
+import { TriageStatusIcon } from './TriageStatusIcon';
 
 type MyCardsWorkspaceProps = {
   cards: LanguageCard[];
   snippets: CorpusSnippet[];
   contextWindowEnabled: boolean;
+  actionsEnabled: boolean;
+  onMarkCardMastered: (cardId: string) => void;
 };
 
 export function MyCardsWorkspace({
   cards,
   snippets,
   contextWindowEnabled,
+  actionsEnabled,
+  onMarkCardMastered,
 }: MyCardsWorkspaceProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [sourceSnippet, setSourceSnippet] = useState<CorpusSnippet | undefined>();
@@ -99,15 +105,31 @@ export function MyCardsWorkspace({
                       {selectedCard.focusText}
                     </p>
                   </div>
-                  {selectedSnippet ? (
-                    <button
-                      type="button"
-                      className="shrink-0 text-[11px] font-medium text-accent hover:underline"
-                      onClick={() => setSourceSnippet(selectedSnippet)}
-                    >
-                      View source
-                    </button>
-                  ) : null}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {actionsEnabled &&
+                    effectiveCardTriageStatus(selectedCard) === 'review' ? (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary shadow-sm transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
+                        aria-label="Mark card as mastered"
+                        title="Mark as mastered"
+                        onClick={() => onMarkCardMastered(selectedCard.id)}
+                      >
+                        <TriageStatusIcon status="review" size={12} />
+                        <span aria-hidden>→</span>
+                        <TriageStatusIcon status="mastered" size={12} />
+                      </button>
+                    ) : null}
+                    {selectedSnippet ? (
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-accent hover:underline"
+                        onClick={() => setSourceSnippet(selectedSnippet)}
+                      >
+                        View source
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
                   <LanguageCardView card={selectedCard} />
