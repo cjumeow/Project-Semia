@@ -29,6 +29,12 @@ export type BackgroundMessage =
   | { type: 'LIST_SNIPPET_NOTES' }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
+  | { type: 'GENERATE_ILLUSTRATIVE_EXAMPLE'; fragment: LanguageFragment }
+  | {
+      type: 'SAVE_ILLUSTRATIVE_EXAMPLE';
+      fragmentId: string;
+      illustrativeExample: string;
+    }
   | { type: 'OPEN_WEB_CAPTURE'; fragment: LanguageFragment }
   | { type: 'DELETE_FRAGMENT'; fragmentId: string }
   | { type: 'DELETE_SOURCE'; sourceUrl: string }

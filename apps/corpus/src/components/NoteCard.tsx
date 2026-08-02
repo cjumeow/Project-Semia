@@ -1,3 +1,4 @@
+import { effectiveSnippetUnitType } from '@semia/shared';
 import type { ReactNode } from 'react';
 import type { SnippetNote } from '../types/corpus';
 import { HighlightSelection } from './HighlightSelection';
@@ -12,6 +13,11 @@ type NoteCardProps = {
   contextError?: string | null;
   onGenerateContext?: () => void;
   onMarkMastered?: () => void;
+  generatingIllustrative?: boolean;
+  savingIllustrative?: boolean;
+  illustrativeError?: string | null;
+  onGenerateIllustrativeExample?: () => void;
+  onSaveIllustrativeExample?: (text: string) => void;
 };
 
 const NOTE_FIELDS = [
@@ -39,9 +45,16 @@ export function NoteCard({
   contextError,
   onGenerateContext,
   onMarkMastered,
+  generatingIllustrative,
+  savingIllustrative,
+  illustrativeError,
+  onGenerateIllustrativeExample,
+  onSaveIllustrativeExample,
 }: NoteCardProps) {
   const noteReady = Boolean(note.generatedAt);
   const contextReady = Boolean(note.dynamicContextBlock?.trim());
+  const showIllustrativeExample =
+    noteReady && effectiveSnippetUnitType(note) === 'word';
 
   return (
     <div className="relative">
@@ -95,16 +108,83 @@ export function NoteCard({
             />
           );
         })}
-        {!generating && note.example ? (
-          <NoteField label="Example" value={note.example} isExample />
+        {showIllustrativeExample ? (
+          <IllustrativeExampleField
+            value={note.illustrativeExample ?? ''}
+            generating={generatingIllustrative}
+            saving={savingIllustrative}
+            onGenerate={onGenerateIllustrativeExample}
+            onSave={onSaveIllustrativeExample}
+          />
         ) : null}
       </dl>
+      {illustrativeError ? (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {illustrativeError}
+        </p>
+      ) : null}
       {contextError ? (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {contextError}
         </p>
       ) : null}
       </article>
+    </div>
+  );
+}
+
+function IllustrativeExampleField({
+  value,
+  generating,
+  saving,
+  onGenerate,
+  onSave,
+}: {
+  value: string;
+  generating?: boolean;
+  saving?: boolean;
+  onGenerate?: () => void;
+  onSave?: (text: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <dt className="semia-section-label">Illustrative example</dt>
+        {onGenerate ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onGenerate}
+            disabled={generating || saving}
+          >
+            {value.trim() ? 'Regenerate' : 'Generate'}
+          </button>
+        ) : null}
+      </div>
+      <dd className="mt-1.5">
+        {generating ? (
+          <p className="text-sm text-text-muted">
+            <TextDots>Generating</TextDots>
+          </p>
+        ) : onSave ? (
+          <textarea
+            key={value}
+            className="w-full rounded-md border border-border bg-canvas px-3 py-2 font-reading text-sm leading-relaxed text-text"
+            rows={3}
+            placeholder="Optional — generate or type your own example sentence"
+            defaultValue={value}
+            disabled={saving}
+            onBlur={(event) => {
+              const next = event.target.value;
+              if (next !== value) {
+                onSave(next);
+              }
+            }}
+          />
+        ) : (
+          <p className="text-sm text-text-secondary">{value || '—'}</p>
+        )}
+      </dd>
     </div>
   );
 }

@@ -29,15 +29,17 @@ const validXml = `
 <original_speech>break a leg</original_speech>
 <natural_translation>祝你好運</natural_translation>
 <background_note>Theatre idiom meaning good luck.</background_note>
+<unit_type>word</unit_type>
 `;
 
-describe('parseSnippetNoteXml', () => {
+describe('parseSnippetNoteXml (extension re-export)', () => {
   it('extracts each tag into the note', () => {
     const note = parseSnippetNoteXml(validXml, fragment);
 
     expect(note.originalSpeech).toBe('break a leg');
     expect(note.naturalTranslation).toBe('祝你好運');
     expect(note.backgroundNote).toBe('Theatre idiom meaning good luck.');
+    expect(note.unitType).toBe('word');
   });
 
   it('stamps generatedAt so the UI can tell real notes from placeholders', () => {
@@ -47,38 +49,15 @@ describe('parseSnippetNoteXml', () => {
     expect(Number.isNaN(Date.parse(note.generatedAt!))).toBe(false);
   });
 
-  it('strips a markdown code fence wrapped around the whole reply', () => {
+  it('defaults unitType to others when tag is missing', () => {
     const note = parseSnippetNoteXml(
-      '```xml\n' + validXml + '\n```',
+      `<original_speech>x</original_speech>
+       <natural_translation>y</natural_translation>
+       <background_note>z</background_note>`,
       fragment,
     );
 
-    expect(note.naturalTranslation).toBe('祝你好運');
-  });
-
-  it('strips a code fence buried in surrounding prose', () => {
-    const note = parseSnippetNoteXml(
-      'Sure, here you go:\n```\n' + validXml + '\n```\nHope that helps!',
-      fragment,
-    );
-
-    expect(note.naturalTranslation).toBe('祝你好運');
-  });
-
-  it('falls back to the selected text when original_speech is missing', () => {
-    const note = parseSnippetNoteXml(
-      '<natural_translation>祝你好運</natural_translation>',
-      fragment,
-    );
-
-    expect(note.originalSpeech).toBe('break a leg');
-  });
-
-  it('leaves fields the prompt does not produce empty', () => {
-    const note = parseSnippetNoteXml(validXml, fragment);
-
-    expect(note.dynamicContextBlock).toBe('');
-    expect(note.example).toBe('');
+    expect(note.unitType).toBe('others');
   });
 
   it('throws when the reply has no recognisable tags', () => {

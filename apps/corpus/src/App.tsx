@@ -4,6 +4,7 @@ import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
+import { useIllustrativeExample } from './hooks/useIllustrativeExample';
 import { useSnippetNoteGeneration } from './hooks/useSnippetNoteGeneration';
 import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
@@ -42,6 +43,14 @@ export default function App() {
     error: contextError,
     generate: generateContext,
   } = useContextWindowGeneration(selectedSnippet, refresh);
+
+  const {
+    generating: generatingIllustrative,
+    saving: savingIllustrative,
+    error: illustrativeError,
+    generate: generateIllustrative,
+    save: saveIllustrative,
+  } = useIllustrativeExample(selectedSnippet, refresh);
 
   const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
     useResizableWidth({
@@ -242,6 +251,15 @@ export default function App() {
               contextError={contextError}
               onGenerateContext={() => {
                 void generateContext();
+              }}
+              generatingIllustrative={generatingIllustrative}
+              savingIllustrative={savingIllustrative}
+              illustrativeError={illustrativeError}
+              onGenerateIllustrativeExample={() => {
+                void generateIllustrative();
+              }}
+              onSaveIllustrativeExample={(text) => {
+                void saveIllustrative(text);
               }}
               onMarkMastered={
                 isLive &&

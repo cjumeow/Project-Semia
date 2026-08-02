@@ -47,7 +47,7 @@ function makeYoutubeSnippet(
       naturalTranslation: '',
       dynamicContextBlock: '',
       backgroundNote: '',
-      example: '',
+      unitType: 'others',
     },
   };
 }
@@ -77,7 +77,7 @@ function makeWebSnippet(
       naturalTranslation: '',
       dynamicContextBlock: '',
       backgroundNote: '',
-      example: '',
+      unitType: 'others',
     },
   };
 }

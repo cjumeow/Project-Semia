@@ -25,6 +25,11 @@ export interface CorpusRepository {
   getSnippetNotes(): Promise<SnippetNotesMap>;
   generateSnippetNote(fragment: LanguageFragment): Promise<SnippetNote>;
   generateContextWindow(fragment: LanguageFragment): Promise<SnippetNote>;
+  generateIllustrativeExample(fragment: LanguageFragment): Promise<SnippetNote>;
+  saveIllustrativeExample(
+    fragmentId: string,
+    illustrativeExample: string,
+  ): Promise<SnippetNote>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -117,6 +122,46 @@ class ChromeCorpusRepository implements CorpusRepository {
       response && !response.ok
         ? response.error
         : 'Failed to generate context window.';
+    throw new Error(message);
+  }
+
+  async generateIllustrativeExample(
+    fragment: LanguageFragment,
+  ): Promise<SnippetNote> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'GENERATE_ILLUSTRATIVE_EXAMPLE',
+      fragment,
+    })) as OkResponse<{ note: SnippetNote }> | ErrResponse | undefined;
+
+    if (response?.ok && response.note) {
+      return response.note;
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to generate illustrative example.';
+    throw new Error(message);
+  }
+
+  async saveIllustrativeExample(
+    fragmentId: string,
+    illustrativeExample: string,
+  ): Promise<SnippetNote> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SAVE_ILLUSTRATIVE_EXAMPLE',
+      fragmentId,
+      illustrativeExample,
+    })) as OkResponse<{ note: SnippetNote }> | ErrResponse | undefined;
+
+    if (response?.ok && response.note) {
+      return response.note;
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to save illustrative example.';
     throw new Error(message);
   }
 
@@ -255,6 +300,14 @@ class MockCorpusRepository implements CorpusRepository {
 
   async generateContextWindow(): Promise<SnippetNote> {
     throw new Error('AI generation requires the Chrome extension.');
+  }
+
+  async generateIllustrativeExample(): Promise<SnippetNote> {
+    throw new Error('AI generation requires the Chrome extension.');
+  }
+
+  async saveIllustrativeExample(): Promise<SnippetNote> {
+    throw new Error('Saving illustrative examples requires the Chrome extension.');
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {

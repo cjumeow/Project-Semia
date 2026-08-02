@@ -15,6 +15,11 @@ type SnippetDetailProps = {
   generatingContext?: boolean;
   contextError?: string | null;
   onGenerateContext?: () => void;
+  generatingIllustrative?: boolean;
+  savingIllustrative?: boolean;
+  illustrativeError?: string | null;
+  onGenerateIllustrativeExample?: () => void;
+  onSaveIllustrativeExample?: (text: string) => void;
   onMarkMastered?: () => void;
 };
 
@@ -27,6 +32,11 @@ export function SnippetDetail({
   generatingContext,
   contextError,
   onGenerateContext,
+  generatingIllustrative,
+  savingIllustrative,
+  illustrativeError,
+  onGenerateIllustrativeExample,
+  onSaveIllustrativeExample,
   onMarkMastered,
 }: SnippetDetailProps) {
   const { markdown, saving, save } = useCorpusNote(snippet?.id);
@@ -86,6 +96,11 @@ export function SnippetDetail({
           generatingContext={generatingContext}
           contextError={contextError}
           onGenerateContext={onGenerateContext}
+          generatingIllustrative={generatingIllustrative}
+          savingIllustrative={savingIllustrative}
+          illustrativeError={illustrativeError}
+          onGenerateIllustrativeExample={onGenerateIllustrativeExample}
+          onSaveIllustrativeExample={onSaveIllustrativeExample}
           onMarkMastered={
             onMarkMastered && effectiveTriageStatus(snippet) === 'review'
               ? onMarkMastered
