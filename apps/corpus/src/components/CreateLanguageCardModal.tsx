@@ -1,8 +1,12 @@
 import type { CardIntent, LanguageCard } from '@semia/shared';
-import { useEffect, useState } from 'react';
+import {
+  buildFocusValidationCorpus,
+  isFocusTextInCorpus,
+} from '@semia/shared';
+import { useEffect, useMemo, useState } from 'react';
 import type { CorpusSnippet } from '../types/corpus';
 import { TextDots } from './TextDots';
-import { LanguageCardView, intentLabel } from './LanguageCardView';
+import { intentLabel } from './LanguageCardView';
 
 type CreateLanguageCardModalProps = {
   open: boolean;
@@ -16,6 +20,7 @@ type CreateLanguageCardModalProps = {
     focusText: string;
     intents: CardIntent[];
     learnerNote?: string;
+    includeScenario: boolean;
   }) => Promise<LanguageCard>;
 };
 
@@ -31,23 +36,38 @@ export function CreateLanguageCardModal({
 }: CreateLanguageCardModalProps) {
   const [focusText, setFocusText] = useState('');
   const [intents, setIntents] = useState<CardIntent[]>(['speaking']);
+  const [includeScenario, setIncludeScenario] = useState(true);
   const [learnerNote, setLearnerNote] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdCard, setCreatedCard] = useState<LanguageCard | null>(null);
 
   useEffect(() => {
-    if (!open) {
+    if (!open || !snippet) {
       return;
     }
 
-    setFocusText('');
+    setFocusText(snippet.selectedText);
     setIntents(['speaking']);
+    setIncludeScenario(true);
     setLearnerNote('');
     setCreating(false);
     setError(null);
-    setCreatedCard(null);
   }, [open, snippet?.id]);
+
+  const focusCorpus = useMemo(
+    () =>
+      buildFocusValidationCorpus({
+        dynamicContextBlock: snippet?.note.dynamicContextBlock,
+        selectedText: snippet?.selectedText ?? '',
+        originalSpeech: snippet?.note.originalSpeech ?? '',
+        naturalTranslation: snippet?.note.naturalTranslation ?? '',
+      }),
+    [snippet],
+  );
+
+  const focusValid =
+    focusText.trim().length > 0 &&
+    isFocusTextInCorpus(focusText, focusCorpus);
 
   if (!open || !snippet) {
     return null;
@@ -77,18 +97,25 @@ export function CreateLanguageCardModal({
       return;
     }
 
+    if (!isFocusTextInCorpus(trimmedFocus, focusCorpus)) {
+      setError(
+        'Focus text must match a complete word or phrase in the context window (or capture text if context window is unavailable).',
+      );
+      return;
+    }
+
     setCreating(true);
     setError(null);
     try {
-      const card = await onCreate({
+      await onCreate({
         focusText: trimmedFocus,
         intents,
         learnerNote: learnerNote.trim() || undefined,
+        includeScenario,
       });
       if (showOnboarding) {
         onMarkOnboardingSeen();
       }
-      setCreatedCard(card);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to create language card.',
@@ -113,8 +140,6 @@ export function CreateLanguageCardModal({
       >
         {!languageCardsProEnabled ? (
           <ProGatePanel onClose={handleClose} onOpenSettings={onOpenSettings} />
-        ) : createdCard ? (
-          <SuccessPanel card={createdCard} onClose={handleClose} />
         ) : (
           <>
             {showOnboarding ? (
@@ -134,17 +159,13 @@ export function CreateLanguageCardModal({
             </h2>
             <div className="mt-4 space-y-4">
               <div className="rounded-md bg-canvas px-3 py-2.5">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  From selection
-                </p>
+                <p className="semia-section-label">From selection</p>
                 <p className="mt-1 text-sm text-text-secondary">
                   {snippet.selectedText}
                 </p>
               </div>
               <label className="block">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  Focus text *
-                </span>
+                <span className="semia-section-label">Focus text *</span>
                 <input
                   className="mt-1.5 w-full rounded-md border border-border bg-canvas px-3 py-2.5 text-sm text-text"
                   placeholder="What do you want to learn?"
@@ -153,11 +174,24 @@ export function CreateLanguageCardModal({
                   onChange={(event) => setFocusText(event.target.value)}
                   autoFocus
                 />
+                {focusText.trim() && !focusValid ? (
+                  <p className="mt-1.5 text-xs text-amber-800">
+                    Must match a complete word or phrase in the context window.
+                  </p>
+                ) : null}
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  className="rounded border-border"
+                  checked={includeScenario}
+                  disabled={creating}
+                  onChange={(event) => setIncludeScenario(event.target.checked)}
+                />
+                Include usage scenario
               </label>
               <fieldset>
-                <legend className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  Intent
-                </legend>
+                <legend className="semia-section-label">Intent</legend>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {(['speaking', 'writing'] as const).map((intent) => {
                     const selected = intents.includes(intent);
@@ -185,9 +219,7 @@ export function CreateLanguageCardModal({
                 </div>
               </fieldset>
               <label className="block">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  Note (optional)
-                </span>
+                <span className="semia-section-label">Note (optional)</span>
                 <input
                   className="mt-1.5 w-full rounded-md border border-border bg-canvas px-3 py-2.5 text-sm text-text"
                   placeholder="One sentence about your goal"
@@ -215,7 +247,7 @@ export function CreateLanguageCardModal({
                 type="button"
                 className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
                 onClick={() => void handleSubmit()}
-                disabled={creating}
+                disabled={creating || !focusValid}
               >
                 {creating ? <TextDots>Generating</TextDots> : 'Generate card'}
               </button>
@@ -264,34 +296,6 @@ function ProGatePanel({
           }}
         >
           Open Settings
-        </button>
-      </div>
-    </>
-  );
-}
-
-function SuccessPanel({
-  card,
-  onClose,
-}: {
-  card: LanguageCard;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-        Language card created for &ldquo;{card.focusText}&rdquo;.
-      </p>
-      <div className="mt-4">
-        <LanguageCardView card={card} />
-      </div>
-      <div className="mt-5 flex justify-end">
-        <button
-          type="button"
-          className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white"
-          onClick={onClose}
-        >
-          Done
         </button>
       </div>
     </>

@@ -129,6 +129,12 @@ export type SnippetNotesMap = Record<string, SnippetNote>;
 
 export type CardIntent = 'speaking' | 'writing';
 
+export type LanguageCardExample = {
+  kind: CardIntent;
+  text: string;
+  translation: string;
+};
+
 /** Permanent learner-focused study card linked to a capture. */
 export type LanguageCard = {
   id: string;
@@ -138,10 +144,8 @@ export type LanguageCard = {
   learnerNote?: string;
   focus: string;
   meaning: string;
-  scenario1: string;
-  scenario2: string;
-  speakingExample?: string;
-  writingExample?: string;
+  scenario?: string;
+  examples: LanguageCardExample[];
   createdAt: string;
   generatedAt: string;
 };

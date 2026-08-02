@@ -1,5 +1,6 @@
 import {
   LANGUAGE_CARDS_STORAGE_KEY,
+  normalizeLanguageCard,
   type LanguageCard,
   type LanguageCardsMap,
 } from '@semia/shared';
@@ -11,9 +12,9 @@ export async function getLanguageCardsMap(): Promise<LanguageCardsMap> {
 
 export async function listLanguageCards(): Promise<LanguageCard[]> {
   const cards = await getLanguageCardsMap();
-  return Object.values(cards).sort((left, right) =>
-    right.createdAt.localeCompare(left.createdAt),
-  );
+  return Object.values(cards)
+    .map((card) => normalizeLanguageCard(card))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
 export async function listLanguageCardsForFragment(

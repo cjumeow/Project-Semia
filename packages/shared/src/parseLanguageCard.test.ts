@@ -6,104 +6,87 @@ import {
 
 const bothIntentsXml = `
 <focus>look forward to</focus>
-<meaning>期待（某事發生）；帶有禮貌、正面的期盼</meaning>
-<scenario_1>Scenario 1 — Email sign-off after a job interview.</scenario_1>
-<scenario_2>Scenario 2 — Casual catch-up with a friend visiting next month.</scenario_2>
-<speaking_example>"I look forward to catching up this weekend!"</speaking_example>
-<writing_example>I look forward to your feedback on the draft.</writing_example>
+<meaning>期待</meaning>
+<scenario>當你要禮貌表達對未來某事的期盼時，可以使用此片語。</scenario>
+<example kind="speaking">
+  <text>I look forward to catching up this weekend!</text>
+  <translation>我很期待這週末敘舊！</translation>
+</example>
+<example kind="writing">
+  <text>I look forward to your feedback on the draft.</text>
+  <translation>期待您對草稿的回饋。</translation>
+</example>
 `;
 
 describe('requiredCardSections', () => {
-  it('always requires core sections', () => {
-    expect(requiredCardSections([])).toEqual([
-      'focus',
-      'meaning',
-      'scenario_1',
-      'scenario_2',
-    ]);
+  it('requires focus only when meaning and scenario are off', () => {
+    expect(
+      requiredCardSections(['speaking'], {
+        includeMeaning: false,
+        includeScenario: false,
+      }),
+    ).toEqual(['focus', 'example kind="speaking"']);
   });
 
-  it('adds speaking_example when speaking is selected', () => {
-    expect(requiredCardSections(['speaking'])).toEqual([
+  it('includes scenario when requested', () => {
+    expect(
+      requiredCardSections(['writing'], {
+        includeMeaning: true,
+        includeScenario: true,
+      }),
+    ).toEqual([
       'focus',
       'meaning',
-      'scenario_1',
-      'scenario_2',
-      'speaking_example',
-    ]);
-  });
-
-  it('adds writing_example when writing is selected', () => {
-    expect(requiredCardSections(['writing'])).toEqual([
-      'focus',
-      'meaning',
-      'scenario_1',
-      'scenario_2',
-      'writing_example',
-    ]);
-  });
-
-  it('requires both examples when both intents are selected', () => {
-    expect(requiredCardSections(['speaking', 'writing'])).toEqual([
-      'focus',
-      'meaning',
-      'scenario_1',
-      'scenario_2',
-      'speaking_example',
-      'writing_example',
+      'scenario',
+      'example kind="writing"',
     ]);
   });
 });
 
 describe('parseLanguageCardXml', () => {
-  it('parses all sections when both intents are selected', () => {
-    const parsed = parseLanguageCardXml(bothIntentsXml, ['speaking', 'writing']);
+  it('parses meaning, scenario, and bilingual examples', () => {
+    const parsed = parseLanguageCardXml(bothIntentsXml, ['speaking', 'writing'], {
+      includeMeaning: true,
+      includeScenario: true,
+    });
 
     expect(parsed.focus).toBe('look forward to');
-    expect(parsed.scenario1).toContain('Scenario 1');
-    expect(parsed.speakingExample).toContain('catching up');
-    expect(parsed.writingExample).toContain('feedback');
+    expect(parsed.meaning).toBe('期待');
+    expect(parsed.scenario).toContain('期盼');
+    expect(parsed.examples).toHaveLength(2);
+    expect(parsed.examples[0]?.translation).toContain('期待');
   });
 
-  it('parses speaking-only cards without writing_example', () => {
+  it('parses fragment cards without meaning tag', () => {
     const xml = `
-<focus>break a leg</focus>
-<meaning>祝你好運（劇場用語）</meaning>
-<scenario_1>Scenario 1 — Before a stage performance.</scenario_1>
-<scenario_2>Scenario 2 — Encouraging a nervous presenter.</scenario_2>
-<speaking_example>Break a leg tonight!</speaking_example>
+<focus>multiple</focus>
+<scenario>當你要表達某情境有「多種」選項時，可以使用此形容詞。</scenario>
+<example kind="speaking">
+  <text>There are multiple options.</text>
+  <translation>有多種選項。</translation>
+</example>
 `;
 
-    const parsed = parseLanguageCardXml(xml, ['speaking']);
+    const parsed = parseLanguageCardXml(xml, ['speaking'], {
+      includeMeaning: false,
+      includeScenario: true,
+    });
 
-    expect(parsed.speakingExample).toBe('Break a leg tonight!');
-    expect(parsed.writingExample).toBeUndefined();
+    expect(parsed.meaning).toBeUndefined();
+    expect(parsed.examples[0]?.kind).toBe('speaking');
   });
 
-  it('parses writing-only cards without speaking_example', () => {
-    const xml = `
-<focus>hearing from you</focus>
-<meaning>收到你的回覆</meaning>
-<scenario_1>Scenario 1 — Follow-up email after a proposal.</scenario_1>
-<scenario_2>Scenario 2 — Customer support ticket closure.</scenario_2>
-<writing_example>I look forward to hearing from you.</writing_example>
-`;
-
-    const parsed = parseLanguageCardXml(xml, ['writing']);
-
-    expect(parsed.writingExample).toContain('hearing from you');
-    expect(parsed.speakingExample).toBeUndefined();
-  });
-
-  it('throws when a required section is missing', () => {
+  it('throws when a required example is missing', () => {
     const xml = `
 <focus>focus</focus>
-<meaning>meaning</meaning>
-<scenario_1>one</scenario_1>
+<meaning>意思</meaning>
 `;
 
-    expect(() => parseLanguageCardXml(xml, ['speaking'])).toThrow(
-      /missing <scenario_2>/i,
-    );
+    expect(() =>
+      parseLanguageCardXml(xml, ['speaking'], {
+        includeMeaning: true,
+        includeScenario: false,
+      }),
+    ).toThrow(/missing <example kind="speaking">/i);
   });
 });
