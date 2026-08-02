@@ -1,5 +1,5 @@
 import { effectiveSnippetUnitType } from '@semia/shared';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { SnippetNote } from '../types/corpus';
 import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
@@ -54,7 +54,7 @@ export function NoteCard({
   const noteReady = Boolean(note.generatedAt);
   const contextReady = Boolean(note.dynamicContextBlock?.trim());
   const showIllustrativeExample =
-    noteReady && effectiveSnippetUnitType(note) === 'word';
+    noteReady && !generating && effectiveSnippetUnitType(note) === 'word';
 
   return (
     <div className="relative">
@@ -146,6 +146,15 @@ function IllustrativeExampleField({
   onGenerate?: () => void;
   onSave?: (text: string) => void;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleGenerate = () => {
+    if (textareaRef.current && onSave) {
+      onSave(textareaRef.current.value);
+    }
+    onGenerate?.();
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
@@ -154,7 +163,7 @@ function IllustrativeExampleField({
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-md border border-border bg-canvas px-2 py-1 font-mono text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={onGenerate}
+            onClick={handleGenerate}
             disabled={generating || saving}
           >
             {value.trim() ? 'Regenerate' : 'Generate'}
@@ -168,6 +177,7 @@ function IllustrativeExampleField({
           </p>
         ) : onSave ? (
           <textarea
+            ref={textareaRef}
             key={value}
             className="w-full rounded-md border border-border bg-canvas px-3 py-2 font-reading text-sm leading-relaxed text-text"
             rows={3}

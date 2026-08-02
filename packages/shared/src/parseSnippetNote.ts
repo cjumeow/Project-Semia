@@ -30,8 +30,9 @@ export function effectiveSnippetUnitType(note: SnippetNote): SnippetUnitType {
 }
 
 export function normalizeSnippetNote(note: SnippetNote): SnippetNote {
-  const unitType = effectiveSnippetUnitType(note);
   const legacyExample = note.example?.trim();
+  const unitType =
+    note.unitType ?? (legacyExample ? 'word' : 'others');
   const illustrativeExample =
     note.illustrativeExample?.trim() ||
     (unitType === 'word' && legacyExample ? legacyExample : '');

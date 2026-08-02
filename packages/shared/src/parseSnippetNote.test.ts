@@ -109,7 +109,20 @@ describe('normalizeSnippetNote', () => {
     expect(normalized.illustrativeExample).toBe('Break a leg tonight!');
   });
 
-  it('ignores legacy example for others', () => {
+  it('infers word unitType when legacy example exists without unitType', () => {
+    const normalized = normalizeSnippetNote({
+      originalSpeech: 'a',
+      naturalTranslation: 'b',
+      dynamicContextBlock: '',
+      backgroundNote: 'c',
+      example: 'Break a leg tonight!',
+    });
+
+    expect(normalized.unitType).toBe('word');
+    expect(normalized.illustrativeExample).toBe('Break a leg tonight!');
+  });
+
+  it('ignores legacy example when unitType is explicitly others', () => {
     const normalized = normalizeSnippetNote({
       originalSpeech: 'a',
       naturalTranslation: 'b',

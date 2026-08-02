@@ -73,9 +73,14 @@ export async function handleFragmentMessage(
       return { ok: true, notes: await getSnippetNotes() };
 
     case 'GENERATE_SNIPPET_NOTE': {
+      const existing = await getSnippetNote(message.fragment.id);
       const note = await generateSnippetNote(message.fragment);
-      await saveSnippetNote(message.fragment.id, note);
-      return { ok: true, note };
+      const merged =
+        note.unitType === 'word' && existing?.illustrativeExample
+          ? { ...note, illustrativeExample: existing.illustrativeExample }
+          : note;
+      await saveSnippetNote(message.fragment.id, merged);
+      return { ok: true, note: merged };
     }
 
     case 'GENERATE_CONTEXT_WINDOW': {
