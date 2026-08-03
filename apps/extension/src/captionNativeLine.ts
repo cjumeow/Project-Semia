@@ -50,16 +50,16 @@ export function resolveNativeCaptionLine(
     }
   }
 
-  if (options?.mtPrewarmActive) {
-    return { status: 'loading' };
-  }
-
   const cueIndex = options?.cueIndex;
   if (cueIndex !== undefined && options?.mtTranslations) {
     const mtText = options.mtTranslations.get(cueIndex);
     if (mtText?.trim()) {
       return { status: 'text', text: mtText };
     }
+  }
+
+  if (options?.mtPrewarmActive) {
+    return { status: 'loading' };
   }
 
   return { status: 'none' };

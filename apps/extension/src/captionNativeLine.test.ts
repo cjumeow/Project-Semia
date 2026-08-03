@@ -40,7 +40,7 @@ describe('resolveNativeCaptionLine', () => {
         mtTranslations: new Map([[0, '翻譯']]),
         mtPrewarmActive: true,
       }),
-    ).toEqual({ status: 'loading' });
+    ).toEqual({ status: 'text', text: '翻譯' });
   });
 
   it('returns none while native line is suppressed during refetch', () => {
@@ -79,6 +79,17 @@ describe('resolveNativeCaptionLine', () => {
         mtPrewarmActive: true,
       }),
     ).toEqual({ status: 'loading' });
+  });
+
+  it('shows cached MT during prewarm on coarse track', () => {
+    expect(
+      resolveNativeCaptionLine(learning, [{ text: 'x', start: 0, duration: 1 }], {
+        learningSegmentCount: 100,
+        cueIndex: 0,
+        mtTranslations: new Map([[0, '翻譯中']]),
+        mtPrewarmActive: true,
+      }),
+    ).toEqual({ status: 'text', text: '翻譯中' });
   });
 
   it('skips tlang when skipTlangPairing is set even on non-coarse track', () => {
