@@ -15,3 +15,5 @@ Tickets: `issues/01` … `issues/05` (v1 workflow, resolved).
 **v3 follow-up (semantic mismatch / zh-Hant asymmetry):** [#41](https://github.com/cjumeow/Project-Semia/issues/41) → [#42](https://github.com/cjumeow/Project-Semia/issues/42) → [#43](https://github.com/cjumeow/Project-Semia/issues/43) (`issues/11`–`issues/13`).
 
 **Research:** [#36](https://github.com/cjumeow/Project-Semia/issues/36) Funlingo parity spike — [funlingo-parity-report.md](.scratch/youtube-bilingual-captions/funlingo-parity-report.md) (`issues/06`, resolved).
+
+**v4 — GTX hybrid native line:** [#44](https://github.com/cjumeow/Project-Semia/issues/44) — [spec-gtx-hybrid-native-line.md](.scratch/youtube-bilingual-captions/spec-gtx-hybrid-native-line.md) · [gtx-prewarm-grilling.md](.scratch/youtube-bilingual-captions/gtx-prewarm-grilling.md)

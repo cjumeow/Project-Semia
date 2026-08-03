@@ -115,37 +115,10 @@ const joRows = sampleRows(jo.learning, jo.native, joIndices);
 const zooRows = sampleRows(zoo.learning, zoo.native, zooIndices);
 const rickRows = sampleRows(rick.learning, rick.native, rickIndices);
 
-const report = `# Funlingo parity spike report
+const FIXTURES_START = '<!-- SPIKE:FIXTURES_START -->';
+const FIXTURES_END = '<!-- SPIKE:FIXTURES_END -->';
 
-**Date:** ${new Date().toISOString().slice(0, 10)}  
-**Ticket:** [#36](https://github.com/cjumeow/Project-Semia/issues/36) · [issues/06-funlingo-parity-spike.md](./issues/06-funlingo-parity-spike.md)  
-**Scope:** Research only — no production code changes.
-
-## Executive summary
-
-| Question | Answer |
-|----------|--------|
-| Does Funlingo use YouTube \`tlang\` like Semia? | **Unlikely on YouTube** — Funlingo engineering blog describes intercepting the **learning subtitle track** and running a **batched MT pipeline** on the same cue boundaries, not pairing against a separate \`tlang\` track. |
-| Why does Funlingo "feel" better on long videos? | **1:1 cue alignment by construction** — native line is a translation of the *same* timed cue Semia already shows for word-click. |
-| Can Semia match Funlingo while keeping \`tlang\` only? | **Not reliably** on coarse ASR+\`tlang\` pairs (Jo, Lex). Count/timing/semantic drift are structural. |
-| Semia v3 mitigation (shipped) | Coarse \`tlang\` track → **learning-only** overlay — avoids wrong native, does not restore Funlingo-style dual line. |
-
-## Funlingo architecture (public sources)
-
-Sources: [Funlingo engineering blog — dual subtitles](https://engineeringgetfunlingo.hashnode.dev/how-we-built-real-time-dual-subtitles-for-youtube-and-netflix-and-what-we-got-wrong-first), [subtitle platform adapters](https://engineeringgetfunlingo.hashnode.dev/the-hardest-part-of-building-a-language-learning-extension-isn-t-translation-it-s-subtitles).
-
-| Layer | Funlingo (described) | Semia (shipped) |
-|-------|----------------------|-----------------|
-| Learning line source | Intercept platform timedtext / VTT **before** player render | Intercept ASR \`lang=en\` timedtext (same) |
-| Native line source | **MT batch translate** of upcoming ~90s of **same cues** | YouTube \`&tlang=\` auto-translate (**separate** segmentation) |
-| Alignment | Same cue index / same timestamps | Time overlap + gates between mismatched tracks |
-| Native CC | Suppress platform CC; own renderer | Hide YT CC; Semia pill overlay |
-| Failure on zh-Hans vs zh-Hant | Blog: "bug in some languages but not others" — likely **MT/locale**, not \`tlang\` drift | Observed: **different \`tlang\` shapes** per locale |
-
-**Hypothesis (primary):** Funlingo parity is not a smarter pairing function on \`tlang\` — it is a **different data source** (translate learning cues, not pair learning ↔ \`tlang\`).
-
-**Hypothesis (secondary):** Extensions that *do* use \`tlang\` (e.g. yt-dual-subs) still suffer when cue counts differ; they may hide errors on short/equal-count videos only.
-
+const fixtureSection = `${FIXTURES_START}
 ## Semia automated comparison (fixtures)
 
 Strategies per row:
@@ -178,48 +151,28 @@ Equal counts (when native track present): index ≈ time-overlap; Semia shows na
 - Learning cues: **${rick.learning.length}** · Native cues: **${rick.native.length}** (${Math.round((100 * rick.native.length) / rick.learning.length)}%) · Coarse: **${isCoarseNativeTrack(rick.learning.length, rick.native.length)}**
 
 ${table(rickRows)}
+${FIXTURES_END}`;
 
-## Manual HITL: Funlingo side-by-side (required for full parity)
-
-Automated run cannot install Funlingo. To complete the comparison on **Lex #434** (\`e-gwvmhyU7A\`) and Jo:
-
-1. Install [Funlingo](https://chromewebstore.google.com/detail/funlingo-dual-subtitles-f/gjdpaicenfffjkgofmcjikilokigkonj) alongside Semia (separate profile or disable one extension at a time).
-2. Open video → enable captions → Funlingo: learning **en**, native **zh-TW** (or zh-CN).
-3. At each timestamp, record Funlingo native line vs Semia overlay:
-
-| Video | Timestamp | EN (both) | Funlingo ZH | Semia ZH (v3) |
-|-------|-----------|-----------|-------------|---------------|
-| Jo \`j_r93YulrUE\` | 3:56 (cue 96) | *That's part of context engineering* | _fill_ | learning-only |
-| Lex \`e-gwvmhyU7A\` | 1:57:41 | *you wanna really stick* | _fill_ | learning-only |
-| Lex \`e-gwvmhyU7A\` | ~56:13 | *405B that's not released yet* | _fill_ | learning-only |
-
-**Prediction:** Funlingo shows a **short, same-span** zh line aligned to the EN cue; Semia v3 shows **no** native line on Lex/Jo (coarse track).
-
-## Recommendations for Semia
-
-| Option | Effort | Funlingo parity? | Trade-off |
-|--------|--------|------------------|-----------|
-| **A. Keep coarse → learning-only** | Done | No dual line on long videos | Safe, no wrong native |
-| **B. MT translate learning cues** (Funlingo-like) | High | **Yes** — 1:1 alignment | API cost, latency, cache; new \`ai/\` or translate module |
-| **C. Hybrid** — \`tlang\` when counts match; else MT | Medium | Partial | Complexity |
-| **D. Show YouTube native CC layer** | Low–med | Variable | Fights word-click UX (ADR-0003 strategy C) |
-
-**Recommendation:** If product requires Funlingo-quality dual line on Lex/Jo-class videos, spike **Option B** next (translate learning \`segments[i]\` per cue or batched window) — not more \`tlang\` pairing gates.
-
-## Reproduction
-
-\`\`\`bash
-node --experimental-transform-types scripts/funlingo-parity-spike.ts
-node --experimental-transform-types scripts/analyze-spike-fixtures.ts
-npm test -- apps/extension/src/lexPairingRepro.test.ts
-\`\`\`
-
-## References
-
-- Semia spike #02: [spike-report.md](./spike-report.md)
-- ADR-0003 gated native line: [docs/adr/0003-youtube-bilingual-gated-native-line.md](../../docs/adr/0003-youtube-bilingual-gated-native-line.md)
-- Funlingo Chrome Web Store: [Funlingo dual subtitles](https://chromewebstore.google.com/detail/funlingo-dual-subtitles-f/gjdpaicenfffjkgofmcjikilokigkonj)
-`;
+let report: string;
+try {
+  const existing = readFileSync(OUT, 'utf8');
+  const start = existing.indexOf(FIXTURES_START);
+  const end = existing.indexOf(FIXTURES_END);
+  if (start !== -1 && end !== -1 && end > start) {
+    report =
+      existing.slice(0, start) +
+      fixtureSection +
+      existing.slice(end + FIXTURES_END.length);
+    console.log('Updated fixture tables only (preserved Network RE section).');
+  } else {
+    throw new Error('markers missing');
+  }
+} catch {
+  console.warn(
+    'funlingo-parity-report.md missing SPIKE markers — writing fixture section only to stdout; restore report from git.',
+  );
+  report = fixtureSection;
+}
 
 writeFileSync(OUT, report);
 console.log(`Wrote ${OUT}`);

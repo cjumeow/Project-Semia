@@ -1,6 +1,6 @@
 # Funlingo parity spike report
 
-**Date:** 2026-08-03  
+**Date:** 2026-08-03 (network RE finalized same day)  
 **Ticket:** [#36](https://github.com/cjumeow/Project-Semia/issues/36) · [issues/06-funlingo-parity-spike.md](./issues/06-funlingo-parity-spike.md)  
 **Scope:** Research only — no production code changes.
 
@@ -8,27 +8,99 @@
 
 | Question | Answer |
 |----------|--------|
-| Does Funlingo use YouTube `tlang` like Semia? | **Unlikely on YouTube** — Funlingo engineering blog describes intercepting the **learning subtitle track** and running a **batched MT pipeline** on the same cue boundaries, not pairing against a separate `tlang` track. |
-| Why does Funlingo "feel" better on long videos? | **1:1 cue alignment by construction** — native line is a translation of the *same* timed cue Semia already shows for word-click. |
+| Does Funlingo use YouTube `tlang` like Semia? | **No (confirmed).** Network filter `tlang` → 0 hits on long-form YouTube videos. |
+| Where does the native (ZH) line come from? | **Google `client=gtx` MT** on the **same learning cue text** — not a separate YouTube translate track. |
+| Why does Funlingo feel better on long videos? | **1:1 cue alignment by construction** — native line is a translation of the *same* timed cue Semia already shows for word-click. |
+| Why is seek instant after initial load? | **Full-video prewarm** — thousands of `gtx` / `inputtools` requests in the first few seconds; results cached locally. |
+| OpenAI / Cloud Translation API? | **Not observed.** No `api.openai.com`, no paid Google Cloud Translation endpoints. |
+| Blog claim of “90s batch MT”? | **Not what we observed on YouTube.** Implementation looks like **per-cue full-sentence `gtx`** plus **per-word** requests for hover gloss. |
 | Can Semia match Funlingo while keeping `tlang` only? | **Not reliably** on coarse ASR+`tlang` pairs (Jo, Lex). Count/timing/semantic drift are structural. |
 | Semia v3 mitigation (shipped) | Coarse `tlang` track → **learning-only** overlay — avoids wrong native, does not restore Funlingo-style dual line. |
 
-## Funlingo architecture (public sources)
+## Funlingo architecture (confirmed — Network RE)
 
-Sources: [Funlingo engineering blog — dual subtitles](https://engineeringgetfunlingo.hashnode.dev/how-we-built-real-time-dual-subtitles-for-youtube-and-netflix-and-what-we-got-wrong-first), [subtitle platform adapters](https://engineeringgetfunlingo.hashnode.dev/the-hardest-part-of-building-a-language-learning-extension-isn-t-translation-it-s-subtitles).
+**Method:** Clean Chrome profile, Funlingo only, DevTools Network (`Preserve log`, `Disable cache`). Test videos: ~2hr interview (Lex-class) and Civil War clip. Initiator for extension calls: `youtube_content.js`.
 
-| Layer | Funlingo (described) | Semia (shipped) |
+### Data flow
+
+```
+YouTube timedtext (~40 req/video)
+        │
+        ▼
+   EN cues (learning track)
+        │
+        ├─► gtx  sl=en  tl=zh  q=<full cue>     → ZH subtitle line (bottom)
+        ├─► gtx  sl=auto tl=en q=<full cue>     → aux (language detect / JSON metadata; echoes EN)
+        ├─► gtx  sl=en  tl=zh  q=<single word>  → hover gloss, e.g. (economic, 经济)
+        └─► inputtools  text=<word> itc=zh-t-i0-und → hover IME suggestions / pronunciation
+
+All results cached after ~few seconds loading burst → seek anywhere = 0 latency, no new API calls
+```
+
+### Three request types observed
+
+| # | Endpoint | Example | Purpose |
+|---|----------|---------|---------|
+| **1** | `translate.googleapis.com/translate_a/single?client=gtx` | `sl=en&tl=zh&q=president` | Single-word EN→ZH (hover / vocabulary prewarm) |
+| **2** | `inputtools.google.com/request` | `text=presidential&itc=zh-t-i0-und` | Single-word Input Tools (hover gloss; **Funlingo extension**, not YouTube) |
+| **3** | `translate.googleapis.com/translate_a/single?client=gtx` | `sl=en&tl=zh&q=<full cue sentence>` | **Native subtitle line** (per cue) |
+| **3b** | same as 3 | `sl=auto&tl=en&q=<full cue sentence>` | Auxiliary; response echoes EN + `"en"` lang tag — not the ZH line |
+
+**Not observed:** `&tlang=` on any `timedtext` request. **Not observed:** `api.openai.com`, DeepL, or Google Cloud Translation API.
+
+### Load behavior (~2hr video)
+
+| Metric | Observed |
+|--------|----------|
+| `timedtext` requests | ~40 |
+| `gtx` + `inputtools` burst | ~2000+ in first few seconds after video load |
+| Per-cue pattern | At least one full-sentence `gtx` (en→zh); often a second identical or paired `gtx` (auto→en) |
+| Per-word pattern | Separate `gtx` (word) + `inputtools` (word) for hover feature |
+| After load | Arbitrary seek → **0 new requests**, ZH line appears instantly |
+| Offline after load | ZH still available (local cache) |
+
+### Duplicate identical requests (confirmed)
+
+For the same cue, **two identical** `gtx` URLs sometimes appear (same `sl`, `tl`, `q`), both **200 OK**, initiated by `youtube_content.js`.
+
+**Root cause (confirmed):** prewarm on load + **hover module fires the same request again** without sharing an in-flight / result cache across subsystems. This is **not** retry-on-failure (both succeed in parallel).
+
+Example duplicate:
+
+```
+client=gtx&sl=auto&tl=en&q=They're rebels and traitors who almost destroyed the nation.
+× 2  (331ms, 244ms — parallel)
+```
+
+### Blog vs observed (YouTube)
+
+| Claim ([engineering blog](https://engineeringgetfunlingo.hashnode.dev/how-we-built-real-time-dual-subtitles-for-youtube-and-netflix-and-what-we-got-wrong-first)) | Observed on YouTube |
+|--------|----------|
+| Batch upcoming **90 seconds** of cues | **Per-cue** full-sentence `gtx` + full-vocabulary word prewarm |
+| MT pipeline (unspecified vendor) | **`client=gtx`** free endpoint (same family as Semia `translateSelection.ts`) |
+| Translation cache on replay | **Yes** — plus full-video prewarm on first open |
+| Intercept learning VTT, not platform translate | **Consistent** — no `tlang` |
+
+Treat the blog as directionally correct (MT learning cues, not `tlang` pairing) but **implementation details differ** on YouTube.
+
+### Cost / stability implications
+
+- **Free to user** because `gtx` / `inputtools` have no API key billing — not because MT is cheap at scale.
+- **Unstable by design** — no SLA, rate limits, ToS risk; ~2000+ requests/video makes throttling likely at growth.
+- Funlingo trades **engineering simplicity + free endpoints** for **request volume and duplicate calls**.
+
+## Funlingo vs Semia
+
+| Layer | Funlingo (confirmed) | Semia (shipped) |
 |-------|----------------------|-----------------|
-| Learning line source | Intercept platform timedtext / VTT **before** player render | Intercept ASR `lang=en` timedtext (same) |
-| Native line source | **MT batch translate** of upcoming ~90s of **same cues** | YouTube `&tlang=` auto-translate (**separate** segmentation) |
-| Alignment | Same cue index / same timestamps | Time overlap + gates between mismatched tracks |
-| Native CC | Suppress platform CC; own renderer | Hide YT CC; Semia pill overlay |
-| Failure on zh-Hans vs zh-Hant | Blog: "bug in some languages but not others" — likely **MT/locale**, not `tlang` drift | Observed: **different `tlang` shapes** per locale |
+| Learning line | YouTube `timedtext` `lang=en` | Same |
+| Native line | `gtx` MT of **same cue text** | YouTube `tlang` track + pairing gates |
+| Alignment | Same cue index / timestamps | Overlap + gates; coarse → learning-only |
+| Word hover | `gtx` word + `inputtools` | `translateSelection.ts` (`gtx`) on selection only |
+| Seek latency | 0 after prewarm | Native from `tlang` when shown; hidden on coarse |
+| API cost | Absorbed via free `gtx` (risk) | $0 (`tlang`); no full-video MT |
 
-**Hypothesis (primary):** Funlingo parity is not a smarter pairing function on `tlang` — it is a **different data source** (translate learning cues, not pair learning ↔ `tlang`).
-
-**Hypothesis (secondary):** Extensions that *do* use `tlang` (e.g. yt-dual-subs) still suffer when cue counts differ; they may hide errors on short/equal-count videos only.
-
+<!-- SPIKE:FIXTURES_START -->
 ## Semia automated comparison (fixtures)
 
 Strategies per row:
@@ -101,44 +173,53 @@ and hurt you ♪ | — | — | none (missing_track) | hide |
 never gonna give ♪ | — | — | none (missing_track) | hide |
 | 40 | 149.5s | ♪ We know the game
 and we&#39;re gonna play it ♪ | — | — | none (missing_track) | hide |
+<!-- SPIKE:FIXTURES_END -->
 
-## Manual HITL: Funlingo side-by-side (required for full parity)
+## Network RE reproduction checklist
 
-Automated run cannot install Funlingo. To complete the comparison on **Lex #434** (`e-gwvmhyU7A`) and Jo:
+Use a **new Chrome profile** with only Funlingo installed (incognito works if “Allow in incognito” is enabled on the extension).
 
-1. Install [Funlingo](https://chromewebstore.google.com/detail/funlingo-dual-subtitles-f/gjdpaicenfffjkgofmcjikilokigkonj) alongside Semia (separate profile or disable one extension at a time).
-2. Open video → enable captions → Funlingo: learning **en**, native **zh-TW** (or zh-CN).
-3. At each timestamp, record Funlingo native line vs Semia overlay:
-
-| Video | Timestamp | EN (both) | Funlingo ZH | Semia ZH (v3) |
-|-------|-----------|-----------|-------------|---------------|
-| Jo `j_r93YulrUE` | 3:56 (cue 96) | *That's part of context engineering* | _fill_ | learning-only |
-| Lex `e-gwvmhyU7A` | 1:57:41 | *you wanna really stick* | _fill_ | learning-only |
-| Lex `e-gwvmhyU7A` | ~56:13 | *405B that's not released yet* | _fill_ | learning-only |
-
-**Prediction:** Funlingo shows a **short, same-span** zh line aligned to the EN cue; Semia v3 shows **no** native line on Lex/Jo (coarse track).
+1. Open long YouTube video with CC → wait for dual subtitles.
+2. Network: filter `timedtext` — confirm ~O(10–40) requests, **no `tlang`** param.
+3. Network: filter `client=gtx` — observe burst of ~1000–3000 requests in first few seconds.
+4. Inspect payloads:
+   - Full cue: `sl=en&tl=zh&q=<sentence>`
+   - Single word: `sl=en&tl=zh&q=<word>`
+   - Aux: `sl=auto&tl=en&q=<sentence>`
+5. Filter `inputtools` — single-word hover (`itc=zh-t-i0-und`); initiator `youtube_content.js`.
+6. Clear Network → seek to unplayed timestamp → confirm **no new** `gtx` requests.
+7. Optional: go Offline after load → seek → ZH line still shows.
+8. Hover a word → confirm duplicate `gtx` URL (prewarm cache not shared with hover module).
 
 ## Recommendations for Semia
 
 | Option | Effort | Funlingo parity? | Trade-off |
 |--------|--------|------------------|-----------|
 | **A. Keep coarse → learning-only** | Done | No dual line on long videos | Safe, no wrong native |
-| **B. MT translate learning cues** (Funlingo-like) | High | **Yes** — 1:1 alignment | API cost, latency, cache; new `ai/` or translate module |
-| **C. Hybrid** — `tlang` when counts match; else MT | Medium | Partial | Complexity |
-| **D. Show YouTube native CC layer** | Low–med | Variable | Fights word-click UX (ADR-0003 strategy C) |
+| **B. MT translate learning cues** (Funlingo-like) | High | **Yes** — 1:1 alignment | Pick backend: BYOK LLM (quality) vs `gtx` spike only (ToS/rate-limit risk) |
+| **C. Hybrid** — `tlang` when counts match; else MT | Medium | Partial | Best cost/quality balance |
+| **D. Copy Funlingo `gtx` flood** | Med | Yes | **Not recommended** — ~2000 req/video, duplicates, no SLA |
 
-**Recommendation:** If product requires Funlingo-quality dual line on Lex/Jo-class videos, spike **Option B** next (translate learning `segments[i]` per cue or batched window) — not more `tlang` pairing gates.
+**Recommendation:** For Funlingo-quality dual line on Lex/Jo-class videos, spike **hybrid + gtx batch prewarm** (approved 2026-08-03 grilling):
+
+- `tlang` when not coarse; else **10 cues/batch** `gtx` prewarm on load
+- UI:「翻譯載入中」during prewarm; both paths fail → learning-only
+- See [gtx-prewarm-grilling.md](./gtx-prewarm-grilling.md) · [issues/07-gtx-hybrid-native-line-spike.md](./issues/07-gtx-hybrid-native-line-spike.md)
+- Plan B if 429: BYOK DeepSeek batch (not Funlingo word flood)
 
 ## Reproduction
 
 ```bash
-node --experimental-transform-types scripts/funlingo-parity-spike.ts
+npm run spike:funlingo-parity
 node --experimental-transform-types scripts/analyze-spike-fixtures.ts
 npm test -- apps/extension/src/lexPairingRepro.test.ts
 ```
+
+> **Note:** `spike:funlingo-parity` regenerates fixture tables only. The **Network RE section** above is maintained manually; re-running the script will not remove it if the script template is kept in sync (see `scripts/funlingo-parity-spike.ts`).
 
 ## References
 
 - Semia spike #02: [spike-report.md](./spike-report.md)
 - ADR-0003 gated native line: [docs/adr/0003-youtube-bilingual-gated-native-line.md](../../docs/adr/0003-youtube-bilingual-gated-native-line.md)
+- Funlingo engineering blog: [dual subtitles](https://engineeringgetfunlingo.hashnode.dev/how-we-built-real-time-dual-subtitles-for-youtube-and-netflix-and-what-we-got-wrong-first), [subtitle adapters](https://engineeringgetfunlingo.hashnode.dev/the-hardest-part-of-building-a-language-learning-extension-isn-t-translation-it-s-subtitles)
 - Funlingo Chrome Web Store: [Funlingo dual subtitles](https://chromewebstore.google.com/detail/funlingo-dual-subtitles-f/gjdpaicenfffjkgofmcjikilokigkonj)

@@ -6,10 +6,11 @@
 
 **Blocked by:** None — can start immediately (parallel with #07).
 
-**Status:** resolved
+**Status:** resolved (fixture tables + **Network RE finalized** 2026-08-03)
 
 - [x] ≥2 videos, ≥10 timestamps each, side-by-side EN/ZH comparison
 - [x] Report with reproduction steps; ticket comment links report
+- [x] **Network RE:** `tlang` absent; `gtx` per-cue + per-word prewarm; `inputtools` hover; duplicate on hover
 - [x] No production code changes
 
 **Report:** [funlingo-parity-report.md](../funlingo-parity-report.md) · `npm run spike:funlingo-parity`
