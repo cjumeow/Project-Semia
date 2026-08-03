@@ -1,4 +1,5 @@
 import overlayCss from './captionOverlay.css';
+import { resolveNativeCaptionLine } from './captionNativeLine';
 import { findCueIndexByTime, getVideoElement } from './playerSync';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import type { StoredTranscript, WordRef } from './types';
@@ -18,6 +19,7 @@ const HIDE_NATIVE_CC_CSS = `
 
 export type CaptionOverlay = {
   setTranscript: (transcript: StoredTranscript | null) => void;
+  setNativeLineSuppressed: (suppressed: boolean) => void;
   destroy: () => void;
 };
 
@@ -52,6 +54,7 @@ export function createCaptionOverlay(options: {
   let timeListenerAttached = false;
   let activeCueIndex = -1;
   let playerParent: HTMLElement | null = null;
+  let nativeLineSuppressed = false;
 
   function escapeHtml(text: string): string {
     return text
@@ -115,7 +118,19 @@ export function createCaptionOverlay(options: {
       })
       .join('');
 
-    root.innerHTML = `<div class="caption-line">${tokenHtml}</div>`;
+    const nativeText = resolveNativeCaptionLine(
+      seg,
+      transcript.nativeSegments,
+      {
+        nativeLineSuppressed,
+        learningSegmentCount: transcript.segments.length,
+      },
+    );
+    const nativeHtml = nativeText
+      ? `<div class="caption-line-native">${escapeHtml(nativeText)}</div>`
+      : '';
+
+    root.innerHTML = `<div class="caption-pill"><div class="caption-line-learning">${tokenHtml}</div>${nativeHtml}</div>`;
 
     root.querySelectorAll<HTMLElement>('.caption-word').forEach((el) => {
       el.addEventListener('click', (ev) => {
@@ -192,6 +207,13 @@ export function createCaptionOverlay(options: {
     }
   }, 1000);
 
+  function setNativeLineSuppressed(suppressed: boolean): void {
+    nativeLineSuppressed = suppressed;
+    if (activeCueIndex >= 0) {
+      renderCue(activeCueIndex);
+    }
+  }
+
   function destroy(): void {
     window.clearInterval(playerPoll);
     detachTimeListener();
@@ -200,5 +222,5 @@ export function createCaptionOverlay(options: {
     host.remove();
   }
 
-  return { setTranscript, destroy };
+  return { setTranscript, setNativeLineSuppressed, destroy };
 }

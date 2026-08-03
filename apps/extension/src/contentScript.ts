@@ -1,12 +1,17 @@
+import type { SemiaSettings } from '@semia/shared';
+import { SEMIA_SETTINGS_STORAGE_KEY } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
-  fetchTranscriptSegments,
-  toJson3Url,
-} from './youtubeTranscript';
+  fetchBilingualTranscript,
+  shouldApplyStoredTranscript,
+  transcriptMatchesSettings,
+} from './bilingualTranscriptFetch';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
 import { getVideoIdFromUrl, navigateCue } from './playerSync';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
+import { getSemiaSettings } from './semiaSettings';
+import { createSubtitleSettingsControl } from './subtitleSettingsControl';
 import {
   applyYoutubeMeta,
   buildYoutubeMetaForVideo,
@@ -14,7 +19,6 @@ import {
 } from './youtubePageMeta';
 
 const BRIDGE_SOURCE = 'YT_TRANSCRIPT_CAPTURE_BRIDGE';
-let lastCapturedVideoId: string | null = null;
 
 type BridgeMessage = {
   source: typeof BRIDGE_SOURCE;
@@ -28,8 +32,37 @@ const sidebar = createCaptureSidebar();
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
 });
+
+const timedtextTemplateByVideoId = new Map<string, string>();
+const inflightSync = new Map<string, Promise<void>>();
+
 let currentVideoId: string | null = getVideoIdFromUrl();
 let currentTranscript: StoredTranscript | null = null;
+let currentSettings: SemiaSettings | null = null;
+let transcriptSyncGeneration = 0;
+
+async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
+  currentSettings = settings;
+  const videoId = getVideoIdFromUrl() ?? currentVideoId;
+  if (!videoId) return;
+
+  const generation = ++transcriptSyncGeneration;
+  captionOverlay.setNativeLineSuppressed(true);
+  try {
+    await syncBilingualTranscriptForVideo(videoId, {
+      force: true,
+      syncGeneration: generation,
+    });
+  } finally {
+    if (generation === transcriptSyncGeneration) {
+      captionOverlay.setNativeLineSuppressed(false);
+    }
+  }
+}
+
+const subtitleSettings = createSubtitleSettingsControl({
+  onSettingsChange: onSemiaSettingsChange,
+});
 
 function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   currentTranscript = transcript;
@@ -104,6 +137,87 @@ async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
   syncTranscriptToUi(stored);
 }
 
+async function syncBilingualTranscriptForVideo(
+  videoId: string,
+  options?: {
+    templateUrl?: string;
+    bridgeMeta?: YoutubePageMeta;
+    force?: boolean;
+    syncGeneration?: number;
+  },
+): Promise<void> {
+  if (options?.templateUrl) {
+    timedtextTemplateByVideoId.set(videoId, options.templateUrl);
+  }
+
+  const settings = currentSettings ?? (await getSemiaSettings());
+  currentSettings = settings;
+
+  const existing = await getTranscript(videoId);
+  if (!options?.force && transcriptMatchesSettings(existing, settings)) {
+    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+      syncTranscriptToUi(existing);
+    }
+    return;
+  }
+
+  const syncKey = `${videoId}:${settings.learningLanguage}:${settings.nativeLanguage}:${settings.bilingualCaptionsEnabled}`;
+  const inflight = inflightSync.get(syncKey);
+  if (inflight) {
+    await inflight;
+    return;
+  }
+
+  const job = (async () => {
+    const { meta } = buildPageMeta(videoId, options?.bridgeMeta);
+    const template =
+      options?.templateUrl ?? timedtextTemplateByVideoId.get(videoId);
+
+    const result = await fetchBilingualTranscript({
+      videoId,
+      templateUrl: template,
+      settings,
+      pageMeta: meta,
+      source: 'interceptedTimedtextUrl',
+    });
+
+    if (!result.ok) {
+      console.warn(`[Semia] Transcript fetch failed for ${videoId}:`, result.error);
+      if (
+        videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+        (options?.syncGeneration === undefined ||
+          options.syncGeneration === transcriptSyncGeneration)
+      ) {
+        syncTranscriptToUi(existing);
+      }
+      return;
+    }
+
+    const stored = applyPageMeta(
+      result.transcript,
+      meta,
+      Boolean(meta.title || meta.channel),
+    );
+    await sendTranscriptToBackground(stored);
+
+    if (
+      videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+      (options?.syncGeneration === undefined ||
+        options.syncGeneration === transcriptSyncGeneration)
+    ) {
+      currentVideoId = videoId;
+      syncTranscriptToUi(stored);
+    }
+  })();
+
+  inflightSync.set(syncKey, job);
+  try {
+    await job;
+  } finally {
+    inflightSync.delete(syncKey);
+  }
+}
+
 async function handleInterceptedURL(
   timedtextUrl: string,
   bridgeMeta?: YoutubePageMeta,
@@ -111,60 +225,29 @@ async function handleInterceptedURL(
   try {
     const urlObj = new URL(timedtextUrl);
     const videoId = urlObj.searchParams.get('v');
-    const lang = urlObj.searchParams.get('lang') ?? 'unknown';
     if (!videoId) return;
 
-    const pageMetaResult = buildPageMeta(videoId, bridgeMeta);
-    const { meta: pageMeta, authoritative } = pageMetaResult;
     const existing = await getTranscript(videoId);
+    const { meta: pageMeta, authoritative } = buildPageMeta(videoId, bridgeMeta);
 
-    if (existing?.segments.length) {
-      if (lastCapturedVideoId === videoId) return;
-      lastCapturedVideoId = videoId;
-
-      if (authoritative && (pageMeta.title || pageMeta.channel)) {
-        const updated = applyPageMeta(existing, pageMeta, true);
-        if (
-          updated.title !== existing.title ||
-          updated.channel !== existing.channel
-        ) {
-          await sendTranscriptToBackground(updated);
-          if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
-            currentVideoId = videoId;
-            syncTranscriptToUi(updated);
-          }
+    if (existing?.segments.length && authoritative && (pageMeta.title || pageMeta.channel)) {
+      const updated = applyPageMeta(existing, pageMeta, true);
+      if (
+        updated.title !== existing.title ||
+        updated.channel !== existing.channel
+      ) {
+        await sendTranscriptToBackground(updated);
+        if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+          syncTranscriptToUi(updated);
         }
       }
-      return;
     }
 
-    if (lastCapturedVideoId === videoId) {
-      return;
-    }
-    lastCapturedVideoId = videoId;
-
-    const json3Url = toJson3Url(timedtextUrl);
-    const segments = await fetchTranscriptSegments(json3Url);
-
-    const stored: StoredTranscript = {
-      videoId,
-      videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-      languageCode: lang,
-      capturedAt: new Date().toISOString(),
-      source: 'interceptedTimedtextUrl',
-      segments,
-      title: pageMeta.title,
-      channel: pageMeta.channel,
-    };
-    await sendTranscriptToBackground(stored);
-    console.debug('Transcript captured and sent to background:', stored);
-
-    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
-      currentVideoId = videoId;
-      syncTranscriptToUi(stored);
-    }
+    await syncBilingualTranscriptForVideo(videoId, {
+      templateUrl: timedtextUrl,
+      bridgeMeta,
+    });
   } catch (err) {
-    lastCapturedVideoId = null;
     console.error('Error capturing transcript:', err);
   }
 }
@@ -242,6 +325,18 @@ function installKeyboardShortcut(): void {
 function installStorageListener(): void {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
+
+    const settingsChange = changes[SEMIA_SETTINGS_STORAGE_KEY];
+    if (settingsChange) {
+      void (async () => {
+        const next = (settingsChange.newValue ?? {}) as SemiaSettings;
+        const merged = { ...(await getSemiaSettings()), ...next };
+        currentSettings = merged;
+        subtitleSettings.setSettings(merged);
+        await onSemiaSettingsChange(merged);
+      })();
+    }
+
     const change = changes[TRANSCRIPTS_STORAGE_KEY];
     if (!change) return;
 
@@ -249,7 +344,11 @@ function installStorageListener(): void {
     if (!videoId) return;
 
     const map = (change.newValue ?? {}) as Record<string, StoredTranscript>;
-    syncTranscriptToUi(map[videoId] ?? null);
+    const transcript = map[videoId] ?? null;
+    if (!shouldApplyStoredTranscript(transcript, currentSettings)) {
+      return;
+    }
+    syncTranscriptToUi(transcript);
   });
 }
 
@@ -272,8 +371,10 @@ function installSpaNavigationWatcher(): void {
     if (nextId === currentVideoId) return;
 
     currentVideoId = nextId;
-    lastCapturedVideoId = null;
     void loadTranscriptForVideo(nextId);
+    if (nextId) {
+      void syncBilingualTranscriptForVideo(nextId);
+    }
     scheduleMetaRefresh(nextId);
   };
 
@@ -286,5 +387,12 @@ installPageWorldListener();
 installKeyboardShortcut();
 installStorageListener();
 installSpaNavigationWatcher();
-void loadTranscriptForVideo(currentVideoId);
-scheduleMetaRefresh(currentVideoId);
+
+void (async () => {
+  currentSettings = await getSemiaSettings();
+  await loadTranscriptForVideo(currentVideoId);
+  if (currentVideoId) {
+    await syncBilingualTranscriptForVideo(currentVideoId);
+  }
+  scheduleMetaRefresh(currentVideoId);
+})();

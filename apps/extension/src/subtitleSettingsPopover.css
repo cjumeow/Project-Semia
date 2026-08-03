@@ -1,0 +1,113 @@
+:host {
+  all: initial;
+  display: block;
+  width: 288px;
+  pointer-events: auto;
+}
+
+.popover {
+  width: 288px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: #212121;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: Roboto, Arial, Helvetica, sans-serif;
+}
+
+.popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.popover-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.popover-subtitle {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.close-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.fields {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.field {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.field-select {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 14px;
+}
+
+.field-select option {
+  color: #111;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.45);
+}

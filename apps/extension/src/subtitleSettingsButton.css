@@ -1,0 +1,24 @@
+#semia-subtitle-settings-host.ytp-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#semia-subtitle-settings-host.ytp-button:hover {
+  color: #fff;
+}
+
+#semia-subtitle-settings-host.ytp-button[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+#semia-subtitle-settings-host.ytp-button svg {
+  display: block;
+  pointer-events: none;
+}

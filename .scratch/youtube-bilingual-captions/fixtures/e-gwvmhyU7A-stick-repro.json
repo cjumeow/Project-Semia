@@ -1,0 +1,25 @@
+{
+  "videoId": "e-gwvmhyU7A",
+  "label": "Lex #434 @ 1:57:41 — zh-Hans pairs correctly, zh-Hant semantic mismatch",
+  "reproTimestamp": 7059,
+  "trackStats": {
+    "learningCount": 4820,
+    "nativeZhHansCount": 2910,
+    "nativeZhHantCount": 2654
+  },
+  "learning": {
+    "text": "You're saying, like, you wanna really stick",
+    "start": 7059.2,
+    "duration": 3.36
+  },
+  "nativeZhHans": {
+    "text": "你的意思是，你想 真正坚持下去。",
+    "start": 7059.2,
+    "duration": 3.36
+  },
+  "nativeZhHant": {
+    "text": "這樣想，你就會明白……完全跳脫固有思考模式。索尼的使命是讓日本走向世界，而不是讓索尼自己走向世界。",
+    "start": 7059.2,
+    "duration": 3.36
+  }
+}

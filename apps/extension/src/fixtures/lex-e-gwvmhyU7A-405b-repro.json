@@ -1,0 +1,38 @@
+{
+  "videoId": "e-gwvmhyU7A",
+  "label": "Lex #434 @ ~56:13 — 405B short semantic mismatch (user screenshot)",
+  "reproTimestamp": 3413,
+  "symptom": {
+    "learning": {
+      "text": "and the 405B that's not released yet",
+      "start": 3413.48,
+      "duration": 4.879
+    },
+    "nativeZhHantWrong": {
+      "text": "收入上，而且可能會犯很多錯",
+      "start": 3413.48,
+      "duration": 4.879
+    }
+  },
+  "fetched": {
+    "learning": {
+      "text": "is there and the 405b that's not",
+      "start": 3413.48,
+      "duration": 4.879
+    },
+    "nativeZhHantCorrectButMisaligned": {
+      "text": "而9010也已經存在，尚未發布的405b很可能會超越它，或者至少和它一樣好，也許效率稍低一些，但這",
+      "start": 3326.119,
+      "duration": 4.5
+    },
+    "nativeZhHantOverlapCandidate": {
+      "text": "2016年，你",
+      "start": 3408.68,
+      "duration": 7.6
+    },
+    "trackStats": {
+      "learningCount": 4502,
+      "nativeZhHantCount": 908
+    }
+  }
+}

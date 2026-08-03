@@ -13,7 +13,7 @@
 :host(.hidden) {
   display: none;
 }
-.caption-line {
+.caption-pill {
   pointer-events: auto;
   max-width: 90%;
   padding: 6px 10px;
@@ -21,13 +21,22 @@
   background: rgba(8, 8, 8, 0.75);
   color: #ffffff;
   font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif;
-  font-size: clamp(16px, 2.2vw, 22px);
-  font-weight: 500;
-  line-height: 1.35;
   text-align: center;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
   white-space: pre-wrap;
   word-break: break-word;
+}
+.caption-line-learning {
+  font-size: clamp(16px, 2.2vw, 22px);
+  font-weight: 500;
+  line-height: 1.35;
+}
+.caption-line-native {
+  margin-top: 2px;
+  font-size: clamp(13.6px, 1.87vw, 18.7px);
+  font-weight: 400;
+  line-height: 1.35;
+  opacity: 0.75;
 }
 .caption-word {
   cursor: pointer;
