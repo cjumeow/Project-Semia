@@ -9,7 +9,7 @@ describe('shouldDismissPopoverOnDocumentClick', () => {
     expect(
       shouldDismissPopoverOnDocumentClick({
         popoverOpen: false,
-        clickInsideHost: false,
+        clickInsideUi: false,
       }),
     ).toBe(false);
   });
@@ -18,7 +18,7 @@ describe('shouldDismissPopoverOnDocumentClick', () => {
     expect(
       shouldDismissPopoverOnDocumentClick({
         popoverOpen: true,
-        clickInsideHost: false,
+        clickInsideUi: false,
       }),
     ).toBe(true);
   });
@@ -27,7 +27,7 @@ describe('shouldDismissPopoverOnDocumentClick', () => {
     expect(
       shouldDismissPopoverOnDocumentClick({
         popoverOpen: true,
-        clickInsideHost: true,
+        clickInsideUi: true,
       }),
     ).toBe(false);
   });
