@@ -2,12 +2,26 @@ import type { SemiaSettings } from '@semia/shared';
 import { SEMIA_SETTINGS_STORAGE_KEY } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
+  coerceTranscriptForNativeLine,
   fetchBilingualTranscript,
   shouldApplyStoredTranscript,
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
+import {
+  runMtNativePrewarm,
+  shouldPrewarmMtNativeLine,
+  translateCueBatchIfMissing,
+  type MtPrewarmStatus,
+} from './mtNativePrewarm';
+import { mtCacheToMap, loadMtNativeCacheEntry } from './mtNativeCacheStorage';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
-import { getVideoIdFromUrl, navigateCue } from './playerSync';
+import {
+  findCueIndexByTime,
+  getVideoElement,
+  getVideoIdFromUrl,
+  navigateCue,
+} from './playerSync';
+import { DEFAULT_CUE_BATCH_SIZE } from './translateCueBatch';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 import { getSemiaSettings } from './semiaSettings';
@@ -29,8 +43,15 @@ type BridgeMessage = {
 };
 
 const sidebar = createCaptureSidebar();
+
+let mtTranslations = new Map<number, string>();
+const inflightPriorityBatches = new Set<number>();
+
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
+  onActiveCueChange: (cueIndex) => {
+    void prioritizeCueTranslation(cueIndex);
+  },
 });
 
 const timedtextTemplateByVideoId = new Map<string, string>();
@@ -40,6 +61,135 @@ let currentVideoId: string | null = getVideoIdFromUrl();
 let currentTranscript: StoredTranscript | null = null;
 let currentSettings: SemiaSettings | null = null;
 let transcriptSyncGeneration = 0;
+let mtPrewarmAbort: AbortController | null = null;
+let mtPrewarmKey: string | null = null;
+
+function updateMtOverlayState(
+  translations: Map<number, string>,
+  prewarmStatus: MtPrewarmStatus,
+): void {
+  mtTranslations = new Map(translations);
+  captionOverlay.setMtNativeState({
+    translationsByCueIndex: translations,
+    prewarmStatus,
+  });
+}
+
+function cancelMtPrewarm(): void {
+  mtPrewarmAbort?.abort();
+  mtPrewarmAbort = null;
+  mtPrewarmKey = null;
+  inflightPriorityBatches.clear();
+}
+
+function getActiveCueIndex(transcript: StoredTranscript): number {
+  const video = getVideoElement();
+  if (!video) return 0;
+  const idx = findCueIndexByTime(transcript.segments, video.currentTime);
+  return idx >= 0 ? idx : 0;
+}
+
+async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
+  const transcript = currentTranscript;
+  if (!transcript || !shouldPrewarmMtNativeLine(transcript)) return;
+  if (mtTranslations.has(cueIndex)) return;
+
+  const batchIndex = Math.floor(cueIndex / DEFAULT_CUE_BATCH_SIZE);
+  if (inflightPriorityBatches.has(batchIndex)) return;
+  inflightPriorityBatches.add(batchIndex);
+
+  const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
+  const key = `${transcript.videoId}:${nativeLang}`;
+
+  try {
+    const updated = await translateCueBatchIfMissing({
+      transcript,
+      cueIndex,
+      translations: mtTranslations,
+      signal: mtPrewarmAbort?.signal,
+    });
+    if (mtPrewarmKey !== key && mtPrewarmKey !== null) return;
+    if (!updated.has(cueIndex)) return;
+    const fullyCached = updated.size >= transcript.segments.length;
+    updateMtOverlayState(updated, fullyCached ? 'complete' : 'loading');
+  } catch (err) {
+    if (mtPrewarmAbort?.signal.aborted) return;
+    console.warn('[Semia] Priority cue translation failed:', err);
+  } finally {
+    inflightPriorityBatches.delete(batchIndex);
+  }
+}
+
+async function maybeStartMtNativePrewarm(
+  transcript: StoredTranscript,
+): Promise<void> {
+  const settings = currentSettings ?? (await getSemiaSettings());
+  if (settings.bilingualCaptionsEnabled === false) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+    return;
+  }
+
+  if (!shouldPrewarmMtNativeLine(transcript)) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+    return;
+  }
+
+  const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
+  const key = `${transcript.videoId}:${nativeLang}`;
+  if (mtPrewarmKey === key) {
+    if (mtPrewarmAbort) {
+      return;
+    }
+    const cached = mtCacheToMap(
+      await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
+    );
+    mtTranslations = new Map(cached);
+    const fullyCached = mtTranslations.size >= transcript.segments.length;
+    updateMtOverlayState(
+      mtTranslations,
+      fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
+    );
+    return;
+  }
+
+  cancelMtPrewarm();
+  mtPrewarmKey = key;
+
+  const cached = mtCacheToMap(
+    await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
+  );
+  mtTranslations = new Map(cached);
+  const fullyCached = mtTranslations.size >= transcript.segments.length;
+  updateMtOverlayState(
+    mtTranslations,
+    fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
+  );
+
+  const controller = new AbortController();
+  mtPrewarmAbort = controller;
+
+  void runMtNativePrewarm({
+    transcript,
+    translations: mtTranslations,
+    priorityCueIndex: getActiveCueIndex(transcript),
+    signal: controller.signal,
+    onProgress: (translations, status) => {
+      if (controller.signal.aborted) return;
+      if (mtPrewarmKey !== key) return;
+      updateMtOverlayState(translations, status);
+    },
+  }).catch((err) => {
+    if (controller.signal.aborted) return;
+    console.warn('[Semia] MT prewarm failed:', err);
+    updateMtOverlayState(mtTranslations, 'failed');
+  }).finally(() => {
+    if (mtPrewarmKey === key) {
+      mtPrewarmAbort = null;
+    }
+  });
+}
 
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
@@ -48,6 +198,8 @@ async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
 
   const generation = ++transcriptSyncGeneration;
   captionOverlay.setNativeLineSuppressed(true);
+  cancelMtPrewarm();
+  updateMtOverlayState(new Map(), 'idle');
   try {
     await syncBilingualTranscriptForVideo(videoId, {
       force: true,
@@ -65,9 +217,27 @@ const subtitleSettings = createSubtitleSettingsControl({
 });
 
 function syncTranscriptToUi(transcript: StoredTranscript | null): void {
-  currentTranscript = transcript;
-  sidebar.setTranscript(transcript);
-  captionOverlay.setTranscript(transcript);
+  const normalized = transcript
+    ? coerceTranscriptForNativeLine(transcript)
+    : null;
+  currentTranscript = normalized;
+  sidebar.setTranscript(normalized);
+  const preferMt = normalized ? shouldPrewarmMtNativeLine(normalized) : false;
+  captionOverlay.setSkipTlangPairing(preferMt);
+  if (normalized && preferMt) {
+    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
+    updateMtOverlayState(new Map(), 'loading');
+  } else if (!normalized) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+  } else {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+  }
+  captionOverlay.setTranscript(normalized);
+  if (normalized && preferMt) {
+    void maybeStartMtNativePrewarm(normalized);
+  }
 }
 
 async function sendTranscriptToBackground(

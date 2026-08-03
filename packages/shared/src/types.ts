@@ -17,6 +17,11 @@ export type StoredTranscript = {
   nativeSegments?: TranscriptSegment[];
   /** Semia native language used when fetching `nativeSegments`. */
   nativeLanguageCode?: string;
+  /**
+   * YouTube `tlang` timedtext failed (e.g. 429). Native line uses GTX instead;
+   * any cached `nativeSegments` must be ignored.
+   */
+  nativeTrackUnavailable?: boolean;
   /** Watch page title without the trailing " - YouTube". */
   title?: string;
   channel?: string;

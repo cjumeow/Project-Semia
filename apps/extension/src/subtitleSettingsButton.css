@@ -1,24 +1,63 @@
+/* Native YouTube chrome — scheme A: opacity-only hover.
+ * Tune alignment here; icon shape in semiaSubtitleIcon.ts */
 #semia-subtitle-settings-host.ytp-button {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: inline-flex;
+  position: relative;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0 !important;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
+  align-self: center;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-#semia-subtitle-settings-host.ytp-button:hover {
+  line-height: 0;
+  font-size: 0;
+  vertical-align: top;
   color: #fff;
+  opacity: 0.75;
+  cursor: pointer;
+  outline: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+#semia-subtitle-settings-host.ytp-button:hover,
+#semia-subtitle-settings-host.ytp-button[aria-expanded='true'],
 #semia-subtitle-settings-host.ytp-button[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  opacity: 1;
+  background: none !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+#semia-subtitle-settings-host.ytp-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
 }
 
 #semia-subtitle-settings-host.ytp-button svg {
   display: block;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
   pointer-events: none;
+  /* Optical nudge: document icon reads slightly low in 24×24 viewBox */
+  transform: translateY(-1px);
 }

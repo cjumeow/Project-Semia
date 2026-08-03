@@ -26,12 +26,12 @@ describe('Lex #434 405B diagnosis (e-gwvmhyU7A @ ~56:13)', () => {
       expect(result.nativeText).toBeNull();
     });
 
-    it('overlay is learning-only on coarse Lex track (screenshot pair)', () => {
+    it('overlay is learning-only on coarse Lex track without MT cache', () => {
       expect(
         resolveNativeCaptionLine(symptom.learning, [symptom.nativeZhHantWrong], {
           learningSegmentCount: fetched.trackStats.learningCount,
         }),
-      ).toBeNull();
+      ).toEqual({ status: 'none' });
     });
   });
 

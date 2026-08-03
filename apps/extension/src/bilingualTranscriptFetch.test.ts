@@ -1,10 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { SemiaSettings } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
+  coerceTranscriptForNativeLine,
+  fetchBilingualTranscript,
   shouldApplyStoredTranscript,
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
+import * as youtubeTranscript from './youtubeTranscript';
+
+vi.mock('./youtubeTranscript', async (importOriginal) => {
+  const actual = await importOriginal<typeof youtubeTranscript>();
+  return {
+    ...actual,
+    fetchTranscriptSegments: vi.fn(),
+  };
+});
 
 const settings: SemiaSettings = {
   learningLanguage: 'en',
@@ -34,6 +45,72 @@ describe('transcriptMatchesSettings', () => {
       nativeLanguageCode: 'zh-CN',
     };
     expect(transcriptMatchesSettings(zhCnTranscript, settings)).toBe(false);
+  });
+
+  it('accepts nativeTrackUnavailable transcript without native segments', () => {
+    const unavailable: StoredTranscript = {
+      ...transcript,
+      nativeSegments: [],
+      nativeTrackUnavailable: true,
+    };
+    expect(transcriptMatchesSettings(unavailable, settings)).toBe(true);
+  });
+});
+
+describe('coerceTranscriptForNativeLine', () => {
+  it('strips stale native segments when tlang is unavailable', () => {
+    const stale: StoredTranscript = {
+      ...transcript,
+      nativeTrackUnavailable: true,
+    };
+    const coerced = coerceTranscriptForNativeLine(stale);
+    expect(coerced.nativeSegments).toEqual([]);
+    expect(coerced.nativeTrackUnavailable).toBe(true);
+  });
+
+  it('returns transcript unchanged when tlang is available', () => {
+    expect(coerceTranscriptForNativeLine(transcript)).toBe(transcript);
+  });
+});
+
+describe('fetchBilingualTranscript', () => {
+  const fetchSegments = vi.mocked(youtubeTranscript.fetchTranscriptSegments);
+
+  beforeEach(() => {
+    fetchSegments.mockReset();
+  });
+
+  it('marks nativeTrackUnavailable when tlang fetch returns 429', async () => {
+    fetchSegments
+      .mockResolvedValueOnce([{ text: 'hello', start: 0, duration: 1 }])
+      .mockRejectedValueOnce(new Error('Failed to fetch timedtext: 429 '));
+
+    const result = await fetchBilingualTranscript({
+      videoId: 'abc',
+      settings,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.translationUnavailable).toBe(true);
+    expect(result.transcript.nativeTrackUnavailable).toBe(true);
+    expect(result.transcript.nativeSegments).toEqual([]);
+  });
+
+  it('clears nativeTrackUnavailable when tlang fetch succeeds', async () => {
+    fetchSegments
+      .mockResolvedValueOnce([{ text: 'hello', start: 0, duration: 1 }])
+      .mockResolvedValueOnce([{ text: '你好', start: 0, duration: 1 }]);
+
+    const result = await fetchBilingualTranscript({
+      videoId: 'abc',
+      settings,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.transcript.nativeTrackUnavailable).toBeUndefined();
+    expect(result.transcript.nativeSegments).toHaveLength(1);
   });
 });
 

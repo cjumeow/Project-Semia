@@ -15,7 +15,7 @@
 }
 .caption-pill {
   pointer-events: auto;
-  max-width: 90%;
+  width: max-content;
   padding: 6px 10px;
   border-radius: 4px;
   background: rgba(8, 8, 8, 0.75);
@@ -23,13 +23,12 @@
   font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif;
   text-align: center;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 .caption-line-learning {
   font-size: clamp(16px, 2.2vw, 22px);
   font-weight: 500;
   line-height: 1.35;
+  white-space: nowrap;
 }
 .caption-line-native {
   margin-top: 2px;
@@ -37,6 +36,7 @@
   font-weight: 400;
   line-height: 1.35;
   opacity: 0.75;
+  white-space: nowrap;
 }
 .caption-word {
   cursor: pointer;
@@ -46,6 +46,7 @@
 .caption-word:hover {
   background: rgba(255, 255, 255, 0.2);
 }
-.caption-punct {
-  color: #ffffff;
+.caption-line-native-loading {
+  opacity: 0.55;
+  font-style: italic;
 }

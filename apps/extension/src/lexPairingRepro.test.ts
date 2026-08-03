@@ -43,18 +43,23 @@ describe('Lex #434 stick repro (e-gwvmhyU7A @ ~1:57:41)', () => {
     expect(result.reason).toBe('granularity');
   });
 
-  it('resolveNativeCaptionLine is learning-only on coarse tlang tracks', () => {
+  it('resolveNativeCaptionLine uses MT cache on coarse tlang tracks', () => {
+    const mt = new Map([[0, '你想真的堅持']]);
     expect(
       resolveNativeCaptionLine(learning, [nativeZhHans], {
         learningSegmentCount: trackStats.learningCount,
+        cueIndex: 0,
+        mtTranslations: mt,
       }),
-    ).toBeNull();
+    ).toEqual({ status: 'text', text: '你想真的堅持' });
 
     expect(
       resolveNativeCaptionLine(learning, [nativeZhHant], {
         learningSegmentCount: trackStats.learningCount,
+        cueIndex: 0,
+        mtTranslations: mt,
       }),
-    ).toBeNull();
+    ).toEqual({ status: 'text', text: '你想真的堅持' });
   });
 });
 

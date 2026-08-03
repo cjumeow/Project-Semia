@@ -21,6 +21,12 @@ export const PAIRING_MAX_NATIVE_DURATION_RATIO = 2.5;
 /** Native cue count below learning × this ratio is a coarse merged track. */
 export const COARSE_NATIVE_TRACK_RATIO = 0.7;
 
+/** Sample size when estimating whether a non-coarse tlang track pairs reliably. */
+export const PAIRING_RELIABILITY_SAMPLE_SIZE = 30;
+
+/** Fraction of sampled cues that must pair `high` to keep the tlang path. */
+export const PAIRING_RELIABILITY_THRESHOLD = 0.8;
+
 const SENTENCE_TERMINATORS = /[.!?。！？]/g;
 
 export type PairingConfidence = 'high' | 'none';
@@ -62,6 +68,50 @@ export function isCoarseNativeTrack(
 ): boolean {
   if (learningCount <= 0 || nativeCount <= 0) return false;
   return nativeCount < learningCount * COARSE_NATIVE_TRACK_RATIO;
+}
+
+export function sampleCueIndices(total: number, maxSamples: number): number[] {
+  if (total <= 0) return [];
+  if (total <= maxSamples) {
+    return Array.from({ length: total }, (_, i) => i);
+  }
+  const step = total / maxSamples;
+  const indices: number[] = [];
+  for (let i = 0; i < maxSamples; i++) {
+    indices.push(Math.min(total - 1, Math.floor(i * step)));
+  }
+  return indices;
+}
+
+/** Share of sampled learning cues that pair `high` against the tlang track. */
+export function estimateTlangPairingHighRate(
+  learningSegments: TranscriptSegment[],
+  nativeSegments: TranscriptSegment[],
+): number {
+  const indices = sampleCueIndices(
+    learningSegments.length,
+    PAIRING_RELIABILITY_SAMPLE_SIZE,
+  );
+  if (!indices.length) return 1;
+
+  let high = 0;
+  for (const i of indices) {
+    const paired = pairNativeForLearningCue(learningSegments[i]!, nativeSegments);
+    if (paired.confidence === 'high') high++;
+  }
+  return high / indices.length;
+}
+
+/** False when tlang exists but pairing gates fail too often — use MT instead. */
+export function isTlangPairingReliable(
+  learningSegments: TranscriptSegment[],
+  nativeSegments: TranscriptSegment[],
+): boolean {
+  if (!learningSegments.length || !nativeSegments.length) return true;
+  return (
+    estimateTlangPairingHighRate(learningSegments, nativeSegments) >=
+    PAIRING_RELIABILITY_THRESHOLD
+  );
 }
 
 function maxNativeLengthRatio(coarseNativeTrack: boolean): number {

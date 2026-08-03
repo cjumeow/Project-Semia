@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   PAIRING_MAX_START_DELTA_SEC,
   PAIRING_MIN_OVERLAP_RATIO,
+  estimateTlangPairingHighRate,
+  isTlangPairingReliable,
   pairNativeForLearningCue,
   validateNativeTrackLength,
 } from './cuePairing';
@@ -158,5 +160,35 @@ describe('validateNativeTrackLength', () => {
 
   it('accepts equal lengths', () => {
     expect(validateNativeTrackLength(10, 10)).toBeNull();
+  });
+});
+
+describe('isTlangPairingReliable', () => {
+  it('returns true when sampled cues pair high', () => {
+    const learning = [
+      { text: 'hello', start: 0, duration: 2 },
+      { text: 'world', start: 2, duration: 2 },
+    ];
+    const native = [
+      { text: '你好', start: 0, duration: 2 },
+      { text: '世界', start: 2, duration: 2 },
+    ];
+    expect(isTlangPairingReliable(learning, native)).toBe(true);
+    expect(estimateTlangPairingHighRate(learning, native)).toBe(1);
+  });
+
+  it('returns false when timing gates fail for most sampled cues', () => {
+    const learning = Array.from({ length: 20 }, (_, i) => ({
+      text: `cue ${i}`,
+      start: i * 2,
+      duration: 1,
+    }));
+    const native = learning.map((seg) => ({
+      text: `翻譯 ${seg.text}`,
+      start: seg.start + 5,
+      duration: 1,
+    }));
+    expect(isTlangPairingReliable(learning, native)).toBe(false);
+    expect(estimateTlangPairingHighRate(learning, native)).toBe(0);
   });
 });

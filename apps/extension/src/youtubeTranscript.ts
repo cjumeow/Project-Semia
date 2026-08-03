@@ -56,6 +56,11 @@ export function buildTranslatedTimedtextUrl(
 /**
  * Download and parse JSON3 timedtext into normalized segments.
  */
+export function isTimedtextRateLimitError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /\b429\b/.test(message);
+}
+
 export async function fetchTranscriptSegments(
   json3Url: string,
 ): Promise<TranscriptSegment[]> {

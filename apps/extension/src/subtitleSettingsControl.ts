@@ -14,6 +14,7 @@ import {
   buildPopoverFieldsHtml,
   POPOVER_WIDTH,
 } from './subtitleSettingsPopoverMarkup';
+import { semiaSnippetTabIconSvg } from './semiaSubtitleIcon';
 
 const BUTTON_HOST_ID = 'semia-subtitle-settings-host';
 const BUTTON_STYLE_ID = 'semia-subtitle-settings-button-style';
@@ -25,14 +26,6 @@ export type SubtitleSettingsControl = {
   destroy: () => void;
   setSettings: (settings: SemiaSettings) => void;
 };
-
-function semiaSubtitleIconSvg(): string {
-  return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M7 10h6M7 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M16 8l3 2-3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-}
 
 function ensureButtonStyles(): void {
   if (document.getElementById(BUTTON_STYLE_ID)) return;
@@ -108,7 +101,7 @@ export function createSubtitleSettingsControl(options: {
     const bilingual = bilingualActive();
     buttonHost.setAttribute('aria-pressed', bilingual ? 'true' : 'false');
     buttonHost.setAttribute('aria-expanded', popoverOpen ? 'true' : 'false');
-    buttonHost.innerHTML = semiaSubtitleIconSvg();
+    buttonHost.innerHTML = semiaSnippetTabIconSvg();
   }
 
   function renderPopover(): void {
