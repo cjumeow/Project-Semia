@@ -1,6 +1,10 @@
 import type { SemiaSettings } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
+  extractTimedtextLanguage,
+  learningLanguagesCompatible,
+} from './transcriptSyncPolicy';
+import {
   buildLearningTimedtextUrl,
   buildTranslatedTimedtextUrl,
   fetchTranscriptSegments,
@@ -27,7 +31,11 @@ export function transcriptMatchesSettings(
 ): boolean {
   if (!transcript?.segments.length) return false;
   const learningLang = settings.learningLanguage?.trim() || 'en';
-  if (transcript.languageCode !== learningLang) return false;
+  if (
+    !learningLanguagesCompatible(transcript.languageCode, learningLang)
+  ) {
+    return false;
+  }
 
   const bilingual = settings.bilingualCaptionsEnabled !== false;
   if (!bilingual) return true;
@@ -62,8 +70,11 @@ export async function fetchBilingualTranscript(options: {
   const template = templateUrl ?? videoId;
 
   let learningSegments;
+  let resolvedLearningLang = learningLang;
   try {
     const learningUrl = buildLearningTimedtextUrl(template, learningLang);
+    resolvedLearningLang =
+      extractTimedtextLanguage(learningUrl) ?? learningLang;
     learningSegments = await fetchTranscriptSegments(learningUrl);
   } catch (err) {
     const message =
@@ -86,7 +97,7 @@ export async function fetchBilingualTranscript(options: {
     try {
       const nativeUrl = buildTranslatedTimedtextUrl(
         template,
-        learningLang,
+        resolvedLearningLang,
         nativeLang,
       );
       nativeSegments = await fetchTranscriptSegments(nativeUrl);
@@ -117,7 +128,7 @@ export async function fetchBilingualTranscript(options: {
   const transcript: StoredTranscript = {
     videoId,
     videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-    languageCode: learningLang,
+    languageCode: resolvedLearningLang,
     nativeLanguageCode: bilingual ? nativeLang : undefined,
     nativeSegments: bilingual ? nativeSegments : undefined,
     nativeTrackUnavailable: nativeTrackUnavailable || undefined,

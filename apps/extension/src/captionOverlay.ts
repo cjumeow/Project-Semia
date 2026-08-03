@@ -1,8 +1,8 @@
 import overlayCss from './captionOverlay.css';
 import {
-  NATIVE_LINE_LOADING_TEXT,
   resolveNativeCaptionLine,
 } from './captionNativeLine';
+import { getNativeLineLoadingText } from './nativeLineLoadingText';
 import type { MtPrewarmStatus } from './mtNativePrewarm';
 import { findCueIndexByTime, getVideoElement } from './playerSync';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
@@ -25,6 +25,7 @@ export type CaptionOverlay = {
   setTranscript: (transcript: StoredTranscript | null) => void;
   setNativeLineSuppressed: (suppressed: boolean) => void;
   setSkipTlangPairing: (skip: boolean) => void;
+  setNativeLoadingText: (text: string) => void;
   setMtNativeState: (state: MtNativeOverlayState) => void;
   getActiveCueIndex: () => number;
   destroy: () => void;
@@ -66,11 +67,17 @@ export function createCaptionOverlay(options: {
   let tokensByCue: CueToken[][] = [];
   let timeListenerAttached = false;
   let activeCueIndex = -1;
+  let renderedCueIndex = -1;
   let playerParent: HTMLElement | null = null;
   let nativeLineSuppressed = false;
   let skipTlangPairing = false;
   let mtTranslations = new Map<number, string>();
   let mtPrewarmStatus: MtPrewarmStatus = 'idle';
+  let nativeLoadingText = getNativeLineLoadingText('zh-TW');
+  let pillEl: HTMLDivElement | null = null;
+  let learningEl: HTMLDivElement | null = null;
+  let nativeEl: HTMLDivElement | null = null;
+  let renderFrame: number | null = null;
 
   function escapeHtml(text: string): string {
     return text
@@ -84,6 +91,28 @@ export function createCaptionOverlay(options: {
     const lang = transcript?.languageCode ?? 'en';
     tokensByCue =
       transcript?.segments.map((seg) => tokenizeCue(seg.text, lang)) ?? [];
+  }
+
+  function ensureCaptionShell(): void {
+    if (pillEl && learningEl && nativeEl) return;
+    root.replaceChildren();
+    pillEl = document.createElement('div');
+    pillEl.className = 'caption-pill';
+    learningEl = document.createElement('div');
+    learningEl.className = 'caption-line-learning';
+    nativeEl = document.createElement('div');
+    nativeEl.className = 'caption-line-native';
+    nativeEl.hidden = true;
+    pillEl.append(learningEl, nativeEl);
+    root.appendChild(pillEl);
+  }
+
+  function clearCaptionShell(): void {
+    pillEl = null;
+    learningEl = null;
+    nativeEl = null;
+    root.replaceChildren();
+    renderedCueIndex = -1;
   }
 
   function mountToPlayer(): boolean {
@@ -104,58 +133,9 @@ export function createCaptionOverlay(options: {
     return true;
   }
 
-  function renderCue(cueIndex: number): void {
-    if (!transcript || cueIndex < 0) {
-      host.classList.add('hidden');
-      root.innerHTML = '';
-      return;
-    }
-
-    const seg = transcript.segments[cueIndex];
-    if (!seg) {
-      host.classList.add('hidden');
-      root.innerHTML = '';
-      return;
-    }
-
-    if (!mountToPlayer()) {
-      host.classList.add('hidden');
-      return;
-    }
-
-    host.classList.remove('hidden');
-    const tokens = tokensByCue[cueIndex] ?? [];
-    const tokenHtml = tokens
-      .map((token) => {
-        if (!token.isWord) {
-          return `<span class="caption-punct">${escapeHtml(token.text)}</span>`;
-        }
-        return `<span class="caption-word" data-cue="${cueIndex}" data-word="${token.wordIndex}">${escapeHtml(token.text)}</span>`;
-      })
-      .join('');
-
-    const nativeResult = resolveNativeCaptionLine(
-      seg,
-      transcript.nativeSegments,
-      {
-        nativeLineSuppressed,
-        skipTlangPairing,
-        learningSegmentCount: transcript.segments.length,
-        cueIndex,
-        mtTranslations,
-        mtPrewarmActive: mtPrewarmStatus === 'loading',
-      },
-    );
-    let nativeHtml = '';
-    if (nativeResult.status === 'text') {
-      nativeHtml = `<div class="caption-line-native">${escapeHtml(nativeResult.text)}</div>`;
-    } else if (nativeResult.status === 'loading') {
-      nativeHtml = `<div class="caption-line-native caption-line-native-loading">${escapeHtml(NATIVE_LINE_LOADING_TEXT)}</div>`;
-    }
-
-    root.innerHTML = `<div class="caption-pill"><div class="caption-line-learning">${tokenHtml}</div>${nativeHtml}</div>`;
-
-    root.querySelectorAll<HTMLElement>('.caption-word').forEach((el) => {
+  function bindLearningWords(cueIndex: number): void {
+    if (!learningEl) return;
+    learningEl.querySelectorAll<HTMLElement>('.caption-word').forEach((el) => {
       el.addEventListener('click', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -166,6 +146,100 @@ export function createCaptionOverlay(options: {
         if (!text) return;
         options.onWordClick({ cueIndex: c, wordIndex: w });
       });
+    });
+  }
+
+  function renderLearningLine(cueIndex: number): void {
+    if (!learningEl) return;
+    const tokens = tokensByCue[cueIndex] ?? [];
+    learningEl.innerHTML = tokens
+      .map((token) => {
+        if (!token.isWord) {
+          return `<span class="caption-punct">${escapeHtml(token.text)}</span>`;
+        }
+        return `<span class="caption-word" data-cue="${cueIndex}" data-word="${token.wordIndex}">${escapeHtml(token.text)}</span>`;
+      })
+      .join('');
+    bindLearningWords(cueIndex);
+  }
+
+  function renderNativeLine(cueIndex: number, seg: StoredTranscript['segments'][number]): void {
+    if (!nativeEl) return;
+
+    const nativeResult = resolveNativeCaptionLine(
+      seg,
+      transcript!.nativeSegments,
+      {
+        nativeLineSuppressed,
+        skipTlangPairing,
+        learningSegmentCount: transcript!.segments.length,
+        cueIndex,
+        mtTranslations,
+        mtPrewarmActive: mtPrewarmStatus === 'loading',
+      },
+    );
+
+    const showMtSlot =
+      skipTlangPairing &&
+      !nativeLineSuppressed &&
+      nativeResult.status !== 'text';
+
+    if (nativeResult.status === 'text') {
+      nativeEl.textContent = nativeResult.text;
+      nativeEl.classList.remove('caption-line-native-loading');
+      nativeEl.hidden = false;
+      return;
+    }
+
+    if (nativeResult.status === 'loading' || showMtSlot) {
+      nativeEl.textContent = nativeLoadingText;
+      nativeEl.classList.add('caption-line-native-loading');
+      nativeEl.hidden = false;
+      return;
+    }
+
+    nativeEl.textContent = '';
+    nativeEl.classList.remove('caption-line-native-loading');
+    nativeEl.hidden = true;
+  }
+
+  function renderCue(cueIndex: number): void {
+    if (!transcript || cueIndex < 0) {
+      host.classList.add('hidden');
+      clearCaptionShell();
+      return;
+    }
+
+    const seg = transcript.segments[cueIndex];
+    if (!seg) {
+      host.classList.add('hidden');
+      clearCaptionShell();
+      return;
+    }
+
+    if (!mountToPlayer()) {
+      host.classList.add('hidden');
+      return;
+    }
+
+    host.classList.remove('hidden');
+    ensureCaptionShell();
+
+    if (cueIndex !== renderedCueIndex) {
+      renderLearningLine(cueIndex);
+      renderedCueIndex = cueIndex;
+    }
+    renderNativeLine(cueIndex, seg);
+  }
+
+  function scheduleRender(): void {
+    if (activeCueIndex < 0) return;
+    if (renderFrame !== null) return;
+    renderFrame = window.requestAnimationFrame(() => {
+      renderFrame = null;
+      if (activeCueIndex >= 0) {
+        renderCue(activeCueIndex);
+      }
     });
   }
 
@@ -207,10 +281,11 @@ export function createCaptionOverlay(options: {
     transcript = next;
     rebuildTokens();
     activeCueIndex = -1;
+    renderedCueIndex = -1;
 
     if (!next?.segments.length) {
       host.classList.add('hidden');
-      root.innerHTML = '';
+      clearCaptionShell();
       detachTimeListener();
       return;
     }
@@ -234,13 +309,18 @@ export function createCaptionOverlay(options: {
   function setMtNativeState(state: MtNativeOverlayState): void {
     mtTranslations = new Map(state.translationsByCueIndex);
     mtPrewarmStatus = state.prewarmStatus;
+    scheduleRender();
+  }
+
+  function setSkipTlangPairing(skip: boolean): void {
+    skipTlangPairing = skip;
     if (activeCueIndex >= 0) {
       renderCue(activeCueIndex);
     }
   }
 
-  function setSkipTlangPairing(skip: boolean): void {
-    skipTlangPairing = skip;
+  function setNativeLoadingText(text: string): void {
+    nativeLoadingText = text;
     if (activeCueIndex >= 0) {
       renderCue(activeCueIndex);
     }
@@ -254,6 +334,9 @@ export function createCaptionOverlay(options: {
   }
 
   function destroy(): void {
+    if (renderFrame !== null) {
+      window.cancelAnimationFrame(renderFrame);
+    }
     window.clearInterval(playerPoll);
     detachTimeListener();
     document.documentElement.classList.remove(HIDE_CC_CLASS);
@@ -264,6 +347,7 @@ export function createCaptionOverlay(options: {
   return {
     setTranscript,
     setNativeLineSuppressed,
+    setNativeLoadingText,
     setSkipTlangPairing,
     setMtNativeState,
     getActiveCueIndex: () => activeCueIndex,

@@ -20,6 +20,53 @@
     };
   }
 
+  function readCaptionTracks(videoId: string | null) {
+    const playerResponse = w.ytInitialPlayerResponse;
+    const responseVideoId = playerResponse?.videoDetails?.videoId;
+    if (videoId && responseVideoId && responseVideoId !== videoId) {
+      return [];
+    }
+
+    const tracks =
+      playerResponse?.captions?.playerCaptionsTracklistRenderer
+        ?.captionTracks ?? [];
+
+    return tracks
+      .map((track: { languageCode?: string; baseUrl?: string }) => ({
+        languageCode: track.languageCode ?? "",
+        baseUrl: track.baseUrl ?? "",
+      }))
+      .filter((track: { baseUrl: string }) => Boolean(track.baseUrl));
+  }
+
+  function readActiveCaptionLanguage(): string | undefined {
+    const player = document.getElementById("movie_player") as
+      | { getOption?: (module: string, name: string) => { languageCode?: string } }
+      | null;
+    const track = player?.getOption?.("captions", "track");
+    return track?.languageCode || undefined;
+  }
+
+  function postCaptionTracks(videoId: string | null) {
+    const tracks = readCaptionTracks(videoId);
+    if (!tracks.length) return;
+
+    const playerMeta = videoId ? readPlayerMeta(videoId) : undefined;
+
+    window.postMessage(
+      {
+        source: BRIDGE_SOURCE,
+        type: "CAPTION_TRACKS",
+        videoId,
+        tracks,
+        activeCaptionLanguage: readActiveCaptionLanguage(),
+        title: playerMeta?.title,
+        channel: playerMeta?.channel,
+      },
+      "*",
+    );
+  }
+
   function postTimedtextUrl(url: string) {
     let videoId: string | null = null;
     try {
@@ -40,6 +87,12 @@
       },
       "*",
     );
+  }
+
+  function publishPlayerCaptionTracks() {
+    const videoId = new URL(window.location.href).searchParams.get("v");
+    if (!videoId) return;
+    postCaptionTracks(videoId);
   }
 
   const originalFetch = window.fetch;
@@ -79,4 +132,8 @@
 
     return (originalOpen as any).apply(this, [method, url, ...args]);
   };
+
+  window.addEventListener("yt-navigate-finish", publishPlayerCaptionTracks);
+  publishPlayerCaptionTracks();
+  window.setTimeout(publishPlayerCaptionTracks, 1500);
 })();

@@ -8,9 +8,22 @@ import {
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
 import {
+  extractTimedtextLanguage,
+  pickCaptionTrackBaseUrl,
+  resolveTimedtextTemplate,
+  shouldDeferTranscriptFetch,
+  shouldStoreTimedtextTemplate,
+  type CaptionTrackRef,
+} from './transcriptSyncPolicy';
+import { fetchInnertubeCaptionTracks } from './youtubeInnertubeCaptions';
+import { getNativeLineLoadingText } from './nativeLineLoadingText';
+import {
+  createMtPrewarmSession,
   runMtNativePrewarm,
+  setMtPrewarmPriorityCue,
   shouldPrewarmMtNativeLine,
   translateCueBatchIfMissing,
+  type MtPrewarmSession,
   type MtPrewarmStatus,
 } from './mtNativePrewarm';
 import { mtCacheToMap, loadMtNativeCacheEntry } from './mtNativeCacheStorage';
@@ -21,7 +34,6 @@ import {
   getVideoIdFromUrl,
   navigateCue,
 } from './playerSync';
-import { DEFAULT_CUE_BATCH_SIZE } from './translateCueBatch';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 import { getSemiaSettings } from './semiaSettings';
@@ -36,8 +48,11 @@ const BRIDGE_SOURCE = 'YT_TRANSCRIPT_CAPTURE_BRIDGE';
 
 type BridgeMessage = {
   source: typeof BRIDGE_SOURCE;
-  type: 'TIMEDTEXT_URL';
-  url: string;
+  type: 'TIMEDTEXT_URL' | 'CAPTION_TRACKS';
+  url?: string;
+  videoId?: string;
+  tracks?: CaptionTrackRef[];
+  activeCaptionLanguage?: string;
   title?: string;
   channel?: string;
 };
@@ -45,16 +60,18 @@ type BridgeMessage = {
 const sidebar = createCaptureSidebar();
 
 let mtTranslations = new Map<number, string>();
-const inflightPriorityBatches = new Set<number>();
+let mtPrewarmSession: MtPrewarmSession | null = null;
 
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
   onActiveCueChange: (cueIndex) => {
+    setMtPrewarmPriorityCue(mtPrewarmSession, cueIndex);
     void prioritizeCueTranslation(cueIndex);
   },
 });
 
 const timedtextTemplateByVideoId = new Map<string, string>();
+const preferredCaptionLanguageByVideoId = new Map<string, string>();
 const inflightSync = new Map<string, Promise<void>>();
 
 let currentVideoId: string | null = getVideoIdFromUrl();
@@ -64,14 +81,19 @@ let transcriptSyncGeneration = 0;
 let mtPrewarmAbort: AbortController | null = null;
 let mtPrewarmKey: string | null = null;
 
-function updateMtOverlayState(
-  translations: Map<number, string>,
-  prewarmStatus: MtPrewarmStatus,
+function replaceMtTranslations(
+  source: Iterable<[number, string]>,
 ): void {
-  mtTranslations = new Map(translations);
+  mtTranslations.clear();
+  for (const [index, text] of source) {
+    if (text.trim()) mtTranslations.set(index, text);
+  }
+}
+
+function updateMtOverlayState(status: MtPrewarmStatus): void {
   captionOverlay.setMtNativeState({
-    translationsByCueIndex: translations,
-    prewarmStatus,
+    translationsByCueIndex: mtTranslations,
+    prewarmStatus: status,
   });
 }
 
@@ -79,7 +101,7 @@ function cancelMtPrewarm(): void {
   mtPrewarmAbort?.abort();
   mtPrewarmAbort = null;
   mtPrewarmKey = null;
-  inflightPriorityBatches.clear();
+  mtPrewarmSession = null;
 }
 
 function getActiveCueIndex(transcript: StoredTranscript): number {
@@ -94,10 +116,6 @@ async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
   if (!transcript || !shouldPrewarmMtNativeLine(transcript)) return;
   if (mtTranslations.has(cueIndex)) return;
 
-  const batchIndex = Math.floor(cueIndex / DEFAULT_CUE_BATCH_SIZE);
-  if (inflightPriorityBatches.has(batchIndex)) return;
-  inflightPriorityBatches.add(batchIndex);
-
   const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
   const key = `${transcript.videoId}:${nativeLang}`;
 
@@ -111,12 +129,10 @@ async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
     if (mtPrewarmKey !== key && mtPrewarmKey !== null) return;
     if (!updated.has(cueIndex)) return;
     const fullyCached = updated.size >= transcript.segments.length;
-    updateMtOverlayState(updated, fullyCached ? 'complete' : 'loading');
+    updateMtOverlayState(fullyCached ? 'complete' : 'loading');
   } catch (err) {
     if (mtPrewarmAbort?.signal.aborted) return;
     console.warn('[Semia] Priority cue translation failed:', err);
-  } finally {
-    inflightPriorityBatches.delete(batchIndex);
   }
 }
 
@@ -126,13 +142,15 @@ async function maybeStartMtNativePrewarm(
   const settings = currentSettings ?? (await getSemiaSettings());
   if (settings.bilingualCaptionsEnabled === false) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
     return;
   }
 
   if (!shouldPrewarmMtNativeLine(transcript)) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
     return;
   }
 
@@ -145,10 +163,9 @@ async function maybeStartMtNativePrewarm(
     const cached = mtCacheToMap(
       await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
     );
-    mtTranslations = new Map(cached);
+    replaceMtTranslations(cached);
     const fullyCached = mtTranslations.size >= transcript.segments.length;
     updateMtOverlayState(
-      mtTranslations,
       fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
     );
     return;
@@ -160,30 +177,30 @@ async function maybeStartMtNativePrewarm(
   const cached = mtCacheToMap(
     await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
   );
-  mtTranslations = new Map(cached);
+  replaceMtTranslations(cached);
   const fullyCached = mtTranslations.size >= transcript.segments.length;
   updateMtOverlayState(
-    mtTranslations,
     fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
   );
 
   const controller = new AbortController();
   mtPrewarmAbort = controller;
+  mtPrewarmSession = createMtPrewarmSession(getActiveCueIndex(transcript));
 
   void runMtNativePrewarm({
     transcript,
     translations: mtTranslations,
-    priorityCueIndex: getActiveCueIndex(transcript),
+    session: mtPrewarmSession,
     signal: controller.signal,
-    onProgress: (translations, status) => {
+    onProgress: (_translations, status) => {
       if (controller.signal.aborted) return;
       if (mtPrewarmKey !== key) return;
-      updateMtOverlayState(translations, status);
+      updateMtOverlayState(status);
     },
   }).catch((err) => {
     if (controller.signal.aborted) return;
     console.warn('[Semia] MT prewarm failed:', err);
-    updateMtOverlayState(mtTranslations, 'failed');
+    updateMtOverlayState('failed');
   }).finally(() => {
     if (mtPrewarmKey === key) {
       mtPrewarmAbort = null;
@@ -191,24 +208,52 @@ async function maybeStartMtNativePrewarm(
   });
 }
 
+function buildOptimisticNativeSwitchTranscript(
+  transcript: StoredTranscript,
+  nativeLanguage: string,
+): StoredTranscript {
+  return {
+    ...transcript,
+    nativeLanguageCode: nativeLanguage,
+    nativeSegments: [],
+    nativeTrackUnavailable: true,
+  };
+}
+
+
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
   const videoId = getVideoIdFromUrl() ?? currentVideoId;
   if (!videoId) return;
 
   const generation = ++transcriptSyncGeneration;
-  captionOverlay.setNativeLineSuppressed(true);
+  const learning = settings.learningLanguage?.trim() || 'en';
+  const native = settings.nativeLanguage?.trim() || 'zh-TW';
+  const bilingual = settings.bilingualCaptionsEnabled !== false;
+  const needsNativeLine = bilingual && learning !== native;
+  const transcript = currentTranscript;
+
   cancelMtPrewarm();
-  updateMtOverlayState(new Map(), 'idle');
+  replaceMtTranslations([]);
+
+  if (needsNativeLine && transcript?.segments.length) {
+    captionOverlay.setNativeLoadingText(getNativeLineLoadingText(native));
+    captionOverlay.setSkipTlangPairing(true);
+    updateMtOverlayState('loading');
+    void maybeStartMtNativePrewarm(
+      buildOptimisticNativeSwitchTranscript(transcript, native),
+    );
+  } else {
+    updateMtOverlayState('idle');
+  }
+
   try {
     await syncBilingualTranscriptForVideo(videoId, {
       force: true,
       syncGeneration: generation,
     });
   } finally {
-    if (generation === transcriptSyncGeneration) {
-      captionOverlay.setNativeLineSuppressed(false);
-    }
+    captionOverlay.setNativeLineSuppressed(false);
   }
 }
 
@@ -224,17 +269,24 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   sidebar.setTranscript(normalized);
   const preferMt = normalized ? shouldPrewarmMtNativeLine(normalized) : false;
   captionOverlay.setSkipTlangPairing(preferMt);
-  if (normalized && preferMt) {
-    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
-    updateMtOverlayState(new Map(), 'loading');
-  } else if (!normalized) {
+  if (!normalized) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
+  } else if (!preferMt) {
+    cancelMtPrewarm();
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
   } else {
-    cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
+    updateMtOverlayState('loading');
   }
   captionOverlay.setTranscript(normalized);
+  if (normalized?.nativeLanguageCode) {
+    captionOverlay.setNativeLoadingText(
+      getNativeLineLoadingText(normalized.nativeLanguageCode),
+    );
+  }
   if (normalized && preferMt) {
     void maybeStartMtNativePrewarm(normalized);
   }
@@ -307,6 +359,50 @@ async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
   syncTranscriptToUi(stored);
 }
 
+function isActiveVideo(videoId: string): boolean {
+  return videoId === (getVideoIdFromUrl() ?? currentVideoId);
+}
+
+function rememberPreferredCaptionLanguage(
+  videoId: string,
+  languageCode?: string,
+): void {
+  const lang = languageCode?.trim();
+  if (!lang) return;
+  preferredCaptionLanguageByVideoId.set(videoId, lang);
+}
+
+async function ensureInnertubeCaptionTemplate(
+  videoId: string,
+  learningLanguage: string,
+): Promise<string | undefined> {
+  const preferred = preferredCaptionLanguageByVideoId.get(videoId);
+  const cached = timedtextTemplateByVideoId.get(videoId);
+  if (shouldStoreTimedtextTemplate(cached)) {
+    const cachedLang = extractTimedtextLanguage(cached);
+    if (!preferred || !cachedLang || cachedLang === preferred) {
+      return cached;
+    }
+    timedtextTemplateByVideoId.delete(videoId);
+  }
+
+  try {
+    const tracks = await fetchInnertubeCaptionTracks(videoId);
+    const baseUrl = pickCaptionTrackBaseUrl(
+      tracks,
+      learningLanguage,
+      preferred,
+    );
+    if (baseUrl) {
+      timedtextTemplateByVideoId.set(videoId, baseUrl);
+    }
+    return baseUrl;
+  } catch (err) {
+    console.warn(`[Semia] Innertube caption track fetch failed for ${videoId}:`, err);
+    return undefined;
+  }
+}
+
 async function syncBilingualTranscriptForVideo(
   videoId: string,
   options?: {
@@ -316,36 +412,77 @@ async function syncBilingualTranscriptForVideo(
     syncGeneration?: number;
   },
 ): Promise<void> {
-  if (options?.templateUrl) {
-    timedtextTemplateByVideoId.set(videoId, options.templateUrl);
-  }
-
   const settings = currentSettings ?? (await getSemiaSettings());
   currentSettings = settings;
 
-  const existing = await getTranscript(videoId);
+  await ensureInnertubeCaptionTemplate(
+    videoId,
+    settings.learningLanguage ?? 'en',
+  );
+
+  const syncKey = `${videoId}:${settings.learningLanguage}:${settings.nativeLanguage}:${settings.bilingualCaptionsEnabled}`;
+
+  const inflight = inflightSync.get(syncKey);
+  if (inflight) {
+    await inflight;
+  }
+
+  let existing = await getTranscript(videoId);
   if (!options?.force && transcriptMatchesSettings(existing, settings)) {
-    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+    if (isActiveVideo(videoId)) {
       syncTranscriptToUi(existing);
     }
     return;
   }
 
-  const syncKey = `${videoId}:${settings.learningLanguage}:${settings.nativeLanguage}:${settings.bilingualCaptionsEnabled}`;
-  const inflight = inflightSync.get(syncKey);
-  if (inflight) {
-    await inflight;
+  const template = resolveTimedtextTemplate(
+    timedtextTemplateByVideoId,
+    videoId,
+    options?.templateUrl,
+  );
+  if (shouldDeferTranscriptFetch(template)) {
+    if (existing && isActiveVideo(videoId)) {
+      syncTranscriptToUi(existing);
+    }
     return;
+  }
+
+  if (inflightSync.has(syncKey)) {
+    await inflightSync.get(syncKey)!;
+    existing = await getTranscript(videoId);
+    if (!options?.force && transcriptMatchesSettings(existing, settings)) {
+      if (isActiveVideo(videoId)) {
+        syncTranscriptToUi(existing);
+      }
+      return;
+    }
+    const templateAfterWait = resolveTimedtextTemplate(
+      timedtextTemplateByVideoId,
+      videoId,
+      options?.templateUrl,
+    );
+    if (shouldDeferTranscriptFetch(templateAfterWait)) {
+      if (existing && isActiveVideo(videoId)) {
+        syncTranscriptToUi(existing);
+      }
+      return;
+    }
   }
 
   const job = (async () => {
     const { meta } = buildPageMeta(videoId, options?.bridgeMeta);
-    const template =
-      options?.templateUrl ?? timedtextTemplateByVideoId.get(videoId);
+    const fetchTemplate = resolveTimedtextTemplate(
+      timedtextTemplateByVideoId,
+      videoId,
+      options?.templateUrl,
+    );
+    if (shouldDeferTranscriptFetch(fetchTemplate)) {
+      return;
+    }
 
     const result = await fetchBilingualTranscript({
       videoId,
-      templateUrl: template,
+      templateUrl: fetchTemplate,
       settings,
       pageMeta: meta,
       source: 'interceptedTimedtextUrl',
@@ -353,12 +490,13 @@ async function syncBilingualTranscriptForVideo(
 
     if (!result.ok) {
       console.warn(`[Semia] Transcript fetch failed for ${videoId}:`, result.error);
+      const fallback = await getTranscript(videoId);
       if (
-        videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+        isActiveVideo(videoId) &&
         (options?.syncGeneration === undefined ||
           options.syncGeneration === transcriptSyncGeneration)
       ) {
-        syncTranscriptToUi(existing);
+        syncTranscriptToUi(fallback);
       }
       return;
     }
@@ -371,7 +509,7 @@ async function syncBilingualTranscriptForVideo(
     await sendTranscriptToBackground(stored);
 
     if (
-      videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+      isActiveVideo(videoId) &&
       (options?.syncGeneration === undefined ||
         options.syncGeneration === transcriptSyncGeneration)
     ) {
@@ -388,6 +526,21 @@ async function syncBilingualTranscriptForVideo(
   }
 }
 
+async function handleCaptionTracks(
+  videoId: string,
+  _tracks: CaptionTrackRef[],
+  bridgeMeta?: YoutubePageMeta,
+  activeCaptionLanguage?: string,
+): Promise<void> {
+  rememberPreferredCaptionLanguage(videoId, activeCaptionLanguage);
+  const settings = currentSettings ?? (await getSemiaSettings());
+  await ensureInnertubeCaptionTemplate(
+    videoId,
+    settings.learningLanguage ?? 'en',
+  );
+  await syncBilingualTranscriptForVideo(videoId, { bridgeMeta });
+}
+
 async function handleInterceptedURL(
   timedtextUrl: string,
   bridgeMeta?: YoutubePageMeta,
@@ -396,6 +549,11 @@ async function handleInterceptedURL(
     const urlObj = new URL(timedtextUrl);
     const videoId = urlObj.searchParams.get('v');
     if (!videoId) return;
+
+    rememberPreferredCaptionLanguage(
+      videoId,
+      urlObj.searchParams.get('lang') ?? undefined,
+    );
 
     const existing = await getTranscript(videoId);
     const { meta: pageMeta, authoritative } = buildPageMeta(videoId, bridgeMeta);
@@ -413,10 +571,7 @@ async function handleInterceptedURL(
       }
     }
 
-    await syncBilingualTranscriptForVideo(videoId, {
-      templateUrl: timedtextUrl,
-      bridgeMeta,
-    });
+    await syncBilingualTranscriptForVideo(videoId, { bridgeMeta });
   } catch (err) {
     console.error('Error capturing transcript:', err);
   }
@@ -426,11 +581,25 @@ function installPageWorldListener(): void {
   window.addEventListener('message', (event: MessageEvent) => {
     const data = event.data as Partial<BridgeMessage>;
     if (!data || data.source !== BRIDGE_SOURCE) return;
+    const bridgeMeta = {
+      title: data.title,
+      channel: data.channel,
+    };
     if (data.type === 'TIMEDTEXT_URL' && typeof data.url === 'string') {
-      void handleInterceptedURL(data.url, {
-        title: data.title,
-        channel: data.channel,
-      });
+      void handleInterceptedURL(data.url, bridgeMeta);
+      return;
+    }
+    if (
+      data.type === 'CAPTION_TRACKS' &&
+      typeof data.videoId === 'string' &&
+      Array.isArray(data.tracks)
+    ) {
+      void handleCaptionTracks(
+        data.videoId,
+        data.tracks,
+        bridgeMeta,
+        data.activeCaptionLanguage,
+      );
     }
   });
 }
