@@ -12,6 +12,7 @@ export * from './normalizeFragments';
 export * from './removeFragments';
 export * from './reviewSchedule';
 export * from './storageKeys';
+export * from './subtitleLanguages';
 export * from './textFragmentUrl';
 export * from './types';
 export * from './webAnchor';

@@ -7,10 +7,16 @@ export type TranscriptSegment = {
 export type StoredTranscript = {
   videoId: string;
   videoUrl: string;
+  /** Learning track language (YouTube `lang`). */
   languageCode: string;
   capturedAt: string;
   source: 'ytInitialPlayerResponse' | 'interceptedTimedtextUrl' | 'unknown';
+  /** Learning track cues (word-click target). */
   segments: TranscriptSegment[];
+  /** Auto-translated native line; index-paired with `segments`. */
+  nativeSegments?: TranscriptSegment[];
+  /** Semia native language used when fetching `nativeSegments`. */
+  nativeLanguageCode?: string;
   /** Watch page title without the trailing " - YouTube". */
   title?: string;
   channel?: string;
@@ -170,6 +176,10 @@ export type SemiaSettings = {
   openAiApiKey?: string;
   /** BCP-47-ish tag used for background explanations, e.g. zh-TW */
   nativeLanguage?: string;
+  /** Last chosen YouTube caption learning language (e.g. en). */
+  learningLanguage?: string;
+  /** When false, overlay shows learning line only. Default: on. */
+  bilingualCaptionsEnabled?: boolean;
   /** When false, skip auto context window generation and show a settings hint. Default: on. */
   contextWindowEnabled?: boolean;
   /** Dev/billing stub: allow language card creation when true. */
