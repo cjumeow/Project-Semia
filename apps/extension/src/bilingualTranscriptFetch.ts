@@ -4,12 +4,22 @@ import {
   buildLearningTimedtextUrl,
   buildTranslatedTimedtextUrl,
   fetchTranscriptSegments,
+  isTimedtextRateLimitError,
 } from './youtubeTranscript';
 import { validateNativeTrackLength } from './cuePairing';
 
 export type BilingualFetchResult =
   | { ok: true; transcript: StoredTranscript; translationUnavailable?: boolean }
   | { ok: false; error: string };
+
+/** When tlang is unavailable, ignore any stale native segments in storage. */
+export function coerceTranscriptForNativeLine(
+  transcript: StoredTranscript,
+): StoredTranscript {
+  if (!transcript.nativeTrackUnavailable) return transcript;
+  if (!transcript.nativeSegments?.length) return transcript;
+  return { ...transcript, nativeSegments: [] };
+}
 
 export function transcriptMatchesSettings(
   transcript: StoredTranscript | null,
@@ -24,6 +34,7 @@ export function transcriptMatchesSettings(
 
   const nativeLang = settings.nativeLanguage?.trim() || 'zh-TW';
   if (transcript.nativeLanguageCode !== nativeLang) return false;
+  if (transcript.nativeTrackUnavailable) return true;
   return (transcript.nativeSegments?.length ?? 0) > 0;
 }
 
@@ -69,6 +80,7 @@ export async function fetchBilingualTranscript(options: {
 
   let nativeSegments: StoredTranscript['nativeSegments'];
   let translationError: string | undefined;
+  let nativeTrackUnavailable = false;
 
   if (bilingual && learningLang !== nativeLang) {
     try {
@@ -91,7 +103,14 @@ export async function fetchBilingualTranscript(options: {
       translationError =
         err instanceof Error ? err.message : 'Translation track failed';
       nativeSegments = [];
-      console.warn(`[Semia] Translation unavailable for ${videoId}:`, err);
+      nativeTrackUnavailable = true;
+      if (isTimedtextRateLimitError(err)) {
+        console.warn(
+          `[Semia] Native track rate limited for ${videoId}; falling back to GTX`,
+        );
+      } else {
+        console.warn(`[Semia] Translation unavailable for ${videoId}:`, err);
+      }
     }
   }
 
@@ -101,6 +120,7 @@ export async function fetchBilingualTranscript(options: {
     languageCode: learningLang,
     nativeLanguageCode: bilingual ? nativeLang : undefined,
     nativeSegments: bilingual ? nativeSegments : undefined,
+    nativeTrackUnavailable: nativeTrackUnavailable || undefined,
     capturedAt: new Date().toISOString(),
     source: source ?? 'interceptedTimedtextUrl',
     segments: learningSegments,

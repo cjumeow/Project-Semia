@@ -2,10 +2,17 @@ import type { SemiaSettings } from '@semia/shared';
 import { SEMIA_SETTINGS_STORAGE_KEY } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
+  coerceTranscriptForNativeLine,
   fetchBilingualTranscript,
   shouldApplyStoredTranscript,
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
+import {
+  runMtNativePrewarm,
+  shouldPrewarmMtNativeLine,
+  type MtPrewarmStatus,
+} from './mtNativePrewarm';
+import { mtCacheToMap, loadMtNativeCacheEntry } from './mtNativeCacheStorage';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
 import { getVideoIdFromUrl, navigateCue } from './playerSync';
 import { createCaptionOverlay } from './captionOverlay';
@@ -40,6 +47,91 @@ let currentVideoId: string | null = getVideoIdFromUrl();
 let currentTranscript: StoredTranscript | null = null;
 let currentSettings: SemiaSettings | null = null;
 let transcriptSyncGeneration = 0;
+let mtPrewarmAbort: AbortController | null = null;
+let mtPrewarmKey: string | null = null;
+
+function updateMtOverlayState(
+  translations: Map<number, string>,
+  prewarmStatus: MtPrewarmStatus,
+): void {
+  captionOverlay.setMtNativeState({
+    translationsByCueIndex: translations,
+    prewarmStatus,
+  });
+}
+
+function cancelMtPrewarm(): void {
+  mtPrewarmAbort?.abort();
+  mtPrewarmAbort = null;
+  mtPrewarmKey = null;
+}
+
+async function maybeStartMtNativePrewarm(
+  transcript: StoredTranscript,
+): Promise<void> {
+  const settings = currentSettings ?? (await getSemiaSettings());
+  if (settings.bilingualCaptionsEnabled === false) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+    return;
+  }
+
+  if (!shouldPrewarmMtNativeLine(transcript)) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+    return;
+  }
+
+  const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
+  const key = `${transcript.videoId}:${nativeLang}`;
+  if (mtPrewarmKey === key) {
+    if (mtPrewarmAbort) {
+      return;
+    }
+    const cached = mtCacheToMap(
+      await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
+    );
+    const fullyCached = cached.size >= transcript.segments.length;
+    updateMtOverlayState(
+      cached,
+      fullyCached && cached.size > 0 ? 'complete' : 'loading',
+    );
+    return;
+  }
+
+  cancelMtPrewarm();
+  mtPrewarmKey = key;
+
+  const cached = mtCacheToMap(
+    await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
+  );
+  const fullyCached = cached.size >= transcript.segments.length;
+  updateMtOverlayState(
+    cached,
+    fullyCached && cached.size > 0 ? 'complete' : 'loading',
+  );
+
+  const controller = new AbortController();
+  mtPrewarmAbort = controller;
+
+  void runMtNativePrewarm({
+    transcript,
+    signal: controller.signal,
+    onProgress: (translations, status) => {
+      if (controller.signal.aborted) return;
+      if (mtPrewarmKey !== key) return;
+      updateMtOverlayState(translations, status);
+    },
+  }).catch((err) => {
+    if (controller.signal.aborted) return;
+    console.warn('[Semia] MT prewarm failed:', err);
+    updateMtOverlayState(cached, 'failed');
+  }).finally(() => {
+    if (mtPrewarmKey === key) {
+      mtPrewarmAbort = null;
+    }
+  });
+}
 
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
@@ -48,6 +140,8 @@ async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
 
   const generation = ++transcriptSyncGeneration;
   captionOverlay.setNativeLineSuppressed(true);
+  cancelMtPrewarm();
+  updateMtOverlayState(new Map(), 'idle');
   try {
     await syncBilingualTranscriptForVideo(videoId, {
       force: true,
@@ -65,9 +159,27 @@ const subtitleSettings = createSubtitleSettingsControl({
 });
 
 function syncTranscriptToUi(transcript: StoredTranscript | null): void {
-  currentTranscript = transcript;
-  sidebar.setTranscript(transcript);
-  captionOverlay.setTranscript(transcript);
+  const normalized = transcript
+    ? coerceTranscriptForNativeLine(transcript)
+    : null;
+  currentTranscript = normalized;
+  sidebar.setTranscript(normalized);
+  const preferMt = normalized ? shouldPrewarmMtNativeLine(normalized) : false;
+  captionOverlay.setSkipTlangPairing(preferMt);
+  if (normalized && preferMt) {
+    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
+    updateMtOverlayState(new Map(), 'loading');
+  } else if (!normalized) {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+  } else {
+    cancelMtPrewarm();
+    updateMtOverlayState(new Map(), 'idle');
+  }
+  captionOverlay.setTranscript(normalized);
+  if (normalized && preferMt) {
+    void maybeStartMtNativePrewarm(normalized);
+  }
 }
 
 async function sendTranscriptToBackground(

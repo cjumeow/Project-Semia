@@ -1,5 +1,9 @@
 import overlayCss from './captionOverlay.css';
-import { resolveNativeCaptionLine } from './captionNativeLine';
+import {
+  NATIVE_LINE_LOADING_TEXT,
+  resolveNativeCaptionLine,
+} from './captionNativeLine';
+import type { MtPrewarmStatus } from './mtNativePrewarm';
 import { findCueIndexByTime, getVideoElement } from './playerSync';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import type { StoredTranscript, WordRef } from './types';
@@ -20,7 +24,14 @@ const HIDE_NATIVE_CC_CSS = `
 export type CaptionOverlay = {
   setTranscript: (transcript: StoredTranscript | null) => void;
   setNativeLineSuppressed: (suppressed: boolean) => void;
+  setSkipTlangPairing: (skip: boolean) => void;
+  setMtNativeState: (state: MtNativeOverlayState) => void;
   destroy: () => void;
+};
+
+export type MtNativeOverlayState = {
+  translationsByCueIndex: ReadonlyMap<number, string>;
+  prewarmStatus: MtPrewarmStatus;
 };
 
 export function createCaptionOverlay(options: {
@@ -55,6 +66,9 @@ export function createCaptionOverlay(options: {
   let activeCueIndex = -1;
   let playerParent: HTMLElement | null = null;
   let nativeLineSuppressed = false;
+  let skipTlangPairing = false;
+  let mtTranslations = new Map<number, string>();
+  let mtPrewarmStatus: MtPrewarmStatus = 'idle';
 
   function escapeHtml(text: string): string {
     return text
@@ -118,17 +132,24 @@ export function createCaptionOverlay(options: {
       })
       .join('');
 
-    const nativeText = resolveNativeCaptionLine(
+    const nativeResult = resolveNativeCaptionLine(
       seg,
       transcript.nativeSegments,
       {
         nativeLineSuppressed,
+        skipTlangPairing,
         learningSegmentCount: transcript.segments.length,
+        cueIndex,
+        mtTranslations,
+        mtPrewarmActive: mtPrewarmStatus === 'loading',
       },
     );
-    const nativeHtml = nativeText
-      ? `<div class="caption-line-native">${escapeHtml(nativeText)}</div>`
-      : '';
+    let nativeHtml = '';
+    if (nativeResult.status === 'text') {
+      nativeHtml = `<div class="caption-line-native">${escapeHtml(nativeResult.text)}</div>`;
+    } else if (nativeResult.status === 'loading') {
+      nativeHtml = `<div class="caption-line-native caption-line-native-loading">${escapeHtml(NATIVE_LINE_LOADING_TEXT)}</div>`;
+    }
 
     root.innerHTML = `<div class="caption-pill"><div class="caption-line-learning">${tokenHtml}</div>${nativeHtml}</div>`;
 
@@ -207,6 +228,21 @@ export function createCaptionOverlay(options: {
     }
   }, 1000);
 
+  function setMtNativeState(state: MtNativeOverlayState): void {
+    mtTranslations = new Map(state.translationsByCueIndex);
+    mtPrewarmStatus = state.prewarmStatus;
+    if (activeCueIndex >= 0) {
+      renderCue(activeCueIndex);
+    }
+  }
+
+  function setSkipTlangPairing(skip: boolean): void {
+    skipTlangPairing = skip;
+    if (activeCueIndex >= 0) {
+      renderCue(activeCueIndex);
+    }
+  }
+
   function setNativeLineSuppressed(suppressed: boolean): void {
     nativeLineSuppressed = suppressed;
     if (activeCueIndex >= 0) {
@@ -222,5 +258,11 @@ export function createCaptionOverlay(options: {
     host.remove();
   }
 
-  return { setTranscript, setNativeLineSuppressed, destroy };
+  return {
+    setTranscript,
+    setNativeLineSuppressed,
+    setSkipTlangPairing,
+    setMtNativeState,
+    destroy,
+  };
 }

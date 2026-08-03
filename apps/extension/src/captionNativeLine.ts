@@ -2,38 +2,65 @@ import {
   isCoarseNativeTrack,
   pairNativeForLearningCue,
 } from './cuePairing';
+import { NATIVE_LINE_LOADING_TEXT } from './mtNativePrewarm';
 import type { TranscriptSegment } from './types';
+
+export type NativeLineResult =
+  | { status: 'text'; text: string }
+  | { status: 'loading' }
+  | { status: 'none' };
 
 export type ResolveNativeCaptionLineOptions = {
   nativeLineSuppressed?: boolean;
   learningSegmentCount?: number;
+  cueIndex?: number;
+  mtTranslations?: ReadonlyMap<number, string>;
+  mtPrewarmActive?: boolean;
+  /** When true, skip tlang pairing (coarse or unreliable track → MT only). */
+  skipTlangPairing?: boolean;
 };
 
-/** Native caption line for overlay when pairing confidence is high. */
+export { NATIVE_LINE_LOADING_TEXT };
+
+/** Native caption line for overlay — tlang pairing or MT cache on coarse tracks. */
 export function resolveNativeCaptionLine(
   learning: TranscriptSegment,
   nativeSegments: TranscriptSegment[] | undefined,
   options?: ResolveNativeCaptionLineOptions,
-): string | null {
+): NativeLineResult {
   if (options?.nativeLineSuppressed) {
-    return null;
+    return { status: 'none' };
   }
 
-  if (!nativeSegments?.length) {
-    return null;
-  }
+  const learningCount = options?.learningSegmentCount;
+  const nativeCount = nativeSegments?.length ?? 0;
+  const coarse =
+    learningCount !== undefined &&
+    nativeCount > 0 &&
+    isCoarseNativeTrack(learningCount, nativeCount);
 
   if (
-    options?.learningSegmentCount !== undefined &&
-    isCoarseNativeTrack(options.learningSegmentCount, nativeSegments.length)
+    !options?.skipTlangPairing &&
+    !coarse &&
+    nativeSegments?.length
   ) {
-    return null;
+    const paired = pairNativeForLearningCue(learning, nativeSegments);
+    if (paired.confidence === 'high' && paired.nativeText) {
+      return { status: 'text', text: paired.nativeText };
+    }
   }
 
-  const paired = pairNativeForLearningCue(learning, nativeSegments);
-  if (paired.confidence !== 'high' || !paired.nativeText) {
-    return null;
+  if (options?.mtPrewarmActive) {
+    return { status: 'loading' };
   }
 
-  return paired.nativeText;
+  const cueIndex = options?.cueIndex;
+  if (cueIndex !== undefined && options?.mtTranslations) {
+    const mtText = options.mtTranslations.get(cueIndex);
+    if (mtText?.trim()) {
+      return { status: 'text', text: mtText };
+    }
+  }
+
+  return { status: 'none' };
 }
