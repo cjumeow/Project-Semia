@@ -10,11 +10,18 @@ import {
 import {
   runMtNativePrewarm,
   shouldPrewarmMtNativeLine,
+  translateCueBatchIfMissing,
   type MtPrewarmStatus,
 } from './mtNativePrewarm';
 import { mtCacheToMap, loadMtNativeCacheEntry } from './mtNativeCacheStorage';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
-import { getVideoIdFromUrl, navigateCue } from './playerSync';
+import {
+  findCueIndexByTime,
+  getVideoElement,
+  getVideoIdFromUrl,
+  navigateCue,
+} from './playerSync';
+import { DEFAULT_CUE_BATCH_SIZE } from './translateCueBatch';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 import { getSemiaSettings } from './semiaSettings';
@@ -36,8 +43,15 @@ type BridgeMessage = {
 };
 
 const sidebar = createCaptureSidebar();
+
+let mtTranslations = new Map<number, string>();
+const inflightPriorityBatches = new Set<number>();
+
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
+  onActiveCueChange: (cueIndex) => {
+    void prioritizeCueTranslation(cueIndex);
+  },
 });
 
 const timedtextTemplateByVideoId = new Map<string, string>();
@@ -54,6 +68,7 @@ function updateMtOverlayState(
   translations: Map<number, string>,
   prewarmStatus: MtPrewarmStatus,
 ): void {
+  mtTranslations = new Map(translations);
   captionOverlay.setMtNativeState({
     translationsByCueIndex: translations,
     prewarmStatus,
@@ -64,6 +79,45 @@ function cancelMtPrewarm(): void {
   mtPrewarmAbort?.abort();
   mtPrewarmAbort = null;
   mtPrewarmKey = null;
+  inflightPriorityBatches.clear();
+}
+
+function getActiveCueIndex(transcript: StoredTranscript): number {
+  const video = getVideoElement();
+  if (!video) return 0;
+  const idx = findCueIndexByTime(transcript.segments, video.currentTime);
+  return idx >= 0 ? idx : 0;
+}
+
+async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
+  const transcript = currentTranscript;
+  if (!transcript || !shouldPrewarmMtNativeLine(transcript)) return;
+  if (mtTranslations.has(cueIndex)) return;
+
+  const batchIndex = Math.floor(cueIndex / DEFAULT_CUE_BATCH_SIZE);
+  if (inflightPriorityBatches.has(batchIndex)) return;
+  inflightPriorityBatches.add(batchIndex);
+
+  const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
+  const key = `${transcript.videoId}:${nativeLang}`;
+
+  try {
+    const updated = await translateCueBatchIfMissing({
+      transcript,
+      cueIndex,
+      translations: mtTranslations,
+      signal: mtPrewarmAbort?.signal,
+    });
+    if (mtPrewarmKey !== key && mtPrewarmKey !== null) return;
+    if (!updated.has(cueIndex)) return;
+    const fullyCached = updated.size >= transcript.segments.length;
+    updateMtOverlayState(updated, fullyCached ? 'complete' : 'loading');
+  } catch (err) {
+    if (mtPrewarmAbort?.signal.aborted) return;
+    console.warn('[Semia] Priority cue translation failed:', err);
+  } finally {
+    inflightPriorityBatches.delete(batchIndex);
+  }
 }
 
 async function maybeStartMtNativePrewarm(
@@ -91,10 +145,11 @@ async function maybeStartMtNativePrewarm(
     const cached = mtCacheToMap(
       await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
     );
-    const fullyCached = cached.size >= transcript.segments.length;
+    mtTranslations = new Map(cached);
+    const fullyCached = mtTranslations.size >= transcript.segments.length;
     updateMtOverlayState(
-      cached,
-      fullyCached && cached.size > 0 ? 'complete' : 'loading',
+      mtTranslations,
+      fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
     );
     return;
   }
@@ -105,10 +160,11 @@ async function maybeStartMtNativePrewarm(
   const cached = mtCacheToMap(
     await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
   );
-  const fullyCached = cached.size >= transcript.segments.length;
+  mtTranslations = new Map(cached);
+  const fullyCached = mtTranslations.size >= transcript.segments.length;
   updateMtOverlayState(
-    cached,
-    fullyCached && cached.size > 0 ? 'complete' : 'loading',
+    mtTranslations,
+    fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
   );
 
   const controller = new AbortController();
@@ -116,6 +172,8 @@ async function maybeStartMtNativePrewarm(
 
   void runMtNativePrewarm({
     transcript,
+    translations: mtTranslations,
+    priorityCueIndex: getActiveCueIndex(transcript),
     signal: controller.signal,
     onProgress: (translations, status) => {
       if (controller.signal.aborted) return;
@@ -125,7 +183,7 @@ async function maybeStartMtNativePrewarm(
   }).catch((err) => {
     if (controller.signal.aborted) return;
     console.warn('[Semia] MT prewarm failed:', err);
-    updateMtOverlayState(cached, 'failed');
+    updateMtOverlayState(mtTranslations, 'failed');
   }).finally(() => {
     if (mtPrewarmKey === key) {
       mtPrewarmAbort = null;

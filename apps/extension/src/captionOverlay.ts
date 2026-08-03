@@ -26,6 +26,7 @@ export type CaptionOverlay = {
   setNativeLineSuppressed: (suppressed: boolean) => void;
   setSkipTlangPairing: (skip: boolean) => void;
   setMtNativeState: (state: MtNativeOverlayState) => void;
+  getActiveCueIndex: () => number;
   destroy: () => void;
 };
 
@@ -36,6 +37,7 @@ export type MtNativeOverlayState = {
 
 export function createCaptionOverlay(options: {
   onWordClick: (ref: WordRef) => void;
+  onActiveCueChange?: (cueIndex: number) => void;
 }): CaptionOverlay {
   const existing = document.getElementById(HOST_ID);
   existing?.remove();
@@ -176,6 +178,7 @@ export function createCaptionOverlay(options: {
     if (idx < 0) return;
     if (idx !== activeCueIndex) {
       activeCueIndex = idx;
+      options.onActiveCueChange?.(idx);
       renderCue(idx);
     }
   }
@@ -263,6 +266,7 @@ export function createCaptionOverlay(options: {
     setNativeLineSuppressed,
     setSkipTlangPairing,
     setMtNativeState,
+    getActiveCueIndex: () => activeCueIndex,
     destroy,
   };
 }
