@@ -5,6 +5,7 @@ import { DeletePrototypeApp } from './prototype/delete/DeletePrototypeApp';
 import { InboxPrototypeApp } from './prototype/inbox/InboxPrototypeApp';
 import { LibraryPromotePrototypeApp } from './prototype/library-promote/LibraryPromotePrototypeApp';
 import { LogoPrototypeApp } from './prototype/logo/LogoPrototypeApp';
+import { YoutubeCaptionsPrototypeApp } from './prototype/youtube-captions/YoutubeCaptionsPrototypeApp';
 import './index.css';
 
 function readPrototypeMode():
@@ -12,12 +13,14 @@ function readPrototypeMode():
   | 'library-promote'
   | 'logo'
   | 'delete'
+  | 'youtube-captions'
   | null {
   const value = new URLSearchParams(window.location.search).get('prototype');
   if (value === 'inbox') return 'inbox';
   if (value === 'library-promote') return 'library-promote';
   if (value === 'logo') return 'logo';
   if (value === 'delete') return 'delete';
+  if (value === 'youtube-captions') return 'youtube-captions';
   return null;
 }
 
@@ -33,6 +36,8 @@ createRoot(document.getElementById('root')!).render(
       <LogoPrototypeApp />
     ) : prototypeMode === 'delete' ? (
       <DeletePrototypeApp />
+    ) : prototypeMode === 'youtube-captions' ? (
+      <YoutubeCaptionsPrototypeApp />
     ) : (
       <App />
     )}
