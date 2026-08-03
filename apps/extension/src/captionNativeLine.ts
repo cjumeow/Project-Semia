@@ -23,14 +23,14 @@ export function resolveNativeCaptionLine(
     return null;
   }
 
-  const coarseNativeTrack =
-    options?.learningSegmentCount !== undefined
-      ? isCoarseNativeTrack(options.learningSegmentCount, nativeSegments.length)
-      : false;
+  if (
+    options?.learningSegmentCount !== undefined &&
+    isCoarseNativeTrack(options.learningSegmentCount, nativeSegments.length)
+  ) {
+    return null;
+  }
 
-  const paired = pairNativeForLearningCue(learning, nativeSegments, {
-    coarseNativeTrack,
-  });
+  const paired = pairNativeForLearningCue(learning, nativeSegments);
   if (paired.confidence !== 'high' || !paired.nativeText) {
     return null;
   }

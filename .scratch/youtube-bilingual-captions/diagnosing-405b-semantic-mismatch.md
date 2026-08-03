@@ -50,16 +50,15 @@ Fixture: `apps/extension/src/fixtures/lex-e-gwvmhyU7A-405b-repro.json`
 5. **Coarse track still shows some `high` pairs that are wrong but timing-aligned**  
    *If this is the cause, product fix is default learning-only when `isCoarseNativeTrack` (nuclear) or semantic gate.*
 
-## Phase 4–5 — Not run
+## Phase 4–5 — Fix applied (option A)
 
-No fix applied this round. Next step: product decision + ticket for pairing v4.
+**Decision:** Coarse `tlang` track (native cues < 70% of learning) → **learning-only** for the whole video in overlay.
 
-**Candidate fixes (ranked):**
+**Change:** `resolveNativeCaptionLine` returns `null` early when `isCoarseNativeTrack`. Pairing seam (`pairNativeForLearningCue`) unchanged for diagnostics.
 
-1. Learning-only on coarse `tlang` tracks (safest, loses good pairs on Jo/Lex)
-2. Semantic / keyword sanity check (e.g. digit "405" in EN → require in zh)
-3. Funlingo spike (#36) for alignment strategy
-4. LLM pairing (ADR escalation)
+**405B screenshot:** overlay test now **passes**. `pairNativeForLearningCue` still `high` for aligned wrong pair (`it.fails` documents seam gap).
+
+**Trade-off:** Lex / Jo lose all native lines on coarse tracks, including previously good zh-Hans pairs.
 
 ## Phase 6 — Post-mortem note
 

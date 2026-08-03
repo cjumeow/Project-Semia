@@ -43,12 +43,12 @@ describe('Lex #434 stick repro (e-gwvmhyU7A @ ~1:57:41)', () => {
     expect(result.reason).toBe('granularity');
   });
 
-  it('resolveNativeCaptionLine shows zh-Hans but hides zh-Hant', () => {
+  it('resolveNativeCaptionLine is learning-only on coarse tlang tracks', () => {
     expect(
       resolveNativeCaptionLine(learning, [nativeZhHans], {
         learningSegmentCount: trackStats.learningCount,
       }),
-    ).toBe(nativeZhHans.text);
+    ).toBeNull();
 
     expect(
       resolveNativeCaptionLine(learning, [nativeZhHant], {

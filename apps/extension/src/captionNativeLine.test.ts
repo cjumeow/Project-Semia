@@ -39,22 +39,18 @@ describe('resolveNativeCaptionLine', () => {
     ).toBeNull();
   });
 
-  it('returns null on coarse track when native text exceeds coarse length gate', () => {
-    const longNative = {
-      text: '这是一段明显比学习句更长的中文翻译内容。',
-      start: 10.1,
-      duration: 2,
-    };
+  it('returns null on coarse track (learning-only for video)', () => {
+    const alignedNative = { text: '你好', start: 10.1, duration: 2 };
     expect(
-      resolveNativeCaptionLine(learning, [longNative], {
+      resolveNativeCaptionLine(learning, [alignedNative], {
         learningSegmentCount: 100,
       }),
     ).toBeNull();
     expect(isCoarseNativeTrack(100, 50)).toBe(true);
     expect(
-      pairNativeForLearningCue(learning, [longNative], {
+      pairNativeForLearningCue(learning, [alignedNative], {
         coarseNativeTrack: true,
-      }).reason,
-    ).toBe('length');
+      }).confidence,
+    ).toBe('high');
   });
 });

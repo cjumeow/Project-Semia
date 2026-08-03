@@ -15,7 +15,7 @@ describe('Lex #434 405B diagnosis (e-gwvmhyU7A @ ~56:13)', () => {
   const coarse = { coarseNativeTrack: true };
 
   describe('Phase 1 — user screenshot symptom (short wrong zh-Hant)', () => {
-    it.fails('aligned short semantic mismatch must not return high confidence', () => {
+    it.fails('pairNativeForLearningCue still returns high for aligned short wrong zh-Hant', () => {
       const result = pairNativeForLearningCue(
         symptom.learning,
         [symptom.nativeZhHantWrong],
@@ -26,7 +26,7 @@ describe('Lex #434 405B diagnosis (e-gwvmhyU7A @ ~56:13)', () => {
       expect(result.nativeText).toBeNull();
     });
 
-    it.fails('overlay must hide misleading native for screenshot pair', () => {
+    it('overlay is learning-only on coarse Lex track (screenshot pair)', () => {
       expect(
         resolveNativeCaptionLine(symptom.learning, [symptom.nativeZhHantWrong], {
           learningSegmentCount: fetched.trackStats.learningCount,
