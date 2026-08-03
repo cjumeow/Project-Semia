@@ -21,7 +21,6 @@ import {
   getVideoIdFromUrl,
   navigateCue,
 } from './playerSync';
-import { DEFAULT_CUE_BATCH_SIZE } from './translateCueBatch';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 import { getSemiaSettings } from './semiaSettings';
@@ -45,7 +44,6 @@ type BridgeMessage = {
 const sidebar = createCaptureSidebar();
 
 let mtTranslations = new Map<number, string>();
-const inflightPriorityBatches = new Set<number>();
 
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
@@ -79,7 +77,6 @@ function cancelMtPrewarm(): void {
   mtPrewarmAbort?.abort();
   mtPrewarmAbort = null;
   mtPrewarmKey = null;
-  inflightPriorityBatches.clear();
 }
 
 function getActiveCueIndex(transcript: StoredTranscript): number {
@@ -93,10 +90,6 @@ async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
   const transcript = currentTranscript;
   if (!transcript || !shouldPrewarmMtNativeLine(transcript)) return;
   if (mtTranslations.has(cueIndex)) return;
-
-  const batchIndex = Math.floor(cueIndex / DEFAULT_CUE_BATCH_SIZE);
-  if (inflightPriorityBatches.has(batchIndex)) return;
-  inflightPriorityBatches.add(batchIndex);
 
   const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
   const key = `${transcript.videoId}:${nativeLang}`;
@@ -115,8 +108,6 @@ async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
   } catch (err) {
     if (mtPrewarmAbort?.signal.aborted) return;
     console.warn('[Semia] Priority cue translation failed:', err);
-  } finally {
-    inflightPriorityBatches.delete(batchIndex);
   }
 }
 
@@ -224,13 +215,10 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   sidebar.setTranscript(normalized);
   const preferMt = normalized ? shouldPrewarmMtNativeLine(normalized) : false;
   captionOverlay.setSkipTlangPairing(preferMt);
-  if (normalized && preferMt) {
-    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
-    updateMtOverlayState(new Map(), 'loading');
-  } else if (!normalized) {
+  if (!normalized) {
     cancelMtPrewarm();
     updateMtOverlayState(new Map(), 'idle');
-  } else {
+  } else if (!preferMt) {
     cancelMtPrewarm();
     updateMtOverlayState(new Map(), 'idle');
   }

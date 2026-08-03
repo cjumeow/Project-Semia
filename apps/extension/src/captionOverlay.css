@@ -37,6 +37,7 @@
   line-height: 1.35;
   opacity: 0.75;
   white-space: nowrap;
+  min-height: 1.35em;
 }
 .caption-word {
   cursor: pointer;

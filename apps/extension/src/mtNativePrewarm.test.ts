@@ -9,6 +9,7 @@ import {
 import type { StoredTranscript } from './types';
 import * as translateCueBatchModule from './translateCueBatch';
 import * as mtNativeCacheStorage from './mtNativeCacheStorage';
+import { clearMtBatchInflightForTests } from './mtBatchInflight';
 
 vi.mock('./translateCueBatch', async (importOriginal) => {
   const actual = await importOriginal<typeof translateCueBatchModule>();
@@ -79,6 +80,7 @@ describe('runMtNativePrewarm', () => {
       options.cueTexts.map((text) => `zh:${text}`),
     );
     vi.mocked(mtNativeCacheStorage.mtCacheToMap).mockReturnValue(new Map());
+    clearMtBatchInflightForTests();
   });
 
   it('translates the priority cue batch before later batches', async () => {
@@ -155,6 +157,30 @@ describe('translateCueBatchIfMissing', () => {
       Array.from({ length: 10 }, (_, i) => `cue-${i + 10}`),
     );
     expect(result.get(15)).toBe('zh-5');
+  });
+
+  it('awaits an in-flight batch instead of firing duplicate GTX', async () => {
+    clearMtBatchInflightForTests();
+    translateCueBatch.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return Array.from({ length: 10 }, (_, i) => `zh-${i}`);
+    });
+    const segments = Array.from({ length: 20 }, (_, i) => ({
+      text: `cue-${i}`,
+      start: i,
+      duration: 1,
+    }));
+    const t = transcript({ segments });
+    const translations = new Map<number, string>();
+
+    await Promise.all([
+      translateCueBatchIfMissing({ transcript: t, cueIndex: 12, translations }),
+      translateCueBatchIfMissing({ transcript: t, cueIndex: 15, translations }),
+    ]);
+
+    expect(translateCueBatch).toHaveBeenCalledOnce();
+    expect(translations.get(12)).toBe('zh-2');
+    expect(translations.get(15)).toBe('zh-5');
   });
 });
 

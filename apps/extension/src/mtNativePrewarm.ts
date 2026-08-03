@@ -15,6 +15,11 @@ import {
   mtCacheToMap,
   saveMtNativeCacheEntry,
 } from './mtNativeCacheStorage';
+import {
+  batchIndexForCue,
+  mtBatchInflightKey,
+  runMtBatchOnce,
+} from './mtBatchInflight';
 
 export const MT_PREWARM_CONCURRENCY = 12;
 export const NATIVE_LINE_LOADING_TEXT = '翻譯載入中';
@@ -134,41 +139,61 @@ type BatchTranslationContext = {
 async function executeBatchTranslation(
   chunkIndices: number[],
   ctx: BatchTranslationContext,
+  batchSize: number,
 ): Promise<{ ok: true } | { ok: false; rateLimited: boolean }> {
-  const cueTexts = chunkIndices.map((i) => ctx.segments[i]!.text);
-  let attempt = 0;
-  while (attempt < 3) {
-    if (ctx.signal?.aborted) return { ok: false, rateLimited: false };
-    try {
-      const translated = await translateCueBatch({
-        cueTexts,
-        sourceLang: ctx.sourceLang,
-        targetLang: ctx.targetLang,
-        signal: ctx.signal,
-      });
-      for (let j = 0; j < chunkIndices.length; j++) {
-        const text = translated[j]?.trim();
-        if (text) ctx.translations.set(chunkIndices[j]!, text);
-      }
-      await saveMtNativeCacheEntry({
-        videoId: ctx.transcript.videoId,
-        nativeLanguageCode: ctx.nativeLang,
-        translations: mapToMtCacheTranslations(ctx.translations),
-        updatedAt: new Date().toISOString(),
-      });
-      return { ok: true };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes('429')) {
-        attempt++;
-        await sleep(300 * 2 ** attempt);
-        continue;
-      }
-      console.warn('[Semia] MT prewarm batch failed:', message);
-      return { ok: false, rateLimited: false };
-    }
+  if (!chunkIndices.length) return { ok: true };
+  const firstCue = chunkIndices[0]!;
+  if (chunkIndices.every((i) => ctx.translations.has(i))) {
+    return { ok: true };
   }
-  return { ok: false, rateLimited: true };
+
+  const batchIndex = batchIndexForCue(firstCue, batchSize);
+  const flightKey = mtBatchInflightKey(
+    ctx.transcript.videoId,
+    ctx.nativeLang,
+    batchIndex,
+  );
+
+  return runMtBatchOnce(flightKey, async () => {
+    if (chunkIndices.every((i) => ctx.translations.has(i))) {
+      return { ok: true };
+    }
+
+    const cueTexts = chunkIndices.map((i) => ctx.segments[i]!.text);
+    let attempt = 0;
+    while (attempt < 3) {
+      if (ctx.signal?.aborted) return { ok: false, rateLimited: false };
+      try {
+        const translated = await translateCueBatch({
+          cueTexts,
+          sourceLang: ctx.sourceLang,
+          targetLang: ctx.targetLang,
+          signal: ctx.signal,
+        });
+        for (let j = 0; j < chunkIndices.length; j++) {
+          const text = translated[j]?.trim();
+          if (text) ctx.translations.set(chunkIndices[j]!, text);
+        }
+        await saveMtNativeCacheEntry({
+          videoId: ctx.transcript.videoId,
+          nativeLanguageCode: ctx.nativeLang,
+          translations: mapToMtCacheTranslations(ctx.translations),
+          updatedAt: new Date().toISOString(),
+        });
+        return { ok: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes('429')) {
+          attempt++;
+          await sleep(300 * 2 ** attempt);
+          continue;
+        }
+        console.warn('[Semia] MT prewarm batch failed:', message);
+        return { ok: false, rateLimited: false };
+      }
+    }
+    return { ok: false, rateLimited: true };
+  });
 }
 
 /** On-demand GTX for the batch containing a visible cue (seek / resume). */
@@ -202,7 +227,7 @@ export async function translateCueBatchIfMissing(options: {
     nativeLang,
     translations,
     signal,
-  });
+  }, batchSize);
 
   if (!result.ok && result.rateLimited) {
     console.warn('[Semia] Priority cue batch rate limited');
@@ -293,7 +318,7 @@ export async function runMtNativePrewarm(options: {
 
   const tasks = chunks.map((chunkIndices) => async () => {
     if (signal?.aborted) return;
-    const result = await executeBatchTranslation(chunkIndices, ctx);
+    const result = await executeBatchTranslation(chunkIndices, ctx, batchSize);
     if (result.ok) {
       succeededBatches++;
       onProgress?.(translations, 'loading');
