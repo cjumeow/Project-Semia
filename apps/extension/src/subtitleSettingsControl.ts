@@ -5,10 +5,15 @@ import {
 } from '@semia/shared';
 import controlCss from './subtitleSettingsControl.css';
 import { getSemiaSettings, saveSemiaSettings } from './semiaSettings';
+import { findSubtitleSettingsMountBefore } from './subtitleSettingsMount';
+import {
+  nextPopoverOpenOnToggle,
+  shouldDismissPopoverOnDocumentClick,
+} from './subtitleSettingsPopover';
 import { mergeSubtitleSettingsPatch } from './subtitleSettingsPatch';
 
 const HOST_ID = 'semia-subtitle-settings-host';
-const MOUNT_POLL_MS = 1000;
+const MOUNT_POLL_MS = 500;
 
 export type SubtitleSettingsControl = {
   destroy: () => void;
@@ -21,6 +26,10 @@ function semiaSubtitleIconSvg(): string {
     <path d="M7 10h6M7 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     <path d="M16 8l3 2-3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
+}
+
+function clickInsideHost(event: Event, host: HTMLElement): boolean {
+  return event.composedPath().includes(host);
 }
 
 export function createSubtitleSettingsControl(options: {
@@ -41,7 +50,8 @@ export function createSubtitleSettingsControl(options: {
 
   let settings: SemiaSettings | null = null;
   let popoverOpen = false;
-  let mountedParent: HTMLElement | null = null;
+  let mountedBefore: HTMLElement | null = null;
+  let playerObserver: MutationObserver | null = null;
 
   function bilingualActive(): boolean {
     return settings?.bilingualCaptionsEnabled !== false;
@@ -68,6 +78,7 @@ export function createSubtitleSettingsControl(options: {
         class="icon-btn"
         aria-label="Semia subtitles"
         aria-pressed="${bilingual ? 'true' : 'false'}"
+        aria-expanded="${popoverOpen ? 'true' : 'false'}"
         title="Semia subtitles"
         data-action="toggle-popover"
       >
@@ -102,13 +113,6 @@ export function createSubtitleSettingsControl(options: {
           : ''
       }
     `;
-
-    const iconBtn = root.querySelector<HTMLButtonElement>('[data-action="toggle-popover"]');
-    if (iconBtn && popoverOpen) {
-      iconBtn.setAttribute('aria-expanded', 'true');
-    } else if (iconBtn) {
-      iconBtn.setAttribute('aria-expanded', 'false');
-    }
   }
 
   async function applyPatch(
@@ -122,6 +126,14 @@ export function createSubtitleSettingsControl(options: {
     await options.onSettingsChange(next);
   }
 
+  function onRootPointerDown(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.closest('[data-action="toggle-popover"]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   function onRootClick(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
@@ -130,7 +142,7 @@ export function createSubtitleSettingsControl(options: {
     if (action === 'toggle-popover') {
       event.preventDefault();
       event.stopPropagation();
-      popoverOpen = !popoverOpen;
+      popoverOpen = nextPopoverOpenOnToggle(popoverOpen);
       render();
       return;
     }
@@ -170,52 +182,66 @@ export function createSubtitleSettingsControl(options: {
     }
   }
 
-  function onDocumentPointerDown(event: Event): void {
-    if (!popoverOpen) return;
-    const path = event.composedPath();
-    if (path.includes(host)) return;
+  function onDocumentClick(event: Event): void {
+    if (
+      !shouldDismissPopoverOnDocumentClick({
+        popoverOpen,
+        clickInsideHost: clickInsideHost(event, host),
+      })
+    ) {
+      return;
+    }
     popoverOpen = false;
     render();
   }
 
+  root.addEventListener('pointerdown', onRootPointerDown);
   root.addEventListener('click', onRootClick);
   root.addEventListener('change', onRootChange);
-  document.addEventListener('pointerdown', onDocumentPointerDown, true);
-
-  function findMountPoint(): HTMLElement | null {
-    const rightControls = document.querySelector<HTMLElement>('.ytp-right-controls');
-    if (!rightControls) return null;
-
-    const settingsButton = rightControls.querySelector<HTMLElement>(
-      '.ytp-settings-button',
-    );
-    if (!settingsButton) return rightControls;
-
-    return settingsButton;
-  }
+  document.addEventListener('click', onDocumentClick, true);
 
   function mount(): boolean {
-    const mountBefore = findMountPoint();
+    const mountBefore = findSubtitleSettingsMountBefore();
     if (!mountBefore) return false;
 
     const parent = mountBefore.parentElement;
     if (!parent) return false;
 
-    if (mountedParent !== parent || host.parentElement !== parent) {
+    const needsInsert =
+      !host.isConnected ||
+      host.parentElement !== parent ||
+      mountedBefore !== mountBefore;
+
+    if (needsInsert) {
       parent.insertBefore(host, mountBefore);
-      mountedParent = parent;
+      mountedBefore = mountBefore;
     }
     return true;
   }
 
+  function watchPlayer(): void {
+    playerObserver?.disconnect();
+    const player =
+      document.querySelector('#movie_player') ??
+      document.querySelector('.html5-video-player');
+    if (!player) return;
+
+    playerObserver = new MutationObserver(() => {
+      mount();
+    });
+    playerObserver.observe(player, { childList: true, subtree: true });
+  }
+
   const mountPoll = window.setInterval(() => {
     mount();
+    if (!playerObserver) watchPlayer();
   }, MOUNT_POLL_MS);
 
   void (async () => {
     settings = await getSemiaSettings();
     render();
     mount();
+    watchPlayer();
   })();
 
   function setSettings(next: SemiaSettings): void {
@@ -225,7 +251,9 @@ export function createSubtitleSettingsControl(options: {
 
   function destroy(): void {
     window.clearInterval(mountPoll);
-    document.removeEventListener('pointerdown', onDocumentPointerDown, true);
+    playerObserver?.disconnect();
+    document.removeEventListener('click', onDocumentClick, true);
+    root.removeEventListener('pointerdown', onRootPointerDown);
     root.removeEventListener('click', onRootClick);
     root.removeEventListener('change', onRootChange);
     host.remove();

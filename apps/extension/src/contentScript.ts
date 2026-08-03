@@ -33,7 +33,6 @@ const captionOverlay = createCaptionOverlay({
 });
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
-  subtitleSettings.setSettings(settings);
   const videoId = getVideoIdFromUrl() ?? currentVideoId;
   if (!videoId) return;
   await syncBilingualTranscriptForVideo(videoId, { force: true });
@@ -308,6 +307,8 @@ function installStorageListener(): void {
       void (async () => {
         const next = (settingsChange.newValue ?? {}) as SemiaSettings;
         const merged = { ...(await getSemiaSettings()), ...next };
+        currentSettings = merged;
+        subtitleSettings.setSettings(merged);
         await onSemiaSettingsChange(merged);
       })();
     }
