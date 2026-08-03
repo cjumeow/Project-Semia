@@ -1,22 +1,23 @@
 import type { SemiaSettings } from '@semia/shared';
-import {
-  LEARNING_LANGUAGE_OPTIONS,
-  NATIVE_LANGUAGE_OPTIONS,
-} from '@semia/shared';
 import buttonCss from './subtitleSettingsControl.css';
 import popoverCss from './subtitleSettingsPopover.css';
 import { getSemiaSettings, saveSemiaSettings } from './semiaSettings';
 import { findSubtitleSettingsMountBefore } from './subtitleSettingsMount';
 import {
-  nextPopoverOpenOnToggle,
-  shouldDismissPopoverOnDocumentClick,
-} from './subtitleSettingsPopover';
+  eventTargetsSubtitleSettingsUi,
+  shouldIgnoreDocumentDismiss,
+} from './subtitleSettingsInteraction';
+import { nextPopoverOpenOnToggle } from './subtitleSettingsPopover';
 import { computePopoverFixedPosition } from './subtitleSettingsPopoverPosition';
 import { mergeSubtitleSettingsPatch } from './subtitleSettingsPatch';
+import {
+  buildPopoverFieldsHtml,
+  POPOVER_WIDTH,
+} from './subtitleSettingsPopoverMarkup';
 
 const BUTTON_HOST_ID = 'semia-subtitle-settings-host';
 const POPOVER_HOST_ID = 'semia-subtitle-settings-popover-host';
-const POPOVER_WIDTH = 288;
+const OPEN_GUARD_MS = 300;
 const MOUNT_POLL_MS = 500;
 
 export type SubtitleSettingsControl = {
@@ -30,54 +31,6 @@ function semiaSubtitleIconSvg(): string {
     <path d="M7 10h6M7 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     <path d="M16 8l3 2-3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
-}
-
-function clickInsideAnyHost(event: Event, hosts: HTMLElement[]): boolean {
-  const path = event.composedPath();
-  return hosts.some((host) => path.includes(host));
-}
-
-function buildPopoverFieldsHtml(
-  learning: string,
-  native: string,
-  bilingual: boolean,
-): string {
-  const learningOptions = LEARNING_LANGUAGE_OPTIONS.map(
-    (option) =>
-      `<option value="${option.code}"${option.code === learning ? ' selected' : ''}>${option.label}</option>`,
-  ).join('');
-
-  const nativeOptions = NATIVE_LANGUAGE_OPTIONS.map(
-    (option) =>
-      `<option value="${option.code}"${option.code === native ? ' selected' : ''}>${option.label}</option>`,
-  ).join('');
-
-  return `
-    <div class="popover" role="dialog" aria-label="Subtitle settings">
-      <div class="popover-header">
-        <div>
-          <p class="popover-title">Semia subtitles</p>
-          <p class="popover-subtitle">YouTube auto-translate</p>
-        </div>
-        <button type="button" class="close-btn" aria-label="Close" data-action="close-popover">×</button>
-      </div>
-      <div class="fields">
-        <label class="field">
-          <span class="field-label">Learning language</span>
-          <select class="field-select" data-field="learningLanguage">${learningOptions}</select>
-        </label>
-        <label class="field">
-          <span class="field-label">Native language</span>
-          <select class="field-select" data-field="nativeLanguage">${nativeOptions}</select>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" data-field="bilingualCaptionsEnabled"${bilingual ? ' checked' : ''} />
-          Show bilingual captions
-        </label>
-        <p class="hint">Learning line is shown on the video. Native line display is deferred until pairing is validated.</p>
-      </div>
-    </div>
-  `;
 }
 
 export function createSubtitleSettingsControl(options: {
@@ -108,15 +61,25 @@ export function createSubtitleSettingsControl(options: {
 
   const popoverRoot = document.createElement('div');
   popoverShadow.appendChild(popoverRoot);
-  document.body.appendChild(popoverHost);
+  document.documentElement.appendChild(popoverHost);
 
   let settings: SemiaSettings | null = null;
   let popoverOpen = false;
+  let openedAtMs: number | null = null;
   let mountedBefore: HTMLElement | null = null;
   let playerObserver: MutationObserver | null = null;
 
   function bilingualActive(): boolean {
     return settings?.bilingualCaptionsEnabled !== false;
+  }
+
+  function applyPopoverHostPosition(top: number, left: number): void {
+    popoverHost.style.position = 'fixed';
+    popoverHost.style.zIndex = '2147483647';
+    popoverHost.style.top = `${top}px`;
+    popoverHost.style.left = `${left}px`;
+    popoverHost.style.width = `${POPOVER_WIDTH}px`;
+    popoverHost.style.pointerEvents = 'auto';
   }
 
   function positionPopover(): void {
@@ -136,8 +99,7 @@ export function createSubtitleSettingsControl(options: {
       viewportHeight: window.innerHeight,
     });
 
-    popoverHost.style.top = `${top}px`;
-    popoverHost.style.left = `${left}px`;
+    applyPopoverHostPosition(top, left);
   }
 
   function renderButton(): void {
@@ -172,6 +134,7 @@ export function createSubtitleSettingsControl(options: {
       native,
       bilingualActive(),
     );
+    positionPopover();
     requestAnimationFrame(() => {
       positionPopover();
     });
@@ -180,6 +143,12 @@ export function createSubtitleSettingsControl(options: {
   function render(): void {
     renderButton();
     renderPopover();
+  }
+
+  function setPopoverOpen(nextOpen: boolean): void {
+    popoverOpen = nextOpen;
+    openedAtMs = nextOpen ? Date.now() : null;
+    render();
   }
 
   async function applyPatch(
@@ -197,21 +166,18 @@ export function createSubtitleSettingsControl(options: {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     if (!target.closest('[data-action="toggle-popover"]')) return;
-    event.preventDefault();
+
     event.stopPropagation();
+    setPopoverOpen(nextPopoverOpenOnToggle(popoverOpen));
   }
 
   function onButtonClick(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
-
-    const action = target.closest<HTMLElement>('[data-action]')?.dataset.action;
-    if (action !== 'toggle-popover') return;
+    if (!target.closest('[data-action="toggle-popover"]')) return;
 
     event.preventDefault();
     event.stopPropagation();
-    popoverOpen = nextPopoverOpenOnToggle(popoverOpen);
-    render();
   }
 
   function onPopoverClick(event: Event): void {
@@ -223,8 +189,7 @@ export function createSubtitleSettingsControl(options: {
 
     event.preventDefault();
     event.stopPropagation();
-    popoverOpen = false;
-    render();
+    setPopoverOpen(false);
   }
 
   function onFieldChange(event: Event): void {
@@ -256,16 +221,20 @@ export function createSubtitleSettingsControl(options: {
   }
 
   function onDocumentClick(event: Event): void {
+    if (!popoverOpen) return;
     if (
-      !shouldDismissPopoverOnDocumentClick({
-        popoverOpen,
-        clickInsideUi: clickInsideAnyHost(event, [buttonHost, popoverHost]),
+      shouldIgnoreDocumentDismiss({
+        openedAtMs,
+        nowMs: Date.now(),
+        guardMs: OPEN_GUARD_MS,
       })
     ) {
       return;
     }
-    popoverOpen = false;
-    render();
+    if (eventTargetsSubtitleSettingsUi(event, [buttonHost, popoverHost])) {
+      return;
+    }
+    setPopoverOpen(false);
   }
 
   function onViewportChange(): void {

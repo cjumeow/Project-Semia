@@ -1,7 +1,6 @@
 :host {
   all: initial;
-  position: fixed;
-  z-index: 2147483647;
+  display: block;
   width: 288px;
   pointer-events: auto;
 }
