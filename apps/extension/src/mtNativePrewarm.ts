@@ -20,6 +20,14 @@ import {
   mtBatchInflightKey,
   runMtBatchOnce,
 } from './mtBatchInflight';
+import {
+  createMtPrewarmSession,
+  runPriorityChunkPool,
+  type MtPrewarmSession,
+} from './mtPrewarmPool';
+
+export { createMtPrewarmSession, setMtPrewarmPriorityCue } from './mtPrewarmPool';
+export type { MtPrewarmSession } from './mtPrewarmPool';
 
 export const MT_PREWARM_CONCURRENCY = 12;
 export const NATIVE_LINE_LOADING_TEXT = '翻譯載入中';
@@ -98,28 +106,6 @@ export function orderChunksByPriorityCue(
     ...chunks.slice(0, chunkIdx),
     ...chunks.slice(chunkIdx + 1),
   ];
-}
-
-async function runPool<T>(
-  tasks: Array<() => Promise<T>>,
-  concurrency: number,
-): Promise<T[]> {
-  const results: T[] = new Array(tasks.length);
-  let next = 0;
-
-  async function worker(): Promise<void> {
-    while (next < tasks.length) {
-      const index = next++;
-      results[index] = await tasks[index]!();
-    }
-  }
-
-  const workers = Array.from(
-    { length: Math.min(concurrency, tasks.length) },
-    () => worker(),
-  );
-  await Promise.all(workers);
-  return results;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -241,6 +227,7 @@ export async function runMtNativePrewarm(options: {
   batchSize?: number;
   concurrency?: number;
   priorityCueIndex?: number;
+  session?: MtPrewarmSession;
   /** Shared mutable map — merges with cache; used by priority on-demand path. */
   translations?: Map<number, string>;
   signal?: AbortSignal;
@@ -251,6 +238,14 @@ export async function runMtNativePrewarm(options: {
   metrics: MtPrewarmMetrics;
 }> {
   const { transcript, signal, onProgress, priorityCueIndex } = options;
+  const session =
+    options.session ?? createMtPrewarmSession(priorityCueIndex);
+  if (
+    priorityCueIndex !== undefined &&
+    session.priorityCueIndex === undefined
+  ) {
+    session.priorityCueIndex = priorityCueIndex;
+  }
   const batchSize = options.batchSize ?? DEFAULT_CUE_BATCH_SIZE;
   const concurrency = options.concurrency ?? MT_PREWARM_CONCURRENCY;
   const nativeLang = transcript.nativeLanguageCode?.trim() || 'zh-TW';
@@ -316,19 +311,23 @@ export async function runMtNativePrewarm(options: {
     signal,
   };
 
-  const tasks = chunks.map((chunkIndices) => async () => {
-    if (signal?.aborted) return;
-    const result = await executeBatchTranslation(chunkIndices, ctx, batchSize);
-    if (result.ok) {
-      succeededBatches++;
-      onProgress?.(translations, 'loading');
-      return;
-    }
-    if (result.rateLimited) rateLimited = true;
-    failedBatches++;
-  });
-
-  await runPool(tasks, concurrency);
+  await runPriorityChunkPool(
+    chunks,
+    session,
+    async (chunkIndices) => {
+      if (signal?.aborted) return;
+      const result = await executeBatchTranslation(chunkIndices, ctx, batchSize);
+      if (result.ok) {
+        succeededBatches++;
+        onProgress?.(translations, 'loading');
+        return;
+      }
+      if (result.rateLimited) rateLimited = true;
+      failedBatches++;
+    },
+    concurrency,
+    signal,
+  );
 
   const durationMs = Math.round(performance.now() - started);
   const status: MtPrewarmStatus =

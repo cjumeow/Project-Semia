@@ -8,9 +8,12 @@ import {
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
 import {
+  createMtPrewarmSession,
   runMtNativePrewarm,
+  setMtPrewarmPriorityCue,
   shouldPrewarmMtNativeLine,
   translateCueBatchIfMissing,
+  type MtPrewarmSession,
   type MtPrewarmStatus,
 } from './mtNativePrewarm';
 import { mtCacheToMap, loadMtNativeCacheEntry } from './mtNativeCacheStorage';
@@ -44,10 +47,12 @@ type BridgeMessage = {
 const sidebar = createCaptureSidebar();
 
 let mtTranslations = new Map<number, string>();
+let mtPrewarmSession: MtPrewarmSession | null = null;
 
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
   onActiveCueChange: (cueIndex) => {
+    setMtPrewarmPriorityCue(mtPrewarmSession, cueIndex);
     void prioritizeCueTranslation(cueIndex);
   },
 });
@@ -62,14 +67,19 @@ let transcriptSyncGeneration = 0;
 let mtPrewarmAbort: AbortController | null = null;
 let mtPrewarmKey: string | null = null;
 
-function updateMtOverlayState(
-  translations: Map<number, string>,
-  prewarmStatus: MtPrewarmStatus,
+function replaceMtTranslations(
+  source: Iterable<[number, string]>,
 ): void {
-  mtTranslations = new Map(translations);
+  mtTranslations.clear();
+  for (const [index, text] of source) {
+    if (text.trim()) mtTranslations.set(index, text);
+  }
+}
+
+function updateMtOverlayState(status: MtPrewarmStatus): void {
   captionOverlay.setMtNativeState({
-    translationsByCueIndex: translations,
-    prewarmStatus,
+    translationsByCueIndex: mtTranslations,
+    prewarmStatus: status,
   });
 }
 
@@ -77,6 +87,7 @@ function cancelMtPrewarm(): void {
   mtPrewarmAbort?.abort();
   mtPrewarmAbort = null;
   mtPrewarmKey = null;
+  mtPrewarmSession = null;
 }
 
 function getActiveCueIndex(transcript: StoredTranscript): number {
@@ -104,7 +115,7 @@ async function prioritizeCueTranslation(cueIndex: number): Promise<void> {
     if (mtPrewarmKey !== key && mtPrewarmKey !== null) return;
     if (!updated.has(cueIndex)) return;
     const fullyCached = updated.size >= transcript.segments.length;
-    updateMtOverlayState(updated, fullyCached ? 'complete' : 'loading');
+    updateMtOverlayState(fullyCached ? 'complete' : 'loading');
   } catch (err) {
     if (mtPrewarmAbort?.signal.aborted) return;
     console.warn('[Semia] Priority cue translation failed:', err);
@@ -117,13 +128,15 @@ async function maybeStartMtNativePrewarm(
   const settings = currentSettings ?? (await getSemiaSettings());
   if (settings.bilingualCaptionsEnabled === false) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
     return;
   }
 
   if (!shouldPrewarmMtNativeLine(transcript)) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
     return;
   }
 
@@ -136,10 +149,9 @@ async function maybeStartMtNativePrewarm(
     const cached = mtCacheToMap(
       await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
     );
-    mtTranslations = new Map(cached);
+    replaceMtTranslations(cached);
     const fullyCached = mtTranslations.size >= transcript.segments.length;
     updateMtOverlayState(
-      mtTranslations,
       fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
     );
     return;
@@ -151,30 +163,30 @@ async function maybeStartMtNativePrewarm(
   const cached = mtCacheToMap(
     await loadMtNativeCacheEntry(transcript.videoId, nativeLang),
   );
-  mtTranslations = new Map(cached);
+  replaceMtTranslations(cached);
   const fullyCached = mtTranslations.size >= transcript.segments.length;
   updateMtOverlayState(
-    mtTranslations,
     fullyCached && mtTranslations.size > 0 ? 'complete' : 'loading',
   );
 
   const controller = new AbortController();
   mtPrewarmAbort = controller;
+  mtPrewarmSession = createMtPrewarmSession(getActiveCueIndex(transcript));
 
   void runMtNativePrewarm({
     transcript,
     translations: mtTranslations,
-    priorityCueIndex: getActiveCueIndex(transcript),
+    session: mtPrewarmSession,
     signal: controller.signal,
-    onProgress: (translations, status) => {
+    onProgress: (_translations, status) => {
       if (controller.signal.aborted) return;
       if (mtPrewarmKey !== key) return;
-      updateMtOverlayState(translations, status);
+      updateMtOverlayState(status);
     },
   }).catch((err) => {
     if (controller.signal.aborted) return;
     console.warn('[Semia] MT prewarm failed:', err);
-    updateMtOverlayState(mtTranslations, 'failed');
+    updateMtOverlayState('failed');
   }).finally(() => {
     if (mtPrewarmKey === key) {
       mtPrewarmAbort = null;
@@ -190,7 +202,8 @@ async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   const generation = ++transcriptSyncGeneration;
   captionOverlay.setNativeLineSuppressed(true);
   cancelMtPrewarm();
-  updateMtOverlayState(new Map(), 'idle');
+  replaceMtTranslations([]);
+  updateMtOverlayState('idle');
   try {
     await syncBilingualTranscriptForVideo(videoId, {
       force: true,
@@ -217,10 +230,12 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   captionOverlay.setSkipTlangPairing(preferMt);
   if (!normalized) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
   } else if (!preferMt) {
     cancelMtPrewarm();
-    updateMtOverlayState(new Map(), 'idle');
+    replaceMtTranslations([]);
+    updateMtOverlayState('idle');
   }
   captionOverlay.setTranscript(normalized);
   if (normalized && preferMt) {
