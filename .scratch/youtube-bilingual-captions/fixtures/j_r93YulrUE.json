@@ -1,0 +1,3379 @@
+{
+  "videoId": "j_r93YulrUE",
+  "label": "Jo Van Eyck — The state of agentic engineering mid-2026",
+  "mode": "tlang-zh-Hant",
+  "learning": [
+    {
+      "text": "Hey folks, I&#39;ve been coding with AI for",
+      "start": 1.68,
+      "duration": 6.159
+    },
+    {
+      "text": "about a year now. I think since uh clot",
+      "start": 4.64,
+      "duration": 5.68
+    },
+    {
+      "text": "code uh really started hitting u like",
+      "start": 7.839,
+      "duration": 5.68
+    },
+    {
+      "text": "public access. And in that time a lot",
+      "start": 10.32,
+      "duration": 5.68
+    },
+    {
+      "text": "has changed, hasn&#39;t it? A lot of new",
+      "start": 13.519,
+      "duration": 4.961
+    },
+    {
+      "text": "terms, a lot of new concepts, a lot of",
+      "start": 16,
+      "duration": 6.16
+    },
+    {
+      "text": "stuff to learn. Uh I think it started",
+      "start": 18.48,
+      "duration": 6.639
+    },
+    {
+      "text": "with like prompt engineering and now",
+      "start": 22.16,
+      "duration": 4.879
+    },
+    {
+      "text": "learning how to use like these coding",
+      "start": 25.119,
+      "duration": 3.841
+    },
+    {
+      "text": "harnesses.",
+      "start": 27.039,
+      "duration": 5.04
+    },
+    {
+      "text": "uh way way back and then uh you needed",
+      "start": 28.96,
+      "duration": 5.599
+    },
+    {
+      "text": "to think about context engineering and",
+      "start": 32.079,
+      "duration": 4.721
+    },
+    {
+      "text": "then like it looked like it seemed like",
+      "start": 34.559,
+      "duration": 4.481
+    },
+    {
+      "text": "every week a new term was like being",
+      "start": 36.8,
+      "duration": 4.8
+    },
+    {
+      "text": "invented, right? Started with prompt",
+      "start": 39.04,
+      "duration": 4.56
+    },
+    {
+      "text": "context harness, then you have some",
+      "start": 41.6,
+      "duration": 4.959
+    },
+    {
+      "text": "habitat engineering,",
+      "start": 43.6,
+      "duration": 5.68
+    },
+    {
+      "text": "maybe even some loop engineering, uh",
+      "start": 46.559,
+      "duration": 5.84
+    },
+    {
+      "text": "some graph engineering recently. Uh and",
+      "start": 49.28,
+      "duration": 4.72
+    },
+    {
+      "text": "all along people are have been talking",
+      "start": 52.399,
+      "duration": 4.721
+    },
+    {
+      "text": "about software factories and dark",
+      "start": 54,
+      "duration": 6.079
+    },
+    {
+      "text": "factories stuff like that and it&#39;s a bit",
+      "start": 57.12,
+      "duration": 4.72
+    },
+    {
+      "text": "much right everyone is beating you",
+      "start": 60.079,
+      "duration": 4.72
+    },
+    {
+      "text": "around the head with new",
+      "start": 61.84,
+      "duration": 4.8
+    },
+    {
+      "text": "like new paradigms and new ways of",
+      "start": 64.799,
+      "duration": 3.841
+    },
+    {
+      "text": "engineering",
+      "start": 66.64,
+      "duration": 4
+    },
+    {
+      "text": "and this video is going to be a bit of a",
+      "start": 68.64,
+      "duration": 4.32
+    },
+    {
+      "text": "rant or a bit of an explainer of uh what",
+      "start": 70.64,
+      "duration": 4
+    },
+    {
+      "text": "I think of all these terms what I think",
+      "start": 72.96,
+      "duration": 3.36
+    },
+    {
+      "text": "they mean. I think some of them have",
+      "start": 74.64,
+      "duration": 3.76
+    },
+    {
+      "text": "definitions or starting people are",
+      "start": 76.32,
+      "duration": 3.52
+    },
+    {
+      "text": "starting to land on like common",
+      "start": 78.4,
+      "duration": 3.28
+    },
+    {
+      "text": "understanding and definitions. But the",
+      "start": 79.84,
+      "duration": 3.599
+    },
+    {
+      "text": "main point of this video will be like",
+      "start": 81.68,
+      "duration": 3.439
+    },
+    {
+      "text": "speed speed running you through all",
+      "start": 83.439,
+      "duration": 4.32
+    },
+    {
+      "text": "these terms like what do they mean? And",
+      "start": 85.119,
+      "duration": 5.441
+    },
+    {
+      "text": "I want to end with and which of these",
+      "start": 87.759,
+      "duration": 5.36
+    },
+    {
+      "text": "concepts actually matter if you&#39;re a",
+      "start": 90.56,
+      "duration": 4.16
+    },
+    {
+      "text": "software engineer. What should you be",
+      "start": 93.119,
+      "duration": 4.161
+    },
+    {
+      "text": "taking a look at today? So that is what",
+      "start": 94.72,
+      "duration": 5.12
+    },
+    {
+      "text": "this video will be about [snorts] and",
+      "start": 97.28,
+      "duration": 4.72
+    },
+    {
+      "text": "we&#39;ll get started as soon as my coffee",
+      "start": 99.84,
+      "duration": 5.279
+    },
+    {
+      "text": "is done.",
+      "start": 102,
+      "duration": 6.076
+    },
+    {
+      "text": "Where do you even start with all this?",
+      "start": 105.119,
+      "duration": 4.401
+    },
+    {
+      "text": "[snorts] Um, maybe with the easiest",
+      "start": 108.076,
+      "duration": 4.164
+    },
+    {
+      "text": "part, prompt engineering.",
+      "start": 109.52,
+      "duration": 5.04
+    },
+    {
+      "text": "I think prompt engineering uh had its",
+      "start": 112.24,
+      "duration": 6.08
+    },
+    {
+      "text": "place with those older models",
+      "start": 114.56,
+      "duration": 6.4
+    },
+    {
+      "text": "uh that needed like a lot of structure",
+      "start": 118.32,
+      "duration": 5.36
+    },
+    {
+      "text": "and a lot of examples. Things like few",
+      "start": 120.96,
+      "duration": 5.68
+    },
+    {
+      "text": "shop engineering uh spew prompting sorry",
+      "start": 123.68,
+      "duration": 4.88
+    },
+    {
+      "text": "and chain of thought stuff. Uh [snorts]",
+      "start": 126.64,
+      "duration": 4
+    },
+    {
+      "text": "that was all",
+      "start": 128.56,
+      "duration": 4.16
+    },
+    {
+      "text": "uh necessary back in the day one year",
+      "start": 130.64,
+      "duration": 4.239
+    },
+    {
+      "text": "ago. Uh but if I look at how people",
+      "start": 132.72,
+      "duration": 4.48
+    },
+    {
+      "text": "prompt uh agents and large language",
+      "start": 134.879,
+      "duration": 3.841
+    },
+    {
+      "text": "models nowadays, I don&#39;t think prompt",
+      "start": 137.2,
+      "duration": 3.2
+    },
+    {
+      "text": "engineering",
+      "start": 138.72,
+      "duration": 4.48
+    },
+    {
+      "text": "uh amounts to much anymore. Uh I see",
+      "start": 140.4,
+      "duration": 6
+    },
+    {
+      "text": "people just uh transcribe and talk to",
+      "start": 143.2,
+      "duration": 5.36
+    },
+    {
+      "text": "their computer and have 20 minute long",
+      "start": 146.4,
+      "duration": 5.36
+    },
+    {
+      "text": "rants. [laughter] I do that as well. So",
+      "start": 148.56,
+      "duration": 5.28
+    },
+    {
+      "text": "there&#39;s no shade [snorts]",
+      "start": 151.76,
+      "duration": 5.6
+    },
+    {
+      "text": "and that works better or as well that",
+      "start": 153.84,
+      "duration": 5.28
+    },
+    {
+      "text": "works as well as prompt engineering. So",
+      "start": 157.36,
+      "duration": 3.68
+    },
+    {
+      "text": "I think the the concept of prompt",
+      "start": 159.12,
+      "duration": 3.52
+    },
+    {
+      "text": "engineering has its place when you&#39;re",
+      "start": 161.04,
+      "duration": 4.24
+    },
+    {
+      "text": "working with like dumber large language",
+      "start": 162.64,
+      "duration": 4.8
+    },
+    {
+      "text": "models that need more structure in the",
+      "start": 165.28,
+      "duration": 5.28
+    },
+    {
+      "text": "prompt. Uh but for uh software engineers",
+      "start": 167.44,
+      "duration": 5.6
+    },
+    {
+      "text": "uh that uh use these tools for",
+      "start": 170.56,
+      "duration": 5.52
+    },
+    {
+      "text": "programming I think prompt engineering",
+      "start": 173.04,
+      "duration": 5.12
+    },
+    {
+      "text": "has become less relevant. So let&#39;s jump",
+      "start": 176.08,
+      "duration": 6.079
+    },
+    {
+      "text": "straight to the the next one",
+      "start": 178.16,
+      "duration": 7.04
+    },
+    {
+      "text": "and that is context engineering.",
+      "start": 182.159,
+      "duration": 7.601
+    },
+    {
+      "text": "Uh I think it&#39;s still relevant as long",
+      "start": 185.2,
+      "duration": 7.44
+    },
+    {
+      "text": "as like context windows uh exist and",
+      "start": 189.76,
+      "duration": 5.52
+    },
+    {
+      "text": "have limitations and",
+      "start": 192.64,
+      "duration": 4.64
+    },
+    {
+      "text": "uh concepts like the dump zone and the",
+      "start": 195.28,
+      "duration": 5.36
+    },
+    {
+      "text": "smart zone that&#39;s like um if you have",
+      "start": 197.28,
+      "duration": 5.44
+    },
+    {
+      "text": "like a million uh tokens in your context",
+      "start": 200.64,
+      "duration": 4.56
+    },
+    {
+      "text": "or a max capacity of a million tokens",
+      "start": 202.72,
+      "duration": 3.84
+    },
+    {
+      "text": "that does not mean you should be pushing",
+      "start": 205.2,
+      "duration": 3.679
+    },
+    {
+      "text": "it up to that limit because large",
+      "start": 206.56,
+      "duration": 4.959
+    },
+    {
+      "text": "language models uh degrade in output",
+      "start": 208.879,
+      "duration": 4.881
+    },
+    {
+      "text": "quality uh once you hit like 200,000",
+      "start": 211.519,
+      "duration": 4.161
+    },
+    {
+      "text": "400,000 tokens. and something like that.",
+      "start": 213.76,
+      "duration": 4.08
+    },
+    {
+      "text": "So that&#39;s what&#39;s called the smart zone,",
+      "start": 215.68,
+      "duration": 4.32
+    },
+    {
+      "text": "staying below that threshold. And for",
+      "start": 217.84,
+      "duration": 3.759
+    },
+    {
+      "text": "me, that&#39;s stuff like that, like being",
+      "start": 220,
+      "duration": 3.76
+    },
+    {
+      "text": "aware that that exists and figuring out",
+      "start": 221.599,
+      "duration": 4.161
+    },
+    {
+      "text": "ways to",
+      "start": 223.76,
+      "duration": 5.039
+    },
+    {
+      "text": "uh deal with that constraint like",
+      "start": 225.76,
+      "duration": 4.559
+    },
+    {
+      "text": "compaction,",
+      "start": 228.799,
+      "duration": 4.241
+    },
+    {
+      "text": "sub agents, uh with a new context window",
+      "start": 230.319,
+      "duration": 5.761
+    },
+    {
+      "text": "or starting new sessions, uh stuff like",
+      "start": 233.04,
+      "duration": 4.64
+    },
+    {
+      "text": "that. That&#39;s part of context engineering",
+      "start": 236.08,
+      "duration": 4.4
+    },
+    {
+      "text": "for me and that&#39;s still relevant.",
+      "start": 237.68,
+      "duration": 5.119
+    },
+    {
+      "text": "uh but also other stuff like uh software",
+      "start": 240.48,
+      "duration": 4.88
+    },
+    {
+      "text": "design even uh I don&#39;t know who I stole",
+      "start": 242.799,
+      "duration": 4.881
+    },
+    {
+      "text": "this quote from but someone said uh",
+      "start": 245.36,
+      "duration": 4.72
+    },
+    {
+      "text": "software design is context engineering",
+      "start": 247.68,
+      "duration": 4.88
+    },
+    {
+      "text": "because yes clot code and all these",
+      "start": 250.08,
+      "duration": 5.6
+    },
+    {
+      "text": "tools uh they can grab their way around",
+      "start": 252.56,
+      "duration": 5.359
+    },
+    {
+      "text": "the codebase and you don&#39;t need to give",
+      "start": 255.68,
+      "duration": 4
+    },
+    {
+      "text": "things descriptive names and you don&#39;t",
+      "start": 257.919,
+      "duration": 4.641
+    },
+    {
+      "text": "need to think about modularity but it",
+      "start": 259.68,
+      "duration": 4.88
+    },
+    {
+      "text": "kind of helps",
+      "start": 262.56,
+      "duration": 3.84
+    },
+    {
+      "text": "if [snorts] uh you&#39;re like making a",
+      "start": 264.56,
+      "duration": 3.919
+    },
+    {
+      "text": "change and it needs to read 20 lines of",
+      "start": 266.4,
+      "duration": 4.4
+    },
+    {
+      "text": "code in a single file.",
+      "start": 268.479,
+      "duration": 4.72
+    },
+    {
+      "text": "uh because you designed it to be modular",
+      "start": 270.8,
+      "duration": 4.56
+    },
+    {
+      "text": "and highly cohesive. I think that helps",
+      "start": 273.199,
+      "duration": 4.161
+    },
+    {
+      "text": "both humans",
+      "start": 275.36,
+      "duration": 4.72
+    },
+    {
+      "text": "and uh large language models working",
+      "start": 277.36,
+      "duration": 5.2
+    },
+    {
+      "text": "code. So software design is also like a",
+      "start": 280.08,
+      "duration": 4.8
+    },
+    {
+      "text": "a part a subset of context engineering",
+      "start": 282.56,
+      "duration": 5.84
+    },
+    {
+      "text": "for me or at least it it acts as a a",
+      "start": 284.88,
+      "duration": 5.12
+    },
+    {
+      "text": "technique for context engineering. So I",
+      "start": 288.4,
+      "duration": 3.28
+    },
+    {
+      "text": "think context engineering still is very",
+      "start": 290,
+      "duration": 6.24
+    },
+    {
+      "text": "relevant. I don&#39;t think we will be",
+      "start": 291.68,
+      "duration": 7.12
+    },
+    {
+      "text": "concerned about having to compact",
+      "start": 296.24,
+      "duration": 4.8
+    },
+    {
+      "text": "context windows ourselves, stuff like",
+      "start": 298.8,
+      "duration": 4.32
+    },
+    {
+      "text": "that. I think infra and tooling layers",
+      "start": 301.04,
+      "duration": 4.8
+    },
+    {
+      "text": "will fix that for us. But now, for now",
+      "start": 303.12,
+      "duration": 4.48
+    },
+    {
+      "text": "at least, as long as those dump zone,",
+      "start": 305.84,
+      "duration": 4.24
+    },
+    {
+      "text": "smart zone things are around, it makes",
+      "start": 307.6,
+      "duration": 5.039
+    },
+    {
+      "text": "sense to be aware that the context",
+      "start": 310.08,
+      "duration": 5.2
+    },
+    {
+      "text": "window is a thing and that and what a",
+      "start": 312.639,
+      "duration": 4.081
+    },
+    {
+      "text": "token is, stuff like that. So, I think",
+      "start": 315.28,
+      "duration": 4.24
+    },
+    {
+      "text": "context engineering still has a bit of",
+      "start": 316.72,
+      "duration": 4.479
+    },
+    {
+      "text": "value.",
+      "start": 319.52,
+      "duration": 4.08
+    },
+    {
+      "text": "uh next term, what was it? I think",
+      "start": 321.199,
+      "duration": 4.401
+    },
+    {
+      "text": "harness engineering was like the next uh",
+      "start": 323.6,
+      "duration": 4.48
+    },
+    {
+      "text": "kind of wave in the ocean of agentic",
+      "start": 325.6,
+      "duration": 4.4
+    },
+    {
+      "text": "engineering",
+      "start": 328.08,
+      "duration": 5.119
+    },
+    {
+      "text": "and I really",
+      "start": 330,
+      "duration": 5.68
+    },
+    {
+      "text": "vibed with that concept",
+      "start": 333.199,
+      "duration": 5.44
+    },
+    {
+      "text": "because [snorts] it puts uh the engineer",
+      "start": 335.68,
+      "duration": 6.56
+    },
+    {
+      "text": "back in uh the driving seat, right? Up",
+      "start": 338.639,
+      "duration": 6.801
+    },
+    {
+      "text": "until now, we were like uh massaging",
+      "start": 342.24,
+      "duration": 5.6
+    },
+    {
+      "text": "inputs, massaging prompts, uh like",
+      "start": 345.44,
+      "duration": 4.319
+    },
+    {
+      "text": "making sure the the quality of our",
+      "start": 347.84,
+      "duration": 4.4
+    },
+    {
+      "text": "context to our tokens was as high as we",
+      "start": 349.759,
+      "duration": 4.481
+    },
+    {
+      "text": "could to get the best output. Harness",
+      "start": 352.24,
+      "duration": 4.88
+    },
+    {
+      "text": "engineering was more about [snorts]",
+      "start": 354.24,
+      "duration": 6.799
+    },
+    {
+      "text": "uh how do we give agents uh the",
+      "start": 357.12,
+      "duration": 6.96
+    },
+    {
+      "text": "necessary eyes and hands and ways to",
+      "start": 361.039,
+      "duration": 5.201
+    },
+    {
+      "text": "check their work so they could iterate",
+      "start": 364.08,
+      "duration": 4
+    },
+    {
+      "text": "longer and do more meaningful work",
+      "start": 366.24,
+      "duration": 4.399
+    },
+    {
+      "text": "without engineers having to babysit",
+      "start": 368.08,
+      "duration": 4.88
+    },
+    {
+      "text": "them. So harness engineering is stuff uh",
+      "start": 370.639,
+      "duration": 6.56
+    },
+    {
+      "text": "like feed forward stuff like um",
+      "start": 372.96,
+      "duration": 6.079
+    },
+    {
+      "text": "clear specifications you know the whole",
+      "start": 377.199,
+      "duration": 4.801
+    },
+    {
+      "text": "specd driven development grimly thing uh",
+      "start": 379.039,
+      "duration": 6
+    },
+    {
+      "text": "but also like uh rules and your agents",
+      "start": 382,
+      "duration": 4.639
+    },
+    {
+      "text": "and defile stuff like that. So that&#39;s",
+      "start": 385.039,
+      "duration": 4.081
+    },
+    {
+      "text": "part of harness engineering and as well",
+      "start": 386.639,
+      "duration": 4
+    },
+    {
+      "text": "as context engineering, prompt",
+      "start": 389.12,
+      "duration": 5.199
+    },
+    {
+      "text": "engineering. It&#39;s all it&#39;s all all like",
+      "start": 390.639,
+      "duration": 6.481
+    },
+    {
+      "text": "every step in this engineering",
+      "start": 394.319,
+      "duration": 5.761
+    },
+    {
+      "text": "terminology journey is like subsuming",
+      "start": 397.12,
+      "duration": 5.84
+    },
+    {
+      "text": "the previous ones, right? So it&#39;s also",
+      "start": 400.08,
+      "duration": 5.76
+    },
+    {
+      "text": "the and some more. So with hardness",
+      "start": 402.96,
+      "duration": 4.16
+    },
+    {
+      "text": "engineering, you have all those things.",
+      "start": 405.84,
+      "duration": 3.28
+    },
+    {
+      "text": "Uh but you have like the whole concept",
+      "start": 407.12,
+      "duration": 5.28
+    },
+    {
+      "text": "of back pressure or the the feedback uh",
+      "start": 409.12,
+      "duration": 5.6
+    },
+    {
+      "text": "signal. So giving agents ways to check",
+      "start": 412.4,
+      "duration": 4.32
+    },
+    {
+      "text": "their work [snorts] and that&#39;s things",
+      "start": 414.72,
+      "duration": 5.12
+    },
+    {
+      "text": "like llinters uh security scanners,",
+      "start": 416.72,
+      "duration": 5.759
+    },
+    {
+      "text": "static code analysis, test suites, stuff",
+      "start": 419.84,
+      "duration": 4.96
+    },
+    {
+      "text": "like that. And that has become really",
+      "start": 422.479,
+      "duration": 5.361
+    },
+    {
+      "text": "invoke uh this year uh since like the",
+      "start": 424.8,
+      "duration": 6.48
+    },
+    {
+      "text": "the invention of the Ralph loop. And now",
+      "start": 427.84,
+      "duration": 5.52
+    },
+    {
+      "text": "these models can run for hours, maybe",
+      "start": 431.28,
+      "duration": 4
+    },
+    {
+      "text": "days on end, especially if you give them",
+      "start": 433.36,
+      "duration": 4.72
+    },
+    {
+      "text": "like a way to objectively uh give them a",
+      "start": 435.28,
+      "duration": 4.639
+    },
+    {
+      "text": "hill climbing heristic so they can",
+      "start": 438.08,
+      "duration": 4
+    },
+    {
+      "text": "verify that they&#39;re improving towards",
+      "start": 439.919,
+      "duration": 5.201
+    },
+    {
+      "text": "some kind of end state objectively. Uh,",
+      "start": 442.08,
+      "duration": 4.559
+    },
+    {
+      "text": "so all of that is like harness",
+      "start": 445.12,
+      "duration": 3.76
+    },
+    {
+      "text": "engineering and I think that&#39;s still",
+      "start": 446.639,
+      "duration": 4.161
+    },
+    {
+      "text": "very active",
+      "start": 448.88,
+      "duration": 3.68
+    },
+    {
+      "text": "and still an active field of like",
+      "start": 450.8,
+      "duration": 6.56
+    },
+    {
+      "text": "figuring out and I like the article",
+      "start": 452.56,
+      "duration": 7.44
+    },
+    {
+      "text": "by Burgetta Buckler best about this one",
+      "start": 457.36,
+      "duration": 5.2
+    },
+    {
+      "text": "because she frames it as harness",
+      "start": 460,
+      "duration": 5.039
+    },
+    {
+      "text": "engineering is a bit of a se",
+      "start": 462.56,
+      "duration": 4.56
+    },
+    {
+      "text": "semantically diffused term already but",
+      "start": 465.039,
+      "duration": 4.081
+    },
+    {
+      "text": "the distinction she makes I think that",
+      "start": 467.12,
+      "duration": 4.24
+    },
+    {
+      "text": "makes a lot of sense is you have two",
+      "start": 469.12,
+      "duration": 4.079
+    },
+    {
+      "text": "kinds of harness engineering. The first",
+      "start": 471.36,
+      "duration": 4.64
+    },
+    {
+      "text": "one is the part that uh Anthropic and",
+      "start": 473.199,
+      "duration": 5.041
+    },
+    {
+      "text": "Open Air are doing for us, the harness",
+      "start": 476,
+      "duration": 4.24
+    },
+    {
+      "text": "builders. So they&#39;re building the cloud",
+      "start": 478.24,
+      "duration": 3.92
+    },
+    {
+      "text": "code harness stuff like that. And that&#39;s",
+      "start": 480.24,
+      "duration": 4
+    },
+    {
+      "text": "an interesting area. Uh but I don&#39;t",
+      "start": 482.16,
+      "duration": 3.92
+    },
+    {
+      "text": "think if you&#39;re like working as a",
+      "start": 484.24,
+      "duration": 3.12
+    },
+    {
+      "text": "software engineer professionally, you",
+      "start": 486.08,
+      "duration": 3.76
+    },
+    {
+      "text": "should be taking too deep a look into",
+      "start": 487.36,
+      "duration": 5.119
+    },
+    {
+      "text": "that. Not at least not in the cloud code",
+      "start": 489.84,
+      "duration": 4.799
+    },
+    {
+      "text": "architecture. If you&#39;re doing like pi",
+      "start": 492.479,
+      "duration": 3.681
+    },
+    {
+      "text": "code or like one of those minimalist",
+      "start": 494.639,
+      "duration": 3.201
+    },
+    {
+      "text": "harnesses that you can change yourself,",
+      "start": 496.16,
+      "duration": 3.439
+    },
+    {
+      "text": "that&#39;s something else. And I do",
+      "start": 497.84,
+      "duration": 3.52
+    },
+    {
+      "text": "recommend doing that as well actually",
+      "start": 499.599,
+      "duration": 3.681
+    },
+    {
+      "text": "because that is very enlightening and uh",
+      "start": 501.36,
+      "duration": 4.239
+    },
+    {
+      "text": "you&#39;ll learn a lot. Uh but I digress. So",
+      "start": 503.28,
+      "duration": 3.84
+    },
+    {
+      "text": "you have like the the inner harness",
+      "start": 505.599,
+      "duration": 3.44
+    },
+    {
+      "text": "which is what the tool vendors um are",
+      "start": 507.12,
+      "duration": 3.919
+    },
+    {
+      "text": "building and then you have the outer",
+      "start": 509.039,
+      "duration": 3.92
+    },
+    {
+      "text": "harness and those are all those feedback",
+      "start": 511.039,
+      "duration": 4.8
+    },
+    {
+      "text": "feed forward mechanisms I described and",
+      "start": 512.959,
+      "duration": 4.64
+    },
+    {
+      "text": "I kind of like that distinction. So I",
+      "start": 515.839,
+      "duration": 3.841
+    },
+    {
+      "text": "think harness engineering is still very",
+      "start": 517.599,
+      "duration": 3.68
+    },
+    {
+      "text": "active field of research and",
+      "start": 519.68,
+      "duration": 3.919
+    },
+    {
+      "text": "experimentation and you should be uh",
+      "start": 521.279,
+      "duration": 6.161
+    },
+    {
+      "text": "reading up and playing around with that.",
+      "start": 523.599,
+      "duration": 6.481
+    },
+    {
+      "text": "Uh the next one uh or like the next one",
+      "start": 527.44,
+      "duration": 4.24
+    },
+    {
+      "text": "for me at least was a concept called",
+      "start": 530.08,
+      "duration": 4.56
+    },
+    {
+      "text": "habitat engineering and that one did not",
+      "start": 531.68,
+      "duration": 5.12
+    },
+    {
+      "text": "gain a lot of traction yet. I do think",
+      "start": 534.64,
+      "duration": 5.52
+    },
+    {
+      "text": "in the long run it&#39;s one of the uh the",
+      "start": 536.8,
+      "duration": 6.719
+    },
+    {
+      "text": "things that&#39;ll stay and the concept of",
+      "start": 540.16,
+      "duration": 6.56
+    },
+    {
+      "text": "habitat engineering is more like how do",
+      "start": 543.519,
+      "duration": 5.521
+    },
+    {
+      "text": "we uh design a habitat like a space",
+      "start": 546.72,
+      "duration": 4.96
+    },
+    {
+      "text": "where we work and live uh where both",
+      "start": 549.04,
+      "duration": 5.76
+    },
+    {
+      "text": "humans and these alien intelligence",
+      "start": 551.68,
+      "duration": 5.12
+    },
+    {
+      "text": "intelligences can like collaborate",
+      "start": 554.8,
+      "duration": 4.64
+    },
+    {
+      "text": "together effectively and playing to each",
+      "start": 556.8,
+      "duration": 4.159
+    },
+    {
+      "text": "of their strengths and weaknesses",
+      "start": 559.44,
+      "duration": 3.92
+    },
+    {
+      "text": "accordingly. [snorts]",
+      "start": 560.959,
+      "duration": 6.721
+    },
+    {
+      "text": "Um, it&#39;s a bit of a softer take uh than",
+      "start": 563.36,
+      "duration": 5.76
+    },
+    {
+      "text": "harness engineering. Harness engineering",
+      "start": 567.68,
+      "duration": 3.599
+    },
+    {
+      "text": "is really like the the technical stuff,",
+      "start": 569.12,
+      "duration": 3.68
+    },
+    {
+      "text": "the engineering stuff. Habitat",
+      "start": 571.279,
+      "duration": 4.401
+    },
+    {
+      "text": "engineering as well. It has like some",
+      "start": 572.8,
+      "duration": 6.64
+    },
+    {
+      "text": "concepts about um uh adversarial review",
+      "start": 575.68,
+      "duration": 5.599
+    },
+    {
+      "text": "and like what you should be putting in",
+      "start": 579.44,
+      "duration": 4.48
+    },
+    {
+      "text": "your agents and D file stuff like that.",
+      "start": 581.279,
+      "duration": 5.12
+    },
+    {
+      "text": "But it&#39;s more on the the people side and",
+      "start": 583.92,
+      "duration": 5.359
+    },
+    {
+      "text": "the multiplayer side because up until",
+      "start": 586.399,
+      "duration": 5.761
+    },
+    {
+      "text": "now uh the focus for like many software",
+      "start": 589.279,
+      "duration": 4.641
+    },
+    {
+      "text": "engineers playing with this has been",
+      "start": 592.16,
+      "duration": 4.799
+    },
+    {
+      "text": "single player and that&#39;s okay if you&#39;re",
+      "start": 593.92,
+      "duration": 5.52
+    },
+    {
+      "text": "a solo founder or like a single person",
+      "start": 596.959,
+      "duration": 4.56
+    },
+    {
+      "text": "startup but as soon as more than one",
+      "start": 599.44,
+      "duration": 4.64
+    },
+    {
+      "text": "engineer is working on a codebase which",
+      "start": 601.519,
+      "duration": 4.481
+    },
+    {
+      "text": "I still think is a good idea all this",
+      "start": 604.08,
+      "duration": 4.319
+    },
+    {
+      "text": "solo engineer yes it might",
+      "start": 606,
+      "duration": 4.72
+    },
+    {
+      "text": "scale a bit more than than we before but",
+      "start": 608.399,
+      "duration": 6
+    },
+    {
+      "text": "I don&#39;t think it&#39;ll scale uh infinitely.",
+      "start": 610.72,
+      "duration": 5.76
+    },
+    {
+      "text": "So I do think uh we need to take a look",
+      "start": 614.399,
+      "duration": 4.161
+    },
+    {
+      "text": "at the multiplayer angle again and",
+      "start": 616.48,
+      "duration": 4
+    },
+    {
+      "text": "that&#39;s where habitat engineering uh is",
+      "start": 618.56,
+      "duration": 4.48
+    },
+    {
+      "text": "really useful because if you make uh",
+      "start": 620.48,
+      "duration": 5.76
+    },
+    {
+      "text": "your environment your habitat more",
+      "start": 623.04,
+      "duration": 6.239
+    },
+    {
+      "text": "amendable to agents this means like",
+      "start": 626.24,
+      "duration": 4.64
+    },
+    {
+      "text": "documenting your architecture",
+      "start": 629.279,
+      "duration": 3.601
+    },
+    {
+      "text": "documenting the way you work in skills",
+      "start": 630.88,
+      "duration": 4.32
+    },
+    {
+      "text": "stuff like that all of these things will",
+      "start": 632.88,
+      "duration": 5.04
+    },
+    {
+      "text": "help colleagues and new employees and",
+      "start": 635.2,
+      "duration": 4.879
+    },
+    {
+      "text": "new software engineers on board in your",
+      "start": 637.92,
+      "duration": 5.039
+    },
+    {
+      "text": "codebase way faster. So what you do for",
+      "start": 640.079,
+      "duration": 5.281
+    },
+    {
+      "text": "agents helps helps other humans as well",
+      "start": 642.959,
+      "duration": 4.961
+    },
+    {
+      "text": "and vice versa I think. So the that&#39;s",
+      "start": 645.36,
+      "duration": 4.08
+    },
+    {
+      "text": "that&#39;s what I get from habitat",
+      "start": 647.92,
+      "duration": 3.12
+    },
+    {
+      "text": "engineering and I still think that&#39;s",
+      "start": 649.44,
+      "duration": 4.24
+    },
+    {
+      "text": "like a [snorts] an undiscovered gem.",
+      "start": 651.04,
+      "duration": 4.72
+    },
+    {
+      "text": "It&#39;s a hidden gem and if you have not",
+      "start": 653.68,
+      "duration": 4.399
+    },
+    {
+      "text": "heard about this term I highly recommend",
+      "start": 655.76,
+      "duration": 4.079
+    },
+    {
+      "text": "looking up Russ Miles&#39;s work. He&#39;s the",
+      "start": 658.079,
+      "duration": 3.2
+    },
+    {
+      "text": "author behind all the habitat",
+      "start": 659.839,
+      "duration": 3.201
+    },
+    {
+      "text": "engineering thing. I think he has some",
+      "start": 661.279,
+      "duration": 4.961
+    },
+    {
+      "text": "ebooks. What were they called again?",
+      "start": 663.04,
+      "duration": 4.96
+    },
+    {
+      "text": "Sovereign engineer and the sovereign",
+      "start": 666.24,
+      "duration": 3.279
+    },
+    {
+      "text": "apprentice.",
+      "start": 668,
+      "duration": 4.64
+    },
+    {
+      "text": "uh they read like uh a large language",
+      "start": 669.519,
+      "duration": 5.681
+    },
+    {
+      "text": "model wrote them, but the content in",
+      "start": 672.64,
+      "duration": 5.28
+    },
+    {
+      "text": "them like the the the message behind the",
+      "start": 675.2,
+      "duration": 5.12
+    },
+    {
+      "text": "slop is real and interesting. So yeah, I",
+      "start": 677.92,
+      "duration": 5.2
+    },
+    {
+      "text": "do think you should be taking a look.",
+      "start": 680.32,
+      "duration": 5.04
+    },
+    {
+      "text": "Sorry about that. Had to take a second",
+      "start": 683.12,
+      "duration": 4.399
+    },
+    {
+      "text": "take. The camera overheated. We&#39;re in",
+      "start": 685.36,
+      "duration": 4.4
+    },
+    {
+      "text": "our third heatwave, I think, this year",
+      "start": 687.519,
+      "duration": 4.721
+    },
+    {
+      "text": "and the camera can&#39;t take it. So this is",
+      "start": 689.76,
+      "duration": 4.48
+    },
+    {
+      "text": "the second take. Uh but we were talking",
+      "start": 692.24,
+      "duration": 4.56
+    },
+    {
+      "text": "about loop engineering",
+      "start": 694.24,
+      "duration": 5.68
+    },
+    {
+      "text": "and yeah basically loop engineering um",
+      "start": 696.8,
+      "duration": 6.24
+    },
+    {
+      "text": "it&#39;s u a year old now I think it started",
+      "start": 699.92,
+      "duration": 5.76
+    },
+    {
+      "text": "with Shuffrey Huntley and his Ralph loop",
+      "start": 703.04,
+      "duration": 5.039
+    },
+    {
+      "text": "concept and it started like really",
+      "start": 705.68,
+      "duration": 4.159
+    },
+    {
+      "text": "simple it started as a context",
+      "start": 708.079,
+      "duration": 3.44
+    },
+    {
+      "text": "engineering practice or like a way to",
+      "start": 709.839,
+      "duration": 4.961
+    },
+    {
+      "text": "circumvent context window limitations",
+      "start": 711.519,
+      "duration": 7.041
+    },
+    {
+      "text": "and the genius uh of the idea was uh its",
+      "start": 714.8,
+      "duration": 6.56
+    },
+    {
+      "text": "simplicity. It was just a while loop and",
+      "start": 718.56,
+      "duration": 4.88
+    },
+    {
+      "text": "having an agent do something until it",
+      "start": 721.36,
+      "duration": 4.4
+    },
+    {
+      "text": "hit the dump zone and then throwing",
+      "start": 723.44,
+      "duration": 4.24
+    },
+    {
+      "text": "everything away or throwing the context",
+      "start": 725.76,
+      "duration": 3.6
+    },
+    {
+      "text": "window",
+      "start": 727.68,
+      "duration": 3.52
+    },
+    {
+      "text": "away at least and like starting a fresh",
+      "start": 729.36,
+      "duration": 3.919
+    },
+    {
+      "text": "agent but there was some way to like",
+      "start": 731.2,
+      "duration": 3.92
+    },
+    {
+      "text": "keep steady progress some kind of hill",
+      "start": 733.279,
+      "duration": 4
+    },
+    {
+      "text": "climbing algorithm right one of the",
+      "start": 735.12,
+      "duration": 4
+    },
+    {
+      "text": "examples is porting a codebase from",
+      "start": 737.279,
+      "duration": 4.081
+    },
+    {
+      "text": "language to from one language to the",
+      "start": 739.12,
+      "duration": 5.12
+    },
+    {
+      "text": "other or like achieving 90% test",
+      "start": 741.36,
+      "duration": 4.88
+    },
+    {
+      "text": "coverage I don&#39;t think it&#39;s a good idea",
+      "start": 744.24,
+      "duration": 5.92
+    },
+    {
+      "text": "to like set a metric like 90% % coverage",
+      "start": 746.24,
+      "duration": 6.64
+    },
+    {
+      "text": "and have a Ralph loop achieve that. But",
+      "start": 750.16,
+      "duration": 4.32
+    },
+    {
+      "text": "stuff like [snorts] that was what the",
+      "start": 752.88,
+      "duration": 4.079
+    },
+    {
+      "text": "initial loop engineering was all about.",
+      "start": 754.48,
+      "duration": 4.673
+    },
+    {
+      "text": "But uh the recent definition of the term",
+      "start": 756.959,
+      "duration": 3.041
+    },
+    {
+      "text": "[snorts]",
+      "start": 759.153,
+      "duration": 3.887
+    },
+    {
+      "text": "uh has a bit more than just a Ralph",
+      "start": 760,
+      "duration": 5.36
+    },
+    {
+      "text": "loop, right? If you look at it uh the",
+      "start": 763.04,
+      "duration": 4.4
+    },
+    {
+      "text": "best resource I found was the langraph",
+      "start": 765.36,
+      "duration": 6
+    },
+    {
+      "text": "or the lang chain blog and uh also some",
+      "start": 767.44,
+      "duration": 6.8
+    },
+    {
+      "text": "from Swix from AI engineering has some",
+      "start": 771.36,
+      "duration": 4.96
+    },
+    {
+      "text": "articles called loop crafting. I think",
+      "start": 774.24,
+      "duration": 3.52
+    },
+    {
+      "text": "I&#39;ll link everything in the description",
+      "start": 776.32,
+      "duration": 3.12
+    },
+    {
+      "text": "below.",
+      "start": 777.76,
+      "duration": 3.759
+    },
+    {
+      "text": "Um, but there&#39;s the idea of stacking",
+      "start": 779.44,
+      "duration": 4.8
+    },
+    {
+      "text": "loops and and and it&#39;s a bit like the",
+      "start": 781.519,
+      "duration": 4.241
+    },
+    {
+      "text": "trend of this video. It&#39;s all like",
+      "start": 784.24,
+      "duration": 3.039
+    },
+    {
+      "text": "building on top of each other, right?",
+      "start": 785.76,
+      "duration": 3.68
+    },
+    {
+      "text": "First you have prompt engineering and",
+      "start": 787.279,
+      "duration": 3.761
+    },
+    {
+      "text": "like context engineering and hardness",
+      "start": 789.44,
+      "duration": 3.92
+    },
+    {
+      "text": "engineering. It&#39;s al also like we&#39;re",
+      "start": 791.04,
+      "duration": 4.32
+    },
+    {
+      "text": "always expanding the circle of of",
+      "start": 793.36,
+      "duration": 5.12
+    },
+    {
+      "text": "influence and of of stuff we take uh",
+      "start": 795.36,
+      "duration": 6.08
+    },
+    {
+      "text": "under like the umbrella of the term. And",
+      "start": 798.48,
+      "duration": 5.76
+    },
+    {
+      "text": "for loops, it&#39;s no different.",
+      "start": 801.44,
+      "duration": 4.24
+    },
+    {
+      "text": "And you start with like the smallest",
+      "start": 804.24,
+      "duration": 4.399
+    },
+    {
+      "text": "loop uh you can find in agentic",
+      "start": 805.68,
+      "duration": 4.56
+    },
+    {
+      "text": "engineering land is the agent loop.",
+      "start": 808.639,
+      "duration": 4.561
+    },
+    {
+      "text": "Actually it&#39;s the",
+      "start": 810.24,
+      "duration": 5.36
+    },
+    {
+      "text": "uh from from Simon Willis&#39;s definition",
+      "start": 813.2,
+      "duration": 4.56
+    },
+    {
+      "text": "of what an agent actually is. An agent",
+      "start": 815.6,
+      "duration": 4.32
+    },
+    {
+      "text": "is a large language model and you give",
+      "start": 817.76,
+      "duration": 4.319
+    },
+    {
+      "text": "it some tools and you put it in a loop",
+      "start": 819.92,
+      "duration": 4.479
+    },
+    {
+      "text": "and you give it a goal like a while goal",
+      "start": 822.079,
+      "duration": 3.921
+    },
+    {
+      "text": "has not been fulfilled kind of thing a",
+      "start": 824.399,
+      "duration": 4.24
+    },
+    {
+      "text": "bit like the Ralph thing and that&#39;s the",
+      "start": 826,
+      "duration": 5.204
+    },
+    {
+      "text": "inner loop right the agentic loop",
+      "start": 828.639,
+      "duration": 4.561
+    },
+    {
+      "text": "[snorts] and then the next step is like",
+      "start": 831.204,
+      "duration": 4.156
+    },
+    {
+      "text": "the the adversarial review or the",
+      "start": 833.2,
+      "duration": 4.16
+    },
+    {
+      "text": "adversarial loop where you have like a",
+      "start": 835.36,
+      "duration": 4.24
+    },
+    {
+      "text": "single agent do something and another",
+      "start": 837.36,
+      "duration": 4.88
+    },
+    {
+      "text": "agent review the work right this is the",
+      "start": 839.6,
+      "duration": 5.28
+    },
+    {
+      "text": "LLM as a judge this is the code review",
+      "start": 842.24,
+      "duration": 5.68
+    },
+    {
+      "text": "agent that gives feedback uh and then",
+      "start": 844.88,
+      "duration": 4.8
+    },
+    {
+      "text": "another agent fixes the feedback and",
+      "start": 847.92,
+      "duration": 4.24
+    },
+    {
+      "text": "they iterate iterate until they reach",
+      "start": 849.68,
+      "duration": 5.12
+    },
+    {
+      "text": "like a stable point, right? A fixed",
+      "start": 852.16,
+      "duration": 5.84
+    },
+    {
+      "text": "point. So that&#39;s like the the first",
+      "start": 854.8,
+      "duration": 4.719
+    },
+    {
+      "text": "engineering level or like the first",
+      "start": 858,
+      "duration": 3.04
+    },
+    {
+      "text": "level of loop engineering that is not",
+      "start": 859.519,
+      "duration": 4.241
+    },
+    {
+      "text": "just build your own agent, build your",
+      "start": 861.04,
+      "duration": 5.68
+    },
+    {
+      "text": "own harness. So the next level is I",
+      "start": 863.76,
+      "duration": 5.6
+    },
+    {
+      "text": "think where loop engineering deserves to",
+      "start": 866.72,
+      "duration": 4.64
+    },
+    {
+      "text": "be like be called out as a separate",
+      "start": 869.36,
+      "duration": 4.479
+    },
+    {
+      "text": "thing and that&#39;s the",
+      "start": 871.36,
+      "duration": 5.12
+    },
+    {
+      "text": "point where you hook these loops on like",
+      "start": 873.839,
+      "duration": 5.521
+    },
+    {
+      "text": "a cron job or like a scheduled trigger",
+      "start": 876.48,
+      "duration": 5.039
+    },
+    {
+      "text": "or some kind of external trigger like a",
+      "start": 879.36,
+      "duration": 4
+    },
+    {
+      "text": "pull request gets created or an issue",
+      "start": 881.519,
+      "duration": 3.601
+    },
+    {
+      "text": "gets created. [snorts]",
+      "start": 883.36,
+      "duration": 4.719
+    },
+    {
+      "text": "Uh and that&#39;s where loop engineering as",
+      "start": 885.12,
+      "duration": 4.959
+    },
+    {
+      "text": "you see it like on Twitter right now",
+      "start": 888.079,
+      "duration": 3.361
+    },
+    {
+      "text": "that&#39;s what most people mean when they",
+      "start": 890.079,
+      "duration": 3.841
+    },
+    {
+      "text": "say that. And yeah, I do think there&#39;s",
+      "start": 891.44,
+      "duration": 4.959
+    },
+    {
+      "text": "some value there. Um,",
+      "start": 893.92,
+      "duration": 4.4
+    },
+    {
+      "text": "and that&#39;s like the beginning of of of",
+      "start": 896.399,
+      "duration": 3.44
+    },
+    {
+      "text": "like software factories which we&#39;ll",
+      "start": 898.32,
+      "duration": 3.36
+    },
+    {
+      "text": "discuss later. But uh I do think a lot",
+      "start": 899.839,
+      "duration": 4.56
+    },
+    {
+      "text": "of teams will get a lot of benefit from",
+      "start": 901.68,
+      "duration": 6.24
+    },
+    {
+      "text": "uh defining a couple of loops.",
+      "start": 904.399,
+      "duration": 5.281
+    },
+    {
+      "text": "not fully automating like the software",
+      "start": 907.92,
+      "duration": 4
+    },
+    {
+      "text": "development life cycle,",
+      "start": 909.68,
+      "duration": 5.599
+    },
+    {
+      "text": "but stuff like uh when a bug gets logged",
+      "start": 911.92,
+      "duration": 5.2
+    },
+    {
+      "text": "and there&#39;s like a correlation ID in",
+      "start": 915.279,
+      "duration": 3.841
+    },
+    {
+      "text": "there, maybe have an agent already fetch",
+      "start": 917.12,
+      "duration": 4.32
+    },
+    {
+      "text": "your sentry logs or like your",
+      "start": 919.12,
+      "duration": 4.48
+    },
+    {
+      "text": "observability logs and [clears throat]",
+      "start": 921.44,
+      "duration": 4.079
+    },
+    {
+      "text": "like do some first initial research",
+      "start": 923.6,
+      "duration": 3.599
+    },
+    {
+      "text": "stuff like that or having [snorts] like",
+      "start": 925.519,
+      "duration": 4.961
+    },
+    {
+      "text": "a weekly nightly job or like a weekly",
+      "start": 927.199,
+      "duration": 7.44
+    },
+    {
+      "text": "job that generates release notes or the",
+      "start": 930.48,
+      "duration": 6.08
+    },
+    {
+      "text": "stuff like that. Uh that&#39;s I think",
+      "start": 934.639,
+      "duration": 4.401
+    },
+    {
+      "text": "useful. Uh so yeah, if you&#39;re not doing",
+      "start": 936.56,
+      "duration": 5.2
+    },
+    {
+      "text": "that, uh the tools are getting there. Um",
+      "start": 939.04,
+      "duration": 4.72
+    },
+    {
+      "text": "I think the hardest part for enterprises",
+      "start": 941.76,
+      "duration": 5.12
+    },
+    {
+      "text": "is having uh an environment where these",
+      "start": 943.76,
+      "duration": 5.84
+    },
+    {
+      "text": "agents can run and have access to the",
+      "start": 946.88,
+      "duration": 4.639
+    },
+    {
+      "text": "code and to your sentry log stuff like",
+      "start": 949.6,
+      "duration": 4.479
+    },
+    {
+      "text": "that in secure matter. I don&#39;t think uh",
+      "start": 951.519,
+      "duration": 5.601
+    },
+    {
+      "text": "the infrastructure has been built out",
+      "start": 954.079,
+      "duration": 5.12
+    },
+    {
+      "text": "and is widely available yet, but we&#39;re",
+      "start": 957.12,
+      "duration": 4.079
+    },
+    {
+      "text": "getting there and I do think we&#39;ll be",
+      "start": 959.199,
+      "duration": 3.601
+    },
+    {
+      "text": "seeing a lot more of that in the coming",
+      "start": 961.199,
+      "duration": 3.841
+    },
+    {
+      "text": "months. So yeah, that&#39;s loop engineering",
+      "start": 962.8,
+      "duration": 4.399
+    },
+    {
+      "text": "in a nutshell. And the logical extension",
+      "start": 965.04,
+      "duration": 3.68
+    },
+    {
+      "text": "for loop engineering is of course",
+      "start": 967.199,
+      "duration": 5.121
+    },
+    {
+      "text": "graphs. A loop is like a",
+      "start": 968.72,
+      "duration": 6
+    },
+    {
+      "text": "uh a graph deconstructed like there&#39;s",
+      "start": 972.32,
+      "duration": 4.959
+    },
+    {
+      "text": "only one path",
+      "start": 974.72,
+      "duration": 4.88
+    },
+    {
+      "text": "and graph engineering is when you limit",
+      "start": 977.279,
+      "duration": 3.92
+    },
+    {
+      "text": "like get rid of those constraints and",
+      "start": 979.6,
+      "duration": 3.52
+    },
+    {
+      "text": "you allow like full graphs. I think the",
+      "start": 981.199,
+      "duration": 6.241
+    },
+    {
+      "text": "best example of this graph approach has",
+      "start": 983.12,
+      "duration": 7.36
+    },
+    {
+      "text": "already been implemented in tools like",
+      "start": 987.44,
+      "duration": 5.12
+    },
+    {
+      "text": "langraph but also cloud code. [snorts]",
+      "start": 990.48,
+      "duration": 4.08
+    },
+    {
+      "text": "And let&#39;s zoom in on the cloud code uh",
+      "start": 992.56,
+      "duration": 3.6
+    },
+    {
+      "text": "example because we&#39;re software engineers",
+      "start": 994.56,
+      "duration": 3.76
+    },
+    {
+      "text": "here.",
+      "start": 996.16,
+      "duration": 3.76
+    },
+    {
+      "text": "Cloud code has this concept called",
+      "start": 998.32,
+      "duration": 4.639
+    },
+    {
+      "text": "dynamic workflows. And [gasps]",
+      "start": 999.92,
+      "duration": 5.359
+    },
+    {
+      "text": "uh if you enable that or if you ask to",
+      "start": 1002.959,
+      "duration": 4.24
+    },
+    {
+      "text": "start a dynamic workflow, it&#39;ll take a",
+      "start": 1005.279,
+      "duration": 3.761
+    },
+    {
+      "text": "look at your prompt and analyze it and",
+      "start": 1007.199,
+      "duration": 5.521
+    },
+    {
+      "text": "it will build a graph like like a",
+      "start": 1009.04,
+      "duration": 6.64
+    },
+    {
+      "text": "sequence of work, a sequence of steps",
+      "start": 1012.72,
+      "duration": 5.44
+    },
+    {
+      "text": "and it can have like parallel sub aents",
+      "start": 1015.68,
+      "duration": 4.32
+    },
+    {
+      "text": "doing some research in your codebase.",
+      "start": 1018.16,
+      "duration": 3.679
+    },
+    {
+      "text": "And um when all that research is done,",
+      "start": 1020,
+      "duration": 3.6
+    },
+    {
+      "text": "another agent looks at the results and",
+      "start": 1021.839,
+      "duration": 4.24
+    },
+    {
+      "text": "start implementing and like it defines",
+      "start": 1023.6,
+      "duration": 4.959
+    },
+    {
+      "text": "this graph. It actually writes",
+      "start": 1026.079,
+      "duration": 5.041
+    },
+    {
+      "text": "TypeScript code to design this graph,",
+      "start": 1028.559,
+      "duration": 4.321
+    },
+    {
+      "text": "design this workflow. Uh and it uses",
+      "start": 1031.12,
+      "duration": 3.839
+    },
+    {
+      "text": "that like as a a real-time workflow",
+      "start": 1032.88,
+      "duration": 4.079
+    },
+    {
+      "text": "execution engine. So that&#39;s pretty",
+      "start": 1034.959,
+      "duration": 3.6
+    },
+    {
+      "text": "advanced stuff. But that&#39;s what graph",
+      "start": 1036.959,
+      "duration": 5.12
+    },
+    {
+      "text": "engineering is for me. It&#39;s like if you",
+      "start": 1038.559,
+      "duration": 5.201
+    },
+    {
+      "text": "have loops which are like singular",
+      "start": 1042.079,
+      "duration": 4.88
+    },
+    {
+      "text": "sequences, uh no",
+      "start": 1043.76,
+      "duration": 5.12
+    },
+    {
+      "text": "branching paths, no parallelization,",
+      "start": 1046.959,
+      "duration": 3.521
+    },
+    {
+      "text": "anything. graphs are the extension of",
+      "start": 1048.88,
+      "duration": 3.12
+    },
+    {
+      "text": "that where you do allow for stuff like",
+      "start": 1050.48,
+      "duration": 4.24
+    },
+    {
+      "text": "that and that is wildly expensive",
+      "start": 1052,
+      "duration": 5.919
+    },
+    {
+      "text": "expensive sorry if you run 70 agents",
+      "start": 1054.72,
+      "duration": 5.68
+    },
+    {
+      "text": "instead of one each with their own like",
+      "start": 1057.919,
+      "duration": 6.64
+    },
+    {
+      "text": "context windows and stuff u yeah that",
+      "start": 1060.4,
+      "duration": 7.44
+    },
+    {
+      "text": "the the tokens do add up really quickly",
+      "start": 1064.559,
+      "duration": 5.12
+    },
+    {
+      "text": "uh so I don&#39;t think it&#39;s ready for prime",
+      "start": 1067.84,
+      "duration": 4.64
+    },
+    {
+      "text": "time just yet but it&#39;s out there uh and",
+      "start": 1069.679,
+      "duration": 4.533
+    },
+    {
+      "text": "people are playing around with it",
+      "start": 1072.48,
+      "duration": 2.8
+    },
+    {
+      "text": "[snorts]",
+      "start": 1074.212,
+      "duration": 3.068
+    },
+    {
+      "text": "and next to all this loop graph",
+      "start": 1075.28,
+      "duration": 3.36
+    },
+    {
+      "text": "engineering there&#39;s like the second",
+      "start": 1077.28,
+      "duration": 3.44
+    },
+    {
+      "text": "discourse was forming and it&#39;s already",
+      "start": 1078.64,
+      "duration": 4
+    },
+    {
+      "text": "been going on for a year but now it&#39;s",
+      "start": 1080.72,
+      "duration": 4.16
+    },
+    {
+      "text": "getting more concrete again as well and",
+      "start": 1082.64,
+      "duration": 5.12
+    },
+    {
+      "text": "that&#39;s called the software factory which",
+      "start": 1084.88,
+      "duration": 5.76
+    },
+    {
+      "text": "is this idea where we try to automate",
+      "start": 1087.76,
+      "duration": 5.52
+    },
+    {
+      "text": "with loops with graphs with whatever as",
+      "start": 1090.64,
+      "duration": 4
+    },
+    {
+      "text": "much as we can of the software",
+      "start": 1093.28,
+      "duration": 4.399
+    },
+    {
+      "text": "development life cycle and there&#39;s a lot",
+      "start": 1094.64,
+      "duration": 4.64
+    },
+    {
+      "text": "of opinions out there there&#39;s a lot of",
+      "start": 1097.679,
+      "duration": 3.521
+    },
+    {
+      "text": "people playing around with it and I",
+      "start": 1099.28,
+      "duration": 3.84
+    },
+    {
+      "text": "think opinions go from never going to",
+      "start": 1101.2,
+      "duration": 4.719
+    },
+    {
+      "text": "happen which I don&#39;t believe I do think",
+      "start": 1103.12,
+      "duration": 4.4
+    },
+    {
+      "text": "it&#39;s going to happen in some form or",
+      "start": 1105.919,
+      "duration": 3.921
+    },
+    {
+      "text": "another and the extreme is the the dark",
+      "start": 1107.52,
+      "duration": 3.92
+    },
+    {
+      "text": "factory",
+      "start": 1109.84,
+      "duration": 4.64
+    },
+    {
+      "text": "where um you automate everything and you",
+      "start": 1111.44,
+      "duration": 5.52
+    },
+    {
+      "text": "don&#39;t even need to like intervene,",
+      "start": 1114.48,
+      "duration": 6.64
+    },
+    {
+      "text": "inspect, debug uh your agents anymore.",
+      "start": 1116.96,
+      "duration": 5.68
+    },
+    {
+      "text": "You can just turn the lights off and the",
+      "start": 1121.12,
+      "duration": 4.16
+    },
+    {
+      "text": "factory will keep running. Um I don&#39;t",
+      "start": 1122.64,
+      "duration": 6.88
+    },
+    {
+      "text": "know if that will ever be a good idea.",
+      "start": 1125.28,
+      "duration": 7.12
+    },
+    {
+      "text": "uh because if you look at AI generated",
+      "start": 1129.52,
+      "duration": 4.72
+    },
+    {
+      "text": "code like whatever harnesses you give",
+      "start": 1132.4,
+      "duration": 3.92
+    },
+    {
+      "text": "it, whatever guardrails you give it, uh",
+      "start": 1134.24,
+      "duration": 5.439
+    },
+    {
+      "text": "they do tend to degrade",
+      "start": 1136.32,
+      "duration": 5.28
+    },
+    {
+      "text": "in in software design and as we said",
+      "start": 1139.679,
+      "duration": 4.561
+    },
+    {
+      "text": "before, software design is context",
+      "start": 1141.6,
+      "duration": 5.199
+    },
+    {
+      "text": "engineering. So I do think everyone",
+      "start": 1144.24,
+      "duration": 4.559
+    },
+    {
+      "text": "doing dark factories will hit a wall and",
+      "start": 1146.799,
+      "duration": 4.049
+    },
+    {
+      "text": "we&#39;ll need to do a full rewrite",
+      "start": 1148.799,
+      "duration": 2.641
+    },
+    {
+      "text": "[laughter]",
+      "start": 1150.848,
+      "duration": 3.071
+    },
+    {
+      "text": "every so often to just like uh keep",
+      "start": 1151.44,
+      "duration": 4.88
+    },
+    {
+      "text": "evolution happening. So no, I don&#39;t",
+      "start": 1153.919,
+      "duration": 4.241
+    },
+    {
+      "text": "think dark factories are like something",
+      "start": 1156.32,
+      "duration": 4.96
+    },
+    {
+      "text": "we should be aiming at, but automating",
+      "start": 1158.16,
+      "duration": 5.04
+    },
+    {
+      "text": "large parts of the software development",
+      "start": 1161.28,
+      "duration": 3.92
+    },
+    {
+      "text": "life cycle like the software factory and",
+      "start": 1163.2,
+      "duration": 4.56
+    },
+    {
+      "text": "metaphor, I do think there&#39;s some uh",
+      "start": 1165.2,
+      "duration": 5.44
+    },
+    {
+      "text": "leverage that still can be we can still",
+      "start": 1167.76,
+      "duration": 6.723
+    },
+    {
+      "text": "leverage a lot of these things. [snorts]",
+      "start": 1170.64,
+      "duration": 3.843
+    },
+    {
+      "text": "And this is all there&#39;s a plane flying",
+      "start": 1174.64,
+      "duration": 4.32
+    },
+    {
+      "text": "over.",
+      "start": 1177.44,
+      "duration": 5.08
+    },
+    {
+      "text": "It&#39;s one of those",
+      "start": 1178.96,
+      "duration": 3.56
+    },
+    {
+      "text": "propeller planes. Cool. Um but um if",
+      "start": 1185.679,
+      "duration": 4.561
+    },
+    {
+      "text": "you&#39;re thinking about building a",
+      "start": 1189.039,
+      "duration": 3.121
+    },
+    {
+      "text": "software factory or buying a software",
+      "start": 1190.24,
+      "duration": 4.64
+    },
+    {
+      "text": "factory product as an enterprise, I",
+      "start": 1192.16,
+      "duration": 5.28
+    },
+    {
+      "text": "think it&#39;s way too soon. They&#39;re on to",
+      "start": 1194.88,
+      "duration": 4
+    },
+    {
+      "text": "something, but it&#39;s not ready for prime",
+      "start": 1197.44,
+      "duration": 4.56
+    },
+    {
+      "text": "time. Um my point is if you are um",
+      "start": 1198.88,
+      "duration": 4.64
+    },
+    {
+      "text": "working in an enterprise and doing",
+      "start": 1202,
+      "duration": 3.76
+    },
+    {
+      "text": "acquisition, uh it&#39;s too soon to be",
+      "start": 1203.52,
+      "duration": 4.56
+    },
+    {
+      "text": "buying software factories. It&#39;s also too",
+      "start": 1205.76,
+      "duration": 4.08
+    },
+    {
+      "text": "soon to be building out your own",
+      "start": 1208.08,
+      "duration": 3.839
+    },
+    {
+      "text": "software factories. At least uh if",
+      "start": 1209.84,
+      "duration": 5.12
+    },
+    {
+      "text": "you&#39;re not if if if you&#39;re Uber or",
+      "start": 1211.919,
+      "duration": 5.361
+    },
+    {
+      "text": "Netflix, yeah, sure, go for it. But if",
+      "start": 1214.96,
+      "duration": 4.16
+    },
+    {
+      "text": "you&#39;re like my typical client, it&#39;s too",
+      "start": 1217.28,
+      "duration": 3.279
+    },
+    {
+      "text": "early to build out your own software",
+      "start": 1219.12,
+      "duration": 4.559
+    },
+    {
+      "text": "factory. [snorts] The primitives are not",
+      "start": 1220.559,
+      "duration": 5.521
+    },
+    {
+      "text": "well understood, not well defined. So",
+      "start": 1223.679,
+      "duration": 4.801
+    },
+    {
+      "text": "it&#39;s too early. Some of them are",
+      "start": 1226.08,
+      "duration": 4.079
+    },
+    {
+      "text": "actually getting there. If you look at",
+      "start": 1228.48,
+      "duration": 5.439
+    },
+    {
+      "text": "the typical software factories that like",
+      "start": 1230.159,
+      "duration": 6.721
+    },
+    {
+      "text": "companies like Uber and Stripe and stuff",
+      "start": 1233.919,
+      "duration": 4.081
+    },
+    {
+      "text": "like are building out, there are",
+      "start": 1236.88,
+      "duration": 2.88
+    },
+    {
+      "text": "primitives that you see popping up",
+      "start": 1238,
+      "duration": 4.32
+    },
+    {
+      "text": "everywhere. they&#39;re shared and I think",
+      "start": 1239.76,
+      "duration": 5.12
+    },
+    {
+      "text": "Steve Yaggi from Gas Town, he has some",
+      "start": 1242.32,
+      "duration": 4.32
+    },
+    {
+      "text": "uh interviews on YouTube, he also",
+      "start": 1244.88,
+      "duration": 4
+    },
+    {
+      "text": "mentions them. So I do think it&#39;s worth",
+      "start": 1246.64,
+      "duration": 4.56
+    },
+    {
+      "text": "taking a look at uh what these people",
+      "start": 1248.88,
+      "duration": 5.84
+    },
+    {
+      "text": "have to say. But in a nutshell uh you",
+      "start": 1251.2,
+      "duration": 5.04
+    },
+    {
+      "text": "need some kind of you need to start",
+      "start": 1254.72,
+      "duration": 3.199
+    },
+    {
+      "text": "treating work as a first class citizen.",
+      "start": 1256.24,
+      "duration": 4.64
+    },
+    {
+      "text": "So you need like to put a a linear board",
+      "start": 1257.919,
+      "duration": 6.161
+    },
+    {
+      "text": "or a gyra board or a [clears throat]",
+      "start": 1260.88,
+      "duration": 5.039
+    },
+    {
+      "text": "GitHub issue list stuff like that. you",
+      "start": 1264.08,
+      "duration": 3.92
+    },
+    {
+      "text": "need to a way to track work, track",
+      "start": 1265.919,
+      "duration": 5.041
+    },
+    {
+      "text": "dependencies between work, track who or",
+      "start": 1268,
+      "duration": 5.44
+    },
+    {
+      "text": "like what agent is working on uh a",
+      "start": 1270.96,
+      "duration": 4.64
+    },
+    {
+      "text": "specific task, uh stuff like that. So",
+      "start": 1273.44,
+      "duration": 4.239
+    },
+    {
+      "text": "that&#39;s the first primitive. And then you",
+      "start": 1275.6,
+      "duration": 3.68
+    },
+    {
+      "text": "need to be able to like have these",
+      "start": 1277.679,
+      "duration": 3.921
+    },
+    {
+      "text": "agents work in parallel on the same",
+      "start": 1279.28,
+      "duration": 5.36
+    },
+    {
+      "text": "codebase. This is why git work trees are",
+      "start": 1281.6,
+      "duration": 5.12
+    },
+    {
+      "text": "are like having a resurgence a",
+      "start": 1284.64,
+      "duration": 4
+    },
+    {
+      "text": "renaissance",
+      "start": 1286.72,
+      "duration": 3.68
+    },
+    {
+      "text": "uh because that allows like an agent to",
+      "start": 1288.64,
+      "duration": 3.919
+    },
+    {
+      "text": "work on a single device a single machine",
+      "start": 1290.4,
+      "duration": 5.36
+    },
+    {
+      "text": "on a a codebase on multiple instances of",
+      "start": 1292.559,
+      "duration": 4.881
+    },
+    {
+      "text": "a codebase in parallel but you also have",
+      "start": 1295.76,
+      "duration": 4.32
+    },
+    {
+      "text": "like virtualization containerization you",
+      "start": 1297.44,
+      "duration": 4.719
+    },
+    {
+      "text": "have like docker sandboxes so those are",
+      "start": 1300.08,
+      "duration": 4.64
+    },
+    {
+      "text": "all necessary primitives and those are",
+      "start": 1302.159,
+      "duration": 4.321
+    },
+    {
+      "text": "getting there uh I don&#39;t think they are",
+      "start": 1304.72,
+      "duration": 3.92
+    },
+    {
+      "text": "ready for like the future of agents",
+      "start": 1306.48,
+      "duration": 4.559
+    },
+    {
+      "text": "spinning up a dev container is super",
+      "start": 1308.64,
+      "duration": 3.919
+    },
+    {
+      "text": "slow especially if you need a database",
+      "start": 1311.039,
+      "duration": 3.12
+    },
+    {
+      "text": "especially if you&#39;re running tests. So,",
+      "start": 1312.559,
+      "duration": 4.321
+    },
+    {
+      "text": "I don&#39;t think we&#39;re all all there yet,",
+      "start": 1314.159,
+      "duration": 4.64
+    },
+    {
+      "text": "but it&#39;s getting there. So, that that",
+      "start": 1316.88,
+      "duration": 4.925
+    },
+    {
+      "text": "part has been solved for. I think",
+      "start": 1318.799,
+      "duration": 3.841
+    },
+    {
+      "text": "[clears throat]",
+      "start": 1321.805,
+      "duration": 2.675
+    },
+    {
+      "text": "the thing that has not been solved, at",
+      "start": 1322.64,
+      "duration": 5.36
+    },
+    {
+      "text": "least not for my typical clients, is the",
+      "start": 1324.48,
+      "duration": 6.48
+    },
+    {
+      "text": "identity and access control angle. Uh if",
+      "start": 1328,
+      "duration": 5.12
+    },
+    {
+      "text": "I see people running agents nowadays,",
+      "start": 1330.96,
+      "duration": 4
+    },
+    {
+      "text": "they all run them under their personal",
+      "start": 1333.12,
+      "duration": 3.52
+    },
+    {
+      "text": "accounts. So, they don&#39;t have like",
+      "start": 1334.96,
+      "duration": 4.4
+    },
+    {
+      "text": "service identities for their agents. uh",
+      "start": 1336.64,
+      "duration": 5.44
+    },
+    {
+      "text": "that&#39;s not a good idea for enterprise",
+      "start": 1339.36,
+      "duration": 4
+    },
+    {
+      "text": "development. [snorts]",
+      "start": 1342.08,
+      "duration": 3.28
+    },
+    {
+      "text": "Uh and they need to talk to like your",
+      "start": 1343.36,
+      "duration": 4.4
+    },
+    {
+      "text": "GitHub repository to stuff like that. Uh",
+      "start": 1345.36,
+      "duration": 5.76
+    },
+    {
+      "text": "I do think the security angle might be a",
+      "start": 1347.76,
+      "duration": 5.52
+    },
+    {
+      "text": "bit overblown. Like if you look at",
+      "start": 1351.12,
+      "duration": 4.559
+    },
+    {
+      "text": "prompt injection and data exfiltration,",
+      "start": 1353.28,
+      "duration": 6.08
+    },
+    {
+      "text": "it it&#39;s still possible theoretically.",
+      "start": 1355.679,
+      "duration": 8.561
+    },
+    {
+      "text": "You can still like uh",
+      "start": 1359.36,
+      "duration": 6.88
+    },
+    {
+      "text": "jailbreak AI. You can still do data",
+      "start": 1364.24,
+      "duration": 4.08
+    },
+    {
+      "text": "exfiltration attacks but it&#39;s getting",
+      "start": 1366.24,
+      "duration": 4.16
+    },
+    {
+      "text": "really hard and you and if you put like",
+      "start": 1368.32,
+      "duration": 4.16
+    },
+    {
+      "text": "some basic guardrails in place so that",
+      "start": 1370.4,
+      "duration": 3.84
+    },
+    {
+      "text": "they cannot talk to the public internet",
+      "start": 1372.48,
+      "duration": 3.199
+    },
+    {
+      "text": "your agents and they don&#39;t have access",
+      "start": 1374.24,
+      "duration": 3.52
+    },
+    {
+      "text": "to the internet and if your issue",
+      "start": 1375.679,
+      "duration": 4.48
+    },
+    {
+      "text": "trackers are like internal only I think",
+      "start": 1377.76,
+      "duration": 4.72
+    },
+    {
+      "text": "the risk is",
+      "start": 1380.159,
+      "duration": 4.321
+    },
+    {
+      "text": "acceptable but like the identity and",
+      "start": 1382.48,
+      "duration": 4.48
+    },
+    {
+      "text": "access control part has not been solved",
+      "start": 1384.48,
+      "duration": 4.8
+    },
+    {
+      "text": "I see all zero and companies like",
+      "start": 1386.96,
+      "duration": 4.64
+    },
+    {
+      "text": "working at it [snorts] so we will be",
+      "start": 1389.28,
+      "duration": 3.519
+    },
+    {
+      "text": "getting there and that&#39;s why I believe",
+      "start": 1391.6,
+      "duration": 4.16
+    },
+    {
+      "text": "that software factories are uh going to",
+      "start": 1392.799,
+      "duration": 5.681
+    },
+    {
+      "text": "happen at scale might be the new",
+      "start": 1395.76,
+      "duration": 5.039
+    },
+    {
+      "text": "paradigm. Uh it&#39;s just not ready for",
+      "start": 1398.48,
+      "duration": 4.48
+    },
+    {
+      "text": "prime time yet. But that&#39;s maybe my",
+      "start": 1400.799,
+      "duration": 5.201
+    },
+    {
+      "text": "advice if you&#39;re a software engineer",
+      "start": 1402.96,
+      "duration": 4.56
+    },
+    {
+      "text": "and you have like played around with",
+      "start": 1406,
+      "duration": 3.84
+    },
+    {
+      "text": "these coding agents for a while. I do",
+      "start": 1407.52,
+      "duration": 5.039
+    },
+    {
+      "text": "think it&#39;s becoming",
+      "start": 1409.84,
+      "duration": 5.68
+    },
+    {
+      "text": "time to start taking a look at loops uh",
+      "start": 1412.559,
+      "duration": 4.881
+    },
+    {
+      "text": "graphs maybe not. It&#39;s prohibitively",
+      "start": 1415.52,
+      "duration": 3.76
+    },
+    {
+      "text": "expensive but like take a look at the",
+      "start": 1417.44,
+      "duration": 4.719
+    },
+    {
+      "text": "concept of loop engineering and like uh",
+      "start": 1419.28,
+      "duration": 4.56
+    },
+    {
+      "text": "running stuff on a chron job. see what",
+      "start": 1422.159,
+      "duration": 3.281
+    },
+    {
+      "text": "you can do with these agents that you",
+      "start": 1423.84,
+      "duration": 4.48
+    },
+    {
+      "text": "could not do with just like uh some",
+      "start": 1425.44,
+      "duration": 6
+    },
+    {
+      "text": "Python scripts uh by yourself. So",
+      "start": 1428.32,
+      "duration": 5.28
+    },
+    {
+      "text": "there&#39;s some learning to be had there.",
+      "start": 1431.44,
+      "duration": 5.04
+    },
+    {
+      "text": "But the concept of a software factory uh",
+      "start": 1433.6,
+      "duration": 4.48
+    },
+    {
+      "text": "last year you should have been building",
+      "start": 1436.48,
+      "duration": 4.64
+    },
+    {
+      "text": "your own coding harness. So you should",
+      "start": 1438.08,
+      "duration": 4.4
+    },
+    {
+      "text": "have been building your own cloud code",
+      "start": 1441.12,
+      "duration": 3.039
+    },
+    {
+      "text": "to really understand concepts like",
+      "start": 1442.48,
+      "duration": 3.52
+    },
+    {
+      "text": "inference and the context window stuff",
+      "start": 1444.159,
+      "duration": 4.321
+    },
+    {
+      "text": "like that. I think 2026 is the year that",
+      "start": 1446,
+      "duration": 3.84
+    },
+    {
+      "text": "you should be building your first",
+      "start": 1448.48,
+      "duration": 3.92
+    },
+    {
+      "text": "software factory and you don&#39;t need",
+      "start": 1449.84,
+      "duration": 5.439
+    },
+    {
+      "text": "much. You need like a a GitHub copilot",
+      "start": 1452.4,
+      "duration": 4.72
+    },
+    {
+      "text": "subscription, cloud code subscription,",
+      "start": 1455.279,
+      "duration": 5.041
+    },
+    {
+      "text": "uh shed GPT subscription and one of them",
+      "start": 1457.12,
+      "duration": 5.84
+    },
+    {
+      "text": "apps if you have the copilot app or",
+      "start": 1460.32,
+      "duration": 4.64
+    },
+    {
+      "text": "cloud code or desktop or if you have the",
+      "start": 1462.96,
+      "duration": 4.319
+    },
+    {
+      "text": "shaded GPT app, you can do all these",
+      "start": 1464.96,
+      "duration": 4.719
+    },
+    {
+      "text": "loops, you can do these automations. Uh",
+      "start": 1467.279,
+      "duration": 4.88
+    },
+    {
+      "text": "and if you then have like just a GitHub",
+      "start": 1469.679,
+      "duration": 3.841
+    },
+    {
+      "text": "account, you can set up an issue",
+      "start": 1472.159,
+      "duration": 4.161
+    },
+    {
+      "text": "tracker, you can set up a comb board and",
+      "start": 1473.52,
+      "duration": 4.32
+    },
+    {
+      "text": "you can start playing around with the",
+      "start": 1476.32,
+      "duration": 3.359
+    },
+    {
+      "text": "concept of a software factory. And I",
+      "start": 1477.84,
+      "duration": 4.719
+    },
+    {
+      "text": "think uh everyone should be messing",
+      "start": 1479.679,
+      "duration": 5.6
+    },
+    {
+      "text": "around with them. It&#39;s time to start",
+      "start": 1482.559,
+      "duration": 4.561
+    },
+    {
+      "text": "messing around with them. So yeah,",
+      "start": 1485.279,
+      "duration": 3.921
+    },
+    {
+      "text": "that&#39;s my advice. Uh maybe to round this",
+      "start": 1487.12,
+      "duration": 4.4
+    },
+    {
+      "text": "video off, um that&#39;s a lot of new terms",
+      "start": 1489.2,
+      "duration": 5.68
+    },
+    {
+      "text": "for the last 12 months. I do think every",
+      "start": 1491.52,
+      "duration": 5.92
+    },
+    {
+      "text": "term added to the conversation and added",
+      "start": 1494.88,
+      "duration": 5.12
+    },
+    {
+      "text": "something new and unique. But if you are",
+      "start": 1497.44,
+      "duration": 5.599
+    },
+    {
+      "text": "a software engineer with like experience",
+      "start": 1500,
+      "duration": 5.76
+    },
+    {
+      "text": "in computer science and you know about",
+      "start": 1503.039,
+      "duration": 5.52
+    },
+    {
+      "text": "graphs, you know about distributed",
+      "start": 1505.76,
+      "duration": 5.36
+    },
+    {
+      "text": "systems, I don&#39;t think anything new is",
+      "start": 1508.559,
+      "duration": 4.561
+    },
+    {
+      "text": "being invented here. We&#39;re just",
+      "start": 1511.12,
+      "duration": 4.96
+    },
+    {
+      "text": "reinventing uh the wheel at a rapid",
+      "start": 1513.12,
+      "duration": 5.2
+    },
+    {
+      "text": "pace. But there&#39;s a new ingredient in",
+      "start": 1516.08,
+      "duration": 4.64
+    },
+    {
+      "text": "the mix. These uh large language models",
+      "start": 1518.32,
+      "duration": 6.4
+    },
+    {
+      "text": "are a new kind of technology. So maybe",
+      "start": 1520.72,
+      "duration": 6.079
+    },
+    {
+      "text": "it warrants the new terminology. The",
+      "start": 1524.72,
+      "duration": 4.88
+    },
+    {
+      "text": "only thing I dislike is that like",
+      "start": 1526.799,
+      "duration": 4.801
+    },
+    {
+      "text": "someone on Twitter yells a term and",
+      "start": 1529.6,
+      "duration": 4.959
+    },
+    {
+      "text": "people like uh if these two influential",
+      "start": 1531.6,
+      "duration": 5.76
+    },
+    {
+      "text": "people Boris or Pete Steinberger or one",
+      "start": 1534.559,
+      "duration": 4.801
+    },
+    {
+      "text": "of the one of those people if they like",
+      "start": 1537.36,
+      "duration": 5.12
+    },
+    {
+      "text": "just vaguely hint at an idea the whole",
+      "start": 1539.36,
+      "duration": 5.28
+    },
+    {
+      "text": "software engineering world [laughter] is",
+      "start": 1542.48,
+      "duration": 3.84
+    },
+    {
+      "text": "like trying to reverse engineer what",
+      "start": 1544.64,
+      "duration": 3.84
+    },
+    {
+      "text": "they mean with like a cryptic sentence.",
+      "start": 1546.32,
+      "duration": 3.92
+    },
+    {
+      "text": "What the hell are we doing? we should be",
+      "start": 1548.48,
+      "duration": 5.679
+    },
+    {
+      "text": "sharing uh more uh we should not not be",
+      "start": 1550.24,
+      "duration": 6.799
+    },
+    {
+      "text": "jumping on on like new terms like it&#39;s",
+      "start": 1554.159,
+      "duration": 8.961
+    },
+    {
+      "text": "some kind of uh sugar uh for a fly right",
+      "start": 1557.039,
+      "duration": 8.801
+    },
+    {
+      "text": "uh yeah",
+      "start": 1563.12,
+      "duration": 5.28
+    },
+    {
+      "text": "so my advice would be yes these new",
+      "start": 1565.84,
+      "duration": 6.16
+    },
+    {
+      "text": "terms have value no it&#39;s not rocket",
+      "start": 1568.4,
+      "duration": 5.519
+    },
+    {
+      "text": "science uh last year you should have",
+      "start": 1572,
+      "duration": 3.279
+    },
+    {
+      "text": "been building an agent and if you have",
+      "start": 1573.919,
+      "duration": 4.081
+    },
+    {
+      "text": "not built your agent um yourself that&#39;s",
+      "start": 1575.279,
+      "duration": 4.961
+    },
+    {
+      "text": "still very worthwhile to do. It only",
+      "start": 1578,
+      "duration": 4.559
+    },
+    {
+      "text": "takes an hour, especially if you use an",
+      "start": 1580.24,
+      "duration": 4.96
+    },
+    {
+      "text": "AI assistant to build it. But really try",
+      "start": 1582.559,
+      "duration": 5.281
+    },
+    {
+      "text": "to like understand what goes into uh the",
+      "start": 1585.2,
+      "duration": 5.92
+    },
+    {
+      "text": "making of an agendic harness.",
+      "start": 1587.84,
+      "duration": 5.28
+    },
+    {
+      "text": "And if you&#39;ve already done that and you",
+      "start": 1591.12,
+      "duration": 4.08
+    },
+    {
+      "text": "gro those concepts, it is time to start",
+      "start": 1593.12,
+      "duration": 3.679
+    },
+    {
+      "text": "building your first software factory. So",
+      "start": 1595.2,
+      "duration": 4.4
+    },
+    {
+      "text": "this is my invitation to you. Uh build",
+      "start": 1596.799,
+      "duration": 4.641
+    },
+    {
+      "text": "your first software factory. And please",
+      "start": 1599.6,
+      "duration": 4.48
+    },
+    {
+      "text": "let me know uh what you learned by doing",
+      "start": 1601.44,
+      "duration": 5.28
+    },
+    {
+      "text": "so in the comments below. See you again.",
+      "start": 1604.08,
+      "duration": 5.44
+    },
+    {
+      "text": "Bye-bye.",
+      "start": 1606.72,
+      "duration": 2.8
+    }
+  ],
+  "native": [],
+  "fetchedAt": "2026-08-03T00:54:32.627Z"
+}

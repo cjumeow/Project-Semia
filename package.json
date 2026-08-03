@@ -11,13 +11,15 @@
         "prototype:library-promote": "npm run dev -w @semia/corpus",
         "prototype:logo": "npm run dev -w @semia/corpus",
         "prototype:delete": "npm run dev -w @semia/corpus",
+        "prototype:youtube-captions": "npm run dev -w @semia/corpus",
         "build:extension": "npm run build -w @semia/extension",
         "build:corpus": "npm run build -w @semia/corpus",
         "build": "npm run build:extension && npm run build:corpus && node scripts/assemble-extension.mjs",
       "test": "vitest run",
       "test:watch": "vitest",
       "typecheck": "npm run typecheck -w @semia/extension && npm run typecheck -w @semia/corpus",
-      "verify": "npm run typecheck && npm run test && npm run build"
+      "verify": "npm run typecheck && npm run test && npm run build",
+      "spike:caption-pairing": "node --experimental-transform-types scripts/caption-pairing-spike.ts"
     },
     "devDependencies": {
         "vitest": "^4.1.10"

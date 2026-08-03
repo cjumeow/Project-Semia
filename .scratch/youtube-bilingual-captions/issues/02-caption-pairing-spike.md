@@ -4,9 +4,15 @@
 
 **Blocked by:** None — can start immediately (may run in parallel with 01 and 03).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] At least five real videos exercised, including the known index-pairing failure case.
-- [ ] Each strategy documented with pass/fail examples and typical failure modes.
-- [ ] Clear recommendation: proceed with dual-line (and which strategy), defer, or abandon native line on-overlay.
-- [ ] Report stored under `.scratch/youtube-bilingual-captions/` or `docs/` and linked from this ticket’s Comments when done.
+- [x] At least five real videos exercised, including the known index-pairing failure case.
+- [x] Each strategy documented with pass/fail examples and typical failure modes.
+- [x] Clear recommendation: proceed with dual-line (and which strategy), defer, or abandon native line on-overlay.
+- [x] Report stored under `.scratch/youtube-bilingual-captions/` and linked from this ticket’s Comments when done.
+
+## Comments
+
+**Report:** [spike-report.md](../spike-report.md) (2026-08-03)
+
+**Recommendation:** Defer dual-line overlay; do not ship index pairing; ticket #05 blocked.
