@@ -42,7 +42,7 @@ export function buildPopoverFieldsHtml(
           <input type="checkbox" data-field="bilingualCaptionsEnabled"${bilingual ? ' checked' : ''} />
           Show bilingual captions
         </label>
-        <p class="hint">Learning line is shown on the video. Native line display is deferred until pairing is validated.</p>
+        <p class="hint">Learning line is always shown. Native line appears when translation alignment is confident.</p>
       </div>
     </div>
   `;

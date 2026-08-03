@@ -1,4 +1,5 @@
 import overlayCss from './captionOverlay.css';
+import { resolveNativeCaptionLine } from './captionNativeLine';
 import { findCueIndexByTime, getVideoElement } from './playerSync';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
 import type { StoredTranscript, WordRef } from './types';
@@ -115,7 +116,15 @@ export function createCaptionOverlay(options: {
       })
       .join('');
 
-    root.innerHTML = `<div class="caption-line">${tokenHtml}</div>`;
+    const nativeText = resolveNativeCaptionLine(
+      seg,
+      transcript.nativeSegments,
+    );
+    const nativeHtml = nativeText
+      ? `<div class="caption-line-native">${escapeHtml(nativeText)}</div>`
+      : '';
+
+    root.innerHTML = `<div class="caption-pill"><div class="caption-line-learning">${tokenHtml}</div>${nativeHtml}</div>`;
 
     root.querySelectorAll<HTMLElement>('.caption-word').forEach((el) => {
       el.addEventListener('click', (ev) => {
