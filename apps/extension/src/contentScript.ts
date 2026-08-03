@@ -8,6 +8,16 @@ import {
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
 import {
+  extractTimedtextLanguage,
+  pickCaptionTrackBaseUrl,
+  resolveTimedtextTemplate,
+  shouldDeferTranscriptFetch,
+  shouldStoreTimedtextTemplate,
+  type CaptionTrackRef,
+} from './transcriptSyncPolicy';
+import { fetchInnertubeCaptionTracks } from './youtubeInnertubeCaptions';
+import { getNativeLineLoadingText } from './nativeLineLoadingText';
+import {
   createMtPrewarmSession,
   runMtNativePrewarm,
   setMtPrewarmPriorityCue,
@@ -38,8 +48,11 @@ const BRIDGE_SOURCE = 'YT_TRANSCRIPT_CAPTURE_BRIDGE';
 
 type BridgeMessage = {
   source: typeof BRIDGE_SOURCE;
-  type: 'TIMEDTEXT_URL';
-  url: string;
+  type: 'TIMEDTEXT_URL' | 'CAPTION_TRACKS';
+  url?: string;
+  videoId?: string;
+  tracks?: CaptionTrackRef[];
+  activeCaptionLanguage?: string;
   title?: string;
   channel?: string;
 };
@@ -58,6 +71,7 @@ const captionOverlay = createCaptionOverlay({
 });
 
 const timedtextTemplateByVideoId = new Map<string, string>();
+const preferredCaptionLanguageByVideoId = new Map<string, string>();
 const inflightSync = new Map<string, Promise<void>>();
 
 let currentVideoId: string | null = getVideoIdFromUrl();
@@ -194,25 +208,51 @@ async function maybeStartMtNativePrewarm(
   });
 }
 
+function buildOptimisticNativeSwitchTranscript(
+  transcript: StoredTranscript,
+  nativeLanguage: string,
+): StoredTranscript {
+  return {
+    ...transcript,
+    nativeLanguageCode: nativeLanguage,
+    nativeSegments: [],
+    nativeTrackUnavailable: true,
+  };
+}
+
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
   const videoId = getVideoIdFromUrl() ?? currentVideoId;
   if (!videoId) return;
 
   const generation = ++transcriptSyncGeneration;
-  captionOverlay.setNativeLineSuppressed(true);
+  const learning = settings.learningLanguage?.trim() || 'en';
+  const native = settings.nativeLanguage?.trim() || 'zh-TW';
+  const bilingual = settings.bilingualCaptionsEnabled !== false;
+  const needsNativeLine = bilingual && learning !== native;
+  const transcript = currentTranscript;
+
   cancelMtPrewarm();
   replaceMtTranslations([]);
-  updateMtOverlayState('idle');
+
+  if (needsNativeLine && transcript?.segments.length) {
+    captionOverlay.setNativeLoadingText(getNativeLineLoadingText(native));
+    captionOverlay.setSkipTlangPairing(true);
+    updateMtOverlayState('loading');
+    void maybeStartMtNativePrewarm(
+      buildOptimisticNativeSwitchTranscript(transcript, native),
+    );
+  } else {
+    updateMtOverlayState('idle');
+  }
+
   try {
     await syncBilingualTranscriptForVideo(videoId, {
       force: true,
       syncGeneration: generation,
     });
   } finally {
-    if (generation === transcriptSyncGeneration) {
-      captionOverlay.setNativeLineSuppressed(false);
-    }
+    captionOverlay.setNativeLineSuppressed(false);
   }
 }
 
@@ -238,6 +278,11 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
     updateMtOverlayState('idle');
   }
   captionOverlay.setTranscript(normalized);
+  if (normalized?.nativeLanguageCode) {
+    captionOverlay.setNativeLoadingText(
+      getNativeLineLoadingText(normalized.nativeLanguageCode),
+    );
+  }
   if (normalized && preferMt) {
     void maybeStartMtNativePrewarm(normalized);
   }
@@ -310,6 +355,50 @@ async function loadTranscriptForVideo(videoId: string | null): Promise<void> {
   syncTranscriptToUi(stored);
 }
 
+function isActiveVideo(videoId: string): boolean {
+  return videoId === (getVideoIdFromUrl() ?? currentVideoId);
+}
+
+function rememberPreferredCaptionLanguage(
+  videoId: string,
+  languageCode?: string,
+): void {
+  const lang = languageCode?.trim();
+  if (!lang) return;
+  preferredCaptionLanguageByVideoId.set(videoId, lang);
+}
+
+async function ensureInnertubeCaptionTemplate(
+  videoId: string,
+  learningLanguage: string,
+): Promise<string | undefined> {
+  const preferred = preferredCaptionLanguageByVideoId.get(videoId);
+  const cached = timedtextTemplateByVideoId.get(videoId);
+  if (shouldStoreTimedtextTemplate(cached)) {
+    const cachedLang = extractTimedtextLanguage(cached);
+    if (!preferred || !cachedLang || cachedLang === preferred) {
+      return cached;
+    }
+    timedtextTemplateByVideoId.delete(videoId);
+  }
+
+  try {
+    const tracks = await fetchInnertubeCaptionTracks(videoId);
+    const baseUrl = pickCaptionTrackBaseUrl(
+      tracks,
+      learningLanguage,
+      preferred,
+    );
+    if (baseUrl) {
+      timedtextTemplateByVideoId.set(videoId, baseUrl);
+    }
+    return baseUrl;
+  } catch (err) {
+    console.warn(`[Semia] Innertube caption track fetch failed for ${videoId}:`, err);
+    return undefined;
+  }
+}
+
 async function syncBilingualTranscriptForVideo(
   videoId: string,
   options?: {
@@ -319,36 +408,77 @@ async function syncBilingualTranscriptForVideo(
     syncGeneration?: number;
   },
 ): Promise<void> {
-  if (options?.templateUrl) {
-    timedtextTemplateByVideoId.set(videoId, options.templateUrl);
-  }
-
   const settings = currentSettings ?? (await getSemiaSettings());
   currentSettings = settings;
 
-  const existing = await getTranscript(videoId);
+  await ensureInnertubeCaptionTemplate(
+    videoId,
+    settings.learningLanguage ?? 'en',
+  );
+
+  const syncKey = `${videoId}:${settings.learningLanguage}:${settings.nativeLanguage}:${settings.bilingualCaptionsEnabled}`;
+
+  const inflight = inflightSync.get(syncKey);
+  if (inflight) {
+    await inflight;
+  }
+
+  let existing = await getTranscript(videoId);
   if (!options?.force && transcriptMatchesSettings(existing, settings)) {
-    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+    if (isActiveVideo(videoId)) {
       syncTranscriptToUi(existing);
     }
     return;
   }
 
-  const syncKey = `${videoId}:${settings.learningLanguage}:${settings.nativeLanguage}:${settings.bilingualCaptionsEnabled}`;
-  const inflight = inflightSync.get(syncKey);
-  if (inflight) {
-    await inflight;
+  const template = resolveTimedtextTemplate(
+    timedtextTemplateByVideoId,
+    videoId,
+    options?.templateUrl,
+  );
+  if (shouldDeferTranscriptFetch(template)) {
+    if (existing && isActiveVideo(videoId)) {
+      syncTranscriptToUi(existing);
+    }
     return;
+  }
+
+  if (inflightSync.has(syncKey)) {
+    await inflightSync.get(syncKey)!;
+    existing = await getTranscript(videoId);
+    if (!options?.force && transcriptMatchesSettings(existing, settings)) {
+      if (isActiveVideo(videoId)) {
+        syncTranscriptToUi(existing);
+      }
+      return;
+    }
+    const templateAfterWait = resolveTimedtextTemplate(
+      timedtextTemplateByVideoId,
+      videoId,
+      options?.templateUrl,
+    );
+    if (shouldDeferTranscriptFetch(templateAfterWait)) {
+      if (existing && isActiveVideo(videoId)) {
+        syncTranscriptToUi(existing);
+      }
+      return;
+    }
   }
 
   const job = (async () => {
     const { meta } = buildPageMeta(videoId, options?.bridgeMeta);
-    const template =
-      options?.templateUrl ?? timedtextTemplateByVideoId.get(videoId);
+    const fetchTemplate = resolveTimedtextTemplate(
+      timedtextTemplateByVideoId,
+      videoId,
+      options?.templateUrl,
+    );
+    if (shouldDeferTranscriptFetch(fetchTemplate)) {
+      return;
+    }
 
     const result = await fetchBilingualTranscript({
       videoId,
-      templateUrl: template,
+      templateUrl: fetchTemplate,
       settings,
       pageMeta: meta,
       source: 'interceptedTimedtextUrl',
@@ -356,12 +486,13 @@ async function syncBilingualTranscriptForVideo(
 
     if (!result.ok) {
       console.warn(`[Semia] Transcript fetch failed for ${videoId}:`, result.error);
+      const fallback = await getTranscript(videoId);
       if (
-        videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+        isActiveVideo(videoId) &&
         (options?.syncGeneration === undefined ||
           options.syncGeneration === transcriptSyncGeneration)
       ) {
-        syncTranscriptToUi(existing);
+        syncTranscriptToUi(fallback);
       }
       return;
     }
@@ -374,7 +505,7 @@ async function syncBilingualTranscriptForVideo(
     await sendTranscriptToBackground(stored);
 
     if (
-      videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+      isActiveVideo(videoId) &&
       (options?.syncGeneration === undefined ||
         options.syncGeneration === transcriptSyncGeneration)
     ) {
@@ -391,6 +522,21 @@ async function syncBilingualTranscriptForVideo(
   }
 }
 
+async function handleCaptionTracks(
+  videoId: string,
+  _tracks: CaptionTrackRef[],
+  bridgeMeta?: YoutubePageMeta,
+  activeCaptionLanguage?: string,
+): Promise<void> {
+  rememberPreferredCaptionLanguage(videoId, activeCaptionLanguage);
+  const settings = currentSettings ?? (await getSemiaSettings());
+  await ensureInnertubeCaptionTemplate(
+    videoId,
+    settings.learningLanguage ?? 'en',
+  );
+  await syncBilingualTranscriptForVideo(videoId, { bridgeMeta });
+}
+
 async function handleInterceptedURL(
   timedtextUrl: string,
   bridgeMeta?: YoutubePageMeta,
@@ -399,6 +545,11 @@ async function handleInterceptedURL(
     const urlObj = new URL(timedtextUrl);
     const videoId = urlObj.searchParams.get('v');
     if (!videoId) return;
+
+    rememberPreferredCaptionLanguage(
+      videoId,
+      urlObj.searchParams.get('lang') ?? undefined,
+    );
 
     const existing = await getTranscript(videoId);
     const { meta: pageMeta, authoritative } = buildPageMeta(videoId, bridgeMeta);
@@ -416,10 +567,7 @@ async function handleInterceptedURL(
       }
     }
 
-    await syncBilingualTranscriptForVideo(videoId, {
-      templateUrl: timedtextUrl,
-      bridgeMeta,
-    });
+    await syncBilingualTranscriptForVideo(videoId, { bridgeMeta });
   } catch (err) {
     console.error('Error capturing transcript:', err);
   }
@@ -429,11 +577,25 @@ function installPageWorldListener(): void {
   window.addEventListener('message', (event: MessageEvent) => {
     const data = event.data as Partial<BridgeMessage>;
     if (!data || data.source !== BRIDGE_SOURCE) return;
+    const bridgeMeta = {
+      title: data.title,
+      channel: data.channel,
+    };
     if (data.type === 'TIMEDTEXT_URL' && typeof data.url === 'string') {
-      void handleInterceptedURL(data.url, {
-        title: data.title,
-        channel: data.channel,
-      });
+      void handleInterceptedURL(data.url, bridgeMeta);
+      return;
+    }
+    if (
+      data.type === 'CAPTION_TRACKS' &&
+      typeof data.videoId === 'string' &&
+      Array.isArray(data.tracks)
+    ) {
+      void handleCaptionTracks(
+        data.videoId,
+        data.tracks,
+        bridgeMeta,
+        data.activeCaptionLanguage,
+      );
     }
   });
 }

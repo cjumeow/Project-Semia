@@ -1,8 +1,8 @@
 import overlayCss from './captionOverlay.css';
 import {
-  NATIVE_LINE_LOADING_TEXT,
   resolveNativeCaptionLine,
 } from './captionNativeLine';
+import { getNativeLineLoadingText } from './nativeLineLoadingText';
 import type { MtPrewarmStatus } from './mtNativePrewarm';
 import { findCueIndexByTime, getVideoElement } from './playerSync';
 import { getWordText, tokenizeCue, type CueToken } from './segmenter';
@@ -25,6 +25,7 @@ export type CaptionOverlay = {
   setTranscript: (transcript: StoredTranscript | null) => void;
   setNativeLineSuppressed: (suppressed: boolean) => void;
   setSkipTlangPairing: (skip: boolean) => void;
+  setNativeLoadingText: (text: string) => void;
   setMtNativeState: (state: MtNativeOverlayState) => void;
   getActiveCueIndex: () => number;
   destroy: () => void;
@@ -72,6 +73,7 @@ export function createCaptionOverlay(options: {
   let skipTlangPairing = false;
   let mtTranslations = new Map<number, string>();
   let mtPrewarmStatus: MtPrewarmStatus = 'idle';
+  let nativeLoadingText = getNativeLineLoadingText('zh-TW');
   let pillEl: HTMLDivElement | null = null;
   let learningEl: HTMLDivElement | null = null;
   let nativeEl: HTMLDivElement | null = null;
@@ -190,7 +192,7 @@ export function createCaptionOverlay(options: {
     }
 
     if (nativeResult.status === 'loading' || showMtSlot) {
-      nativeEl.textContent = NATIVE_LINE_LOADING_TEXT;
+      nativeEl.textContent = nativeLoadingText;
       nativeEl.classList.add('caption-line-native-loading');
       nativeEl.hidden = false;
       return;
@@ -317,6 +319,13 @@ export function createCaptionOverlay(options: {
     }
   }
 
+  function setNativeLoadingText(text: string): void {
+    nativeLoadingText = text;
+    if (activeCueIndex >= 0) {
+      renderCue(activeCueIndex);
+    }
+  }
+
   function setNativeLineSuppressed(suppressed: boolean): void {
     nativeLineSuppressed = suppressed;
     if (activeCueIndex >= 0) {
@@ -338,6 +347,7 @@ export function createCaptionOverlay(options: {
   return {
     setTranscript,
     setNativeLineSuppressed,
+    setNativeLoadingText,
     setSkipTlangPairing,
     setMtNativeState,
     getActiveCueIndex: () => activeCueIndex,

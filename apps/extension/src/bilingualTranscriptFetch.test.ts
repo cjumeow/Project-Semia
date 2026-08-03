@@ -55,6 +55,14 @@ describe('transcriptMatchesSettings', () => {
     };
     expect(transcriptMatchesSettings(unavailable, settings)).toBe(true);
   });
+
+  it('accepts en-US transcript when settings learning language is en', () => {
+    const usTranscript: StoredTranscript = {
+      ...transcript,
+      languageCode: 'en-US',
+    };
+    expect(transcriptMatchesSettings(usTranscript, settings)).toBe(true);
+  });
 });
 
 describe('coerceTranscriptForNativeLine', () => {
