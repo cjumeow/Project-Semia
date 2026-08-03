@@ -4,11 +4,11 @@
 
 **Blocked by:** None — can start immediately (may run in parallel with 01 and 02).
 
-**Status:** ready-for-human — prototype v3 updated 2026-08-03
+**Status:** resolved — variant **A** approved 2026-08-03
 
 - [x] One command starts the prototype (per project prototype conventions).
 - [x] Variants switchable via URL param and/or floating switcher.
-- [ ] User has reviewed and approved a single variant (or noted required changes) before ticket 05 starts.
+- [x] User has reviewed and approved a single variant (or noted required changes) before ticket 05 starts.
 - [x] Prototype marked throwaway; validated UI decisions captured in ticket Comments or spec — not merged as production code.
 
 ## Comments
@@ -17,4 +17,4 @@
 
 **v3 changes:** Removed LingoPanel settings chip (ADR-0002). Tightened popover layout. Mock cues from Jo Van Eyck spike.
 
-**Awaiting:** Your variant pick (A / B / C or hybrid).
+**Decision:** **Variant A** — Semia icon in YouTube bottom bar (between CC and gear) → popover with learning/native language + bilingual toggle.

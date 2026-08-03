@@ -10,6 +10,7 @@ import { getVideoIdFromUrl, navigateCue } from './playerSync';
 import { createCaptionOverlay } from './captionOverlay';
 import { createCaptureSidebar } from './sidebarPanel';
 import { getSemiaSettings } from './semiaSettings';
+import { createSubtitleSettingsControl } from './subtitleSettingsControl';
 import {
   applyYoutubeMeta,
   buildYoutubeMetaForVideo,
@@ -29,6 +30,17 @@ type BridgeMessage = {
 const sidebar = createCaptureSidebar();
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
+});
+async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
+  currentSettings = settings;
+  subtitleSettings.setSettings(settings);
+  const videoId = getVideoIdFromUrl() ?? currentVideoId;
+  if (!videoId) return;
+  await syncBilingualTranscriptForVideo(videoId, { force: true });
+}
+
+const subtitleSettings = createSubtitleSettingsControl({
+  onSettingsChange: onSemiaSettingsChange,
 });
 
 const timedtextTemplateByVideoId = new Map<string, string>();
@@ -215,13 +227,6 @@ async function handleInterceptedURL(
   } catch (err) {
     console.error('Error capturing transcript:', err);
   }
-}
-
-async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
-  currentSettings = settings;
-  const videoId = getVideoIdFromUrl() ?? currentVideoId;
-  if (!videoId) return;
-  await syncBilingualTranscriptForVideo(videoId, { force: true });
 }
 
 function installPageWorldListener(): void {

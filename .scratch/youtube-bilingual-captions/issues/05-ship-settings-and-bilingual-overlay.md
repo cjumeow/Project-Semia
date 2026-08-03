@@ -4,10 +4,14 @@
 
 **Blocked by:** 02 — Caption pairing spike; 03 — Prototype: subtitle settings; 04 — Implement validated cue pairing
 
-**Status:** ready-for-agent
+**Status:** resolved — variant A settings shipped; native line deferred
 
-- [ ] Settings panel matches approved prototype (placement, fields, bilingual toggle).
-- [ ] Learning language / native language / bilingual on-off behave as specified in prototype + spike report.
-- [ ] Native line appears only when pairing gate passes; no repeat of index-only blind pairing.
-- [ ] LingoPanel unchanged unless a separate decision says otherwise.
-- [ ] `npm run verify` passes; manual smoke on YouTube with extension reload.
+- [x] Settings panel matches approved prototype (placement, fields, bilingual toggle).
+- [x] Learning language / native language / bilingual on-off behave as specified in prototype + spike report.
+- [x] Native line appears only when pairing gate passes; no repeat of index-only blind pairing.
+- [x] LingoPanel unchanged unless a separate decision says otherwise.
+- [x] `npm run verify` passes; manual smoke on YouTube with extension reload.
+
+## Comments
+
+**Shipped:** Variant A — Semia icon in `.ytp-right-controls` before YouTube gear; popover with learning/native/bilingual fields. Overlay remains learning-only per spike #02.
