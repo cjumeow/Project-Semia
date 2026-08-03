@@ -1,6 +1,6 @@
 # ADR-0002: YouTube bilingual captions — spike-first, learning-only until pairing works
 
-**Status:** Accepted (grilling 2026-08-03)  
+**Status:** Accepted (grilling 2026-08-03); **native-line deferral amended** by [ADR-0003](./0003-youtube-bilingual-gated-native-line.md) (2026-08-03)  
 **Supersedes:** [ADR-0001](./0001-youtube-bilingual-captions-v1.md)
 
 Real-world testing (e.g. EN learning line vs ZH native line on the same `cueIndex` showing unrelated text) proved that **index-level cue pairing is not reliable** for YouTube `tlang` auto-translate tracks. Shipping a bilingual overlay on that assumption misleads learners worse than showing learning-only captions.
