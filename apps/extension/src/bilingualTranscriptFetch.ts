@@ -27,6 +27,16 @@ export function transcriptMatchesSettings(
   return (transcript.nativeSegments?.length ?? 0) > 0;
 }
 
+/** Ignore storage/UI updates when transcript was fetched for different settings. */
+export function shouldApplyStoredTranscript(
+  transcript: StoredTranscript | null,
+  settings: SemiaSettings | null,
+): boolean {
+  if (!transcript) return true;
+  if (!settings) return true;
+  return transcriptMatchesSettings(transcript, settings);
+}
+
 export async function fetchBilingualTranscript(options: {
   videoId: string;
   templateUrl?: string;

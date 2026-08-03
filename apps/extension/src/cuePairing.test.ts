@@ -96,11 +96,54 @@ describe('pairNativeForLearningCue', () => {
     expect(result.reason).toBe('length');
   });
 
+  it('returns none with span when native duration far exceeds learning (tlang merge)', () => {
+    const result = pairNativeForLearningCue(learning, [
+      {
+        text: '短句翻譯',
+        start: 10,
+        duration: 8,
+      },
+    ]);
+    expect(result.confidence).toBe('none');
+    expect(result.reason).toBe('span');
+  });
+
+  it('rejects span mismatch for short learning cue with long native paragraph', () => {
+    const lexLearning = {
+      text: "But that's, like, a simple philosophy thing.",
+      start: 412.5,
+      duration: 2.8,
+    };
+    const lexNativeMerged = {
+      text: '深刻的理念在於不要責怪用戶，而是理解他們的需求。我媽媽總是說，產品設計就像哲學一樣簡單。Perplexity 這類工具改變了我們思考問題的方式，但核心仍然是同理心與清晰的溝通。',
+      start: 412.5,
+      duration: 9.2,
+    };
+
+    const result = pairNativeForLearningCue(lexLearning, [lexNativeMerged]);
+
+    expect(result.confidence).toBe('none');
+    expect(result.nativeText).toBeNull();
+    expect(['length', 'span', 'granularity']).toContain(result.reason);
+  });
+
+  it('returns none with granularity when native has multiple sentences', () => {
+    const result = pairNativeForLearningCue(learning, [
+      {
+        text: '第一句。第二句也更長一些。',
+        start: 10,
+        duration: 2,
+      },
+    ]);
+    expect(result.confidence).toBe('none');
+    expect(result.reason).toBe('granularity');
+  });
+
   it('Jo Van Eyck cue 96 uses time overlap, not index-96 wrong native', () => {
     const result = pairNativeForLearningCue(JO_LEARNING_96, [
       JO_NATIVE_92_ALIGNED,
       JO_NATIVE_96_INDEX_WRONG,
-    ]);
+    ], { coarseNativeTrack: true });
 
     expect(result.confidence).toBe('high');
     expect(result.nativeText).toBe(JO_NATIVE_92_ALIGNED.text);

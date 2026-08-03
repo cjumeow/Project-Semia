@@ -3,6 +3,7 @@ import { SEMIA_SETTINGS_STORAGE_KEY } from '@semia/shared';
 import type { StoredTranscript } from './types';
 import {
   fetchBilingualTranscript,
+  shouldApplyStoredTranscript,
   transcriptMatchesSettings,
 } from './bilingualTranscriptFetch';
 import { getTranscript, TRANSCRIPTS_STORAGE_KEY } from './storage';
@@ -31,16 +32,6 @@ const sidebar = createCaptureSidebar();
 const captionOverlay = createCaptionOverlay({
   onWordClick: (ref) => sidebar.beginCaptureFromOverlay(ref),
 });
-async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
-  currentSettings = settings;
-  const videoId = getVideoIdFromUrl() ?? currentVideoId;
-  if (!videoId) return;
-  await syncBilingualTranscriptForVideo(videoId, { force: true });
-}
-
-const subtitleSettings = createSubtitleSettingsControl({
-  onSettingsChange: onSemiaSettingsChange,
-});
 
 const timedtextTemplateByVideoId = new Map<string, string>();
 const inflightSync = new Map<string, Promise<void>>();
@@ -48,6 +39,30 @@ const inflightSync = new Map<string, Promise<void>>();
 let currentVideoId: string | null = getVideoIdFromUrl();
 let currentTranscript: StoredTranscript | null = null;
 let currentSettings: SemiaSettings | null = null;
+let transcriptSyncGeneration = 0;
+
+async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
+  currentSettings = settings;
+  const videoId = getVideoIdFromUrl() ?? currentVideoId;
+  if (!videoId) return;
+
+  const generation = ++transcriptSyncGeneration;
+  captionOverlay.setNativeLineSuppressed(true);
+  try {
+    await syncBilingualTranscriptForVideo(videoId, {
+      force: true,
+      syncGeneration: generation,
+    });
+  } finally {
+    if (generation === transcriptSyncGeneration) {
+      captionOverlay.setNativeLineSuppressed(false);
+    }
+  }
+}
+
+const subtitleSettings = createSubtitleSettingsControl({
+  onSettingsChange: onSemiaSettingsChange,
+});
 
 function syncTranscriptToUi(transcript: StoredTranscript | null): void {
   currentTranscript = transcript;
@@ -128,6 +143,7 @@ async function syncBilingualTranscriptForVideo(
     templateUrl?: string;
     bridgeMeta?: YoutubePageMeta;
     force?: boolean;
+    syncGeneration?: number;
   },
 ): Promise<void> {
   if (options?.templateUrl) {
@@ -167,7 +183,11 @@ async function syncBilingualTranscriptForVideo(
 
     if (!result.ok) {
       console.warn(`[Semia] Transcript fetch failed for ${videoId}:`, result.error);
-      if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+      if (
+        videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+        (options?.syncGeneration === undefined ||
+          options.syncGeneration === transcriptSyncGeneration)
+      ) {
         syncTranscriptToUi(existing);
       }
       return;
@@ -180,7 +200,11 @@ async function syncBilingualTranscriptForVideo(
     );
     await sendTranscriptToBackground(stored);
 
-    if (videoId === (getVideoIdFromUrl() ?? currentVideoId)) {
+    if (
+      videoId === (getVideoIdFromUrl() ?? currentVideoId) &&
+      (options?.syncGeneration === undefined ||
+        options.syncGeneration === transcriptSyncGeneration)
+    ) {
       currentVideoId = videoId;
       syncTranscriptToUi(stored);
     }
@@ -320,7 +344,11 @@ function installStorageListener(): void {
     if (!videoId) return;
 
     const map = (change.newValue ?? {}) as Record<string, StoredTranscript>;
-    syncTranscriptToUi(map[videoId] ?? null);
+    const transcript = map[videoId] ?? null;
+    if (!shouldApplyStoredTranscript(transcript, currentSettings)) {
+      return;
+    }
+    syncTranscriptToUi(transcript);
   });
 }
 

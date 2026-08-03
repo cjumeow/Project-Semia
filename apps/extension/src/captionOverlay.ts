@@ -19,6 +19,7 @@ const HIDE_NATIVE_CC_CSS = `
 
 export type CaptionOverlay = {
   setTranscript: (transcript: StoredTranscript | null) => void;
+  setNativeLineSuppressed: (suppressed: boolean) => void;
   destroy: () => void;
 };
 
@@ -53,6 +54,7 @@ export function createCaptionOverlay(options: {
   let timeListenerAttached = false;
   let activeCueIndex = -1;
   let playerParent: HTMLElement | null = null;
+  let nativeLineSuppressed = false;
 
   function escapeHtml(text: string): string {
     return text
@@ -119,6 +121,10 @@ export function createCaptionOverlay(options: {
     const nativeText = resolveNativeCaptionLine(
       seg,
       transcript.nativeSegments,
+      {
+        nativeLineSuppressed,
+        learningSegmentCount: transcript.segments.length,
+      },
     );
     const nativeHtml = nativeText
       ? `<div class="caption-line-native">${escapeHtml(nativeText)}</div>`
@@ -201,6 +207,13 @@ export function createCaptionOverlay(options: {
     }
   }, 1000);
 
+  function setNativeLineSuppressed(suppressed: boolean): void {
+    nativeLineSuppressed = suppressed;
+    if (activeCueIndex >= 0) {
+      renderCue(activeCueIndex);
+    }
+  }
+
   function destroy(): void {
     window.clearInterval(playerPoll);
     detachTimeListener();
@@ -209,5 +222,5 @@ export function createCaptionOverlay(options: {
     host.remove();
   }
 
-  return { setTranscript, destroy };
+  return { setTranscript, setNativeLineSuppressed, destroy };
 }

@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+  isCoarseNativeTrack,
+  pairNativeForLearningCue,
+} from './cuePairing';
 import { resolveNativeCaptionLine } from './captionNativeLine';
 
 describe('resolveNativeCaptionLine', () => {
@@ -23,5 +27,34 @@ describe('resolveNativeCaptionLine', () => {
         { text: '你好', start: 20, duration: 2 },
       ]),
     ).toBeNull();
+  });
+
+  it('returns null while native line is suppressed during refetch', () => {
+    expect(
+      resolveNativeCaptionLine(
+        learning,
+        [{ text: '你好', start: 10.1, duration: 2 }],
+        { nativeLineSuppressed: true },
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null on coarse track when native text exceeds coarse length gate', () => {
+    const longNative = {
+      text: '这是一段明显比学习句更长的中文翻译内容。',
+      start: 10.1,
+      duration: 2,
+    };
+    expect(
+      resolveNativeCaptionLine(learning, [longNative], {
+        learningSegmentCount: 100,
+      }),
+    ).toBeNull();
+    expect(isCoarseNativeTrack(100, 50)).toBe(true);
+    expect(
+      pairNativeForLearningCue(learning, [longNative], {
+        coarseNativeTrack: true,
+      }).reason,
+    ).toBe('length');
   });
 });
