@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   PrototypeSwitcher,
+  readYoutubeCaptionsVariant,
   YOUTUBE_CAPTIONS_VARIANTS,
   type YoutubeCaptionsVariantKey,
 } from './PrototypeSwitcher';
@@ -11,21 +12,12 @@ import { VariantC } from './variants/VariantC';
 import { VariantD } from './variants/VariantD';
 import { VariantE } from './variants/VariantE';
 import { VariantF } from './variants/VariantF';
-
-function readVariant(): YoutubeCaptionsVariantKey {
-  const value = new URLSearchParams(window.location.search).get('variant');
-  if (
-    value === 'A' ||
-    value === 'B' ||
-    value === 'C' ||
-    value === 'D' ||
-    value === 'E' ||
-    value === 'F'
-  ) {
-    return value;
-  }
-  return 'D';
-}
+import { VariantG } from './variants/VariantG';
+import { VariantH } from './variants/VariantH';
+import { VariantI } from './variants/VariantI';
+import { VariantJ } from './variants/VariantJ';
+import { VariantK } from './variants/VariantK';
+import { VariantL } from './variants/VariantL';
 
 function VariantView({
   variant,
@@ -47,19 +39,33 @@ function VariantView({
       return <VariantE state={state} />;
     case 'F':
       return <VariantF state={state} />;
+    case 'G':
+      return <VariantG state={state} />;
+    case 'H':
+      return <VariantH state={state} />;
+    case 'I':
+      return <VariantI state={state} />;
+    case 'J':
+      return <VariantJ state={state} />;
+    case 'K':
+      return <VariantK state={state} />;
+    case 'L':
+      return <VariantL state={state} />;
   }
 }
 
 /**
  * YouTube subtitle settings + chrome prototypes.
- * ?prototype=youtube-captions&variant=A|B|C|D|E|F
+ * ?prototype=youtube-captions&variant=A–L
  */
 export function YoutubeCaptionsPrototypeApp() {
   const state = useYoutubeCaptionsPrototypeState();
-  const [variant, setVariant] = useState<YoutubeCaptionsVariantKey>(readVariant);
+  const [variant, setVariant] = useState<YoutubeCaptionsVariantKey>(
+    readYoutubeCaptionsVariant,
+  );
 
   useEffect(() => {
-    const onPopState = (): void => setVariant(readVariant());
+    const onPopState = (): void => setVariant(readYoutubeCaptionsVariant());
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -68,9 +74,8 @@ export function YoutubeCaptionsPrototypeApp() {
     <main className="flex h-screen flex-col overflow-hidden bg-[#0f0f0f] text-text">
       <header className="shrink-0 border-b border-white/10 bg-black px-4 py-2">
         <p className="font-mono text-[10px] text-amber-300/90">
-          PROTOTYPE v4 — Chrome redesign: Semia on far right (Funlingo-style
-          placement). D/E/F = visual directions; A/B/C = legacy settings UX.
-          Click Semia control to open popover.
+          PROTOTYPE v4 — D–F = chrome shells · G–L = icon directions (same dark
+          badge shell for fair compare). Far right placement. ← → to cycle A–L.
         </p>
       </header>
       <div className="flex min-h-0 flex-1">

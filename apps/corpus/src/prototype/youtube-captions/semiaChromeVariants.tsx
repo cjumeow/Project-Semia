@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 import type { YoutubeCaptionsPrototypeState } from './youtubeCaptionTypes';
 import { SubtitleSettingsFields } from './prototypeShared';
+import {
+  IconBilingualStack,
+  IconBrackets,
+  IconLayeredS,
+  IconSemicolon,
+  IconSnippetTab,
+  IconTranscriptArc,
+} from './semiaIcons';
 
 function SemiaLinesIcon({ className = '' }: { className?: string }) {
   return (
@@ -170,5 +178,115 @@ export function SemiaChromeF({ state }: { state: YoutubeCaptionsPrototypeState }
         <SubtitleSettingsFields state={state} tone="dark" />
       </PopoverShell>
     </div>
+  );
+}
+
+function IconChromeShell({
+  state,
+  icon,
+  label,
+  popoverClassName,
+}: {
+  state: YoutubeCaptionsPrototypeState;
+  icon: ReactNode;
+  label: string;
+  popoverClassName: string;
+}) {
+  const active = state.bilingualEnabled;
+
+  return (
+    <div className="relative ml-1 shrink-0">
+      <button
+        type="button"
+        title={label}
+        aria-label={label}
+        aria-expanded={state.settingsPopoverOpen}
+        aria-pressed={active}
+        onClick={() => state.setSettingsPopoverOpen(!state.settingsPopoverOpen)}
+        className={[
+          'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
+          active
+            ? 'border-[#8fd89a]/50 bg-[#2f5233] text-white shadow-lg shadow-[#2f5233]/40 ring-2 ring-[#8fd89a]/30'
+            : 'border-white/20 bg-[#141414] text-white/90 hover:border-white/35 hover:bg-[#1c1c1c]',
+        ].join(' ')}
+      >
+        {icon}
+      </button>
+      <PopoverShell state={state} className={popoverClassName}>
+        <SubtitleSettingsFields state={state} tone="dark" />
+      </PopoverShell>
+    </div>
+  );
+}
+
+/** G — Icon: Semicolon (logo A — pause point). */
+export function SemiaChromeG({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — semicolon"
+      icon={<IconSemicolon />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
+  );
+}
+
+/** H — Icon: Brackets (logo B — selection). */
+export function SemiaChromeH({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — brackets"
+      icon={<IconBrackets />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
+  );
+}
+
+/** I — Icon: Transcript arc (logo C — wave). */
+export function SemiaChromeI({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — transcript arc"
+      icon={<IconTranscriptArc />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
+  );
+}
+
+/** J — Icon: Layered S (logo D — monogram). */
+export function SemiaChromeJ({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — layered S"
+      icon={<IconLayeredS />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
+  );
+}
+
+/** K — Icon: Snippet tab (logo E — index card). */
+export function SemiaChromeK({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — snippet tab"
+      icon={<IconSnippetTab />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
+  );
+}
+
+/** L — Icon: Bilingual stack (dual-line metaphor). */
+export function SemiaChromeL({ state }: { state: YoutubeCaptionsPrototypeState }) {
+  return (
+    <IconChromeShell
+      state={state}
+      label="Semia subtitles — bilingual stack"
+      icon={<IconBilingualStack />}
+      popoverClassName="rounded-xl border border-[#4a8f55]/35 bg-[#141a16] p-3 text-[#e8f0ea] shadow-2xl shadow-black/60"
+    />
   );
 }
