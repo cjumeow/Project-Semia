@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { overlapSeconds } from './cuePairing';
 import {
   analyzePairingStrategies,
   nativeTextByTimeOverlap,
-  overlapSeconds,
 } from './captionPairingAnalysis';
 
 describe('overlapSeconds', () => {

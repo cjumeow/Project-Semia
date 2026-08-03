@@ -1,6 +1,5 @@
 import type { TranscriptSegment } from './types';
-
-const TIMING_TOLERANCE_SEC = 0.05;
+import { overlapSeconds } from './cuePairing';
 
 export type PairingSample = {
   cueIndex: number;
@@ -25,17 +24,10 @@ export type PairingStrategyStats = {
   samples: PairingSample[];
 };
 
+const TIMING_TOLERANCE_SEC = 0.05;
+
 function segmentEnd(seg: TranscriptSegment): number {
   return seg.start + seg.duration;
-}
-
-export function overlapSeconds(
-  a: TranscriptSegment,
-  b: TranscriptSegment,
-): number {
-  const start = Math.max(a.start, b.start);
-  const end = Math.min(segmentEnd(a), segmentEnd(b));
-  return Math.max(0, end - start);
 }
 
 /** Pick native text by maximum time overlap; tie-break by earliest start. */
