@@ -1,9 +1,12 @@
 import { useCallback, useEffect } from 'react';
 
 export const YOUTUBE_CAPTIONS_VARIANTS = [
-  { key: 'A', label: 'Bottom bar popover (recommended)' },
-  { key: 'B', label: 'Bottom sheet settings' },
-  { key: 'C', label: 'Toggle + chevron split control' },
+  { key: 'A', label: 'Legacy: before ⚙ popover', group: 'settings UX' },
+  { key: 'B', label: 'Legacy: bottom sheet', group: 'settings UX' },
+  { key: 'C', label: 'Legacy: toggle + chevron', group: 'settings UX' },
+  { key: 'D', label: 'Canopy — forest badge (far right)', group: 'chrome v4' },
+  { key: 'E', label: 'Glass — frosted circle (far right)', group: 'chrome v4' },
+  { key: 'F', label: 'Signal — S·pill + amber dot (far right)', group: 'chrome v4' },
 ] as const;
 
 export type YoutubeCaptionsVariantKey =
@@ -11,8 +14,17 @@ export type YoutubeCaptionsVariantKey =
 
 function readVariant(): YoutubeCaptionsVariantKey {
   const value = new URLSearchParams(window.location.search).get('variant');
-  if (value === 'B' || value === 'C') return value;
-  return 'A';
+  if (
+    value === 'A' ||
+    value === 'B' ||
+    value === 'C' ||
+    value === 'D' ||
+    value === 'E' ||
+    value === 'F'
+  ) {
+    return value;
+  }
+  return 'D';
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -77,7 +89,7 @@ export function PrototypeSwitcher() {
         >
           ←
         </button>
-        <p className="min-w-[15rem] text-center font-mono text-[11px] text-text">
+        <p className="min-w-[18rem] text-center font-mono text-[11px] text-text">
           <span className="font-semibold">{current.key}</span>
           <span className="text-text-muted"> — {current.label}</span>
         </p>

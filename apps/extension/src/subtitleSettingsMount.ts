@@ -1,5 +1,5 @@
-/** Pure mount targeting — scoped to the active YouTube player chrome. */
-export function findSubtitleSettingsMountBefore(
+/** Mount target: active player's right controls (append = far-right). */
+export function findSubtitleSettingsMountParent(
   root: ParentNode = document,
 ): HTMLElement | null {
   const player =
@@ -8,10 +8,17 @@ export function findSubtitleSettingsMountBefore(
   if (!player) return null;
 
   const rightControls = player.querySelector('.ytp-right-controls');
-  if (!rightControls) return null;
-
-  const settingsButton = rightControls.querySelector('.ytp-settings-button');
-  if (settingsButton instanceof HTMLElement) return settingsButton;
   if (rightControls instanceof HTMLElement) return rightControls;
   return null;
+}
+
+/** @deprecated Use findSubtitleSettingsMountParent + appendChild for far-right placement. */
+export function findSubtitleSettingsMountBefore(
+  root: ParentNode = document,
+): HTMLElement | null {
+  const parent = findSubtitleSettingsMountParent(root);
+  if (!parent) return null;
+  const settingsButton = parent.querySelector('.ytp-settings-button');
+  if (settingsButton instanceof HTMLElement) return settingsButton;
+  return parent;
 }

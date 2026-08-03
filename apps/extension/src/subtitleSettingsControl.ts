@@ -2,7 +2,7 @@ import type { SemiaSettings } from '@semia/shared';
 import buttonCss from './subtitleSettingsButton.css';
 import popoverCss from './subtitleSettingsPopover.css';
 import { getSemiaSettings, saveSemiaSettings } from './semiaSettings';
-import { findSubtitleSettingsMountBefore } from './subtitleSettingsMount';
+import { findSubtitleSettingsMountParent } from './subtitleSettingsMount';
 import {
   eventTargetsSubtitleSettingsUi,
   shouldIgnoreDocumentDismiss,
@@ -72,7 +72,6 @@ export function createSubtitleSettingsControl(options: {
   let settings: SemiaSettings | null = null;
   let popoverOpen = false;
   let openedAtMs: number | null = null;
-  let mountedBefore: HTMLElement | null = null;
   let playerObserver: MutationObserver | null = null;
 
   function bilingualActive(): boolean {
@@ -236,20 +235,14 @@ export function createSubtitleSettingsControl(options: {
   window.addEventListener('scroll', onViewportChange, true);
 
   function mount(): boolean {
-    const mountBefore = findSubtitleSettingsMountBefore();
-    if (!mountBefore) return false;
-
-    const parent = mountBefore.parentElement;
+    const parent = findSubtitleSettingsMountParent();
     if (!parent) return false;
 
     const needsInsert =
-      !buttonHost.isConnected ||
-      buttonHost.parentElement !== parent ||
-      mountedBefore !== mountBefore;
+      !buttonHost.isConnected || buttonHost.parentElement !== parent;
 
     if (needsInsert) {
-      parent.insertBefore(buttonHost, mountBefore);
-      mountedBefore = mountBefore;
+      parent.appendChild(buttonHost);
     }
     return true;
   }

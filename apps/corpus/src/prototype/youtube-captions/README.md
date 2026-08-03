@@ -1,8 +1,8 @@
-# YouTube subtitle settings — UI prototype (v3)
+# YouTube subtitle chrome — UI prototype (v4)
 
-**Question:** Where should subtitle settings live on the YouTube watch page, and how should the popover look?
+**Question:** Where should the Semia control sit on the YouTube bar, and what should it look like?
 
-Aligned with [ADR-0002](../../../docs/adr/0002-youtube-bilingual-captions-spike-first.md): settings **only** on the YouTube bottom bar; **LingoPanel is capture-only** (no summary chip / Edit). Dual-line pill is a visual preview — production stays learning-only until pairing is solved (spike #02).
+v4 adds **far-right placement** (after fullscreen, Funlingo-style) and three visual directions **D / E / F**. Legacy **A / B / C** remain for settings UX comparison.
 
 ## Run
 
@@ -10,35 +10,28 @@ Aligned with [ADR-0002](../../../docs/adr/0002-youtube-bilingual-captions-spike-
 npm run prototype:youtube-captions
 ```
 
-Open:
+Open (default **D**):
 
-- **A (recommended):** http://localhost:5173/?prototype=youtube-captions&variant=A
-- **B:** `&variant=B`
-- **C:** `&variant=C`
+| Variant | URL | Placement | Look |
+|---------|-----|-----------|------|
+| **D** | `&variant=D` | Far right | **Canopy** — forest green badge, corpus-aligned |
+| **E** | `&variant=E` | Far right | **Glass** — frosted circle, YouTube-native |
+| **F** | `&variant=F` | Far right | **Signal** — compact `S·` pill, amber bilingual dot |
+| A | `&variant=A` | Before ⚙ | Legacy popover (shipped UX) |
+| B | `&variant=B` | Before ⚙ | Bottom sheet |
+| C | `&variant=C` | Before ⚙ | Toggle + chevron |
 
-Use the bottom switcher or ← → to compare variants.
+Use bottom switcher or ← → .
 
-## Variants
+## Design tokens (D/E/F)
 
-| Key | Settings entry | Notes |
-|-----|----------------|-------|
-| **A** | Semia icon in YouTube bottom bar → **popover** above CC | Recommended in grilling |
-| **B** | Same icon → **bottom sheet** | More room for future fields |
-| **C** | **雙語** toggle + chevron → popover | Split control |
-
-Shared:
-
-- Mock Jo Van Eyck player chrome (title, CC, Semia icon, YouTube gear)
-- Bilingual pill on video (toggle off = learning line only)
-- LingoPanel open on the right — **no subtitle settings inside**
-- Amber state bar shows cue index, language summary, popover open/closed
-
-## Mock data
-
-Cue #96 reproduces the spike #02 index-pairing bug (`That's part of context engineering` vs long unrelated ZH).
+| | D Canopy | E Glass | F Signal |
+|---|----------|---------|----------|
+| Accent | `#2f5233` forest | white / frost | `amber-400` |
+| Shape | rounded square | circle | pill |
+| Popover | dark green panel | blur glass | warm black + amber border |
+| Active state | green ring | white ring | amber glow dot |
 
 ## Pick a winner
 
-Reply with variant (or hybrid: e.g. “A popover layout, B sheet on mobile”). Record decision in ticket #03 Comments before ticket #05 implementation.
-
-**Do not merge this folder to production as-is** — rewrite in `apps/extension` when implementing.
+Reply with variant (**D / E / F** or hybrid). Production extension will match chosen chrome + far-right mount.

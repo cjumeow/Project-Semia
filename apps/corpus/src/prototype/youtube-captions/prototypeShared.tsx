@@ -198,13 +198,44 @@ export function YouTubePlayerChrome({
   controlsExtra,
   settingsAnchor = 'popover',
   hideSemiaIcon = false,
+  semiaPlacement = 'before-settings',
+  semiaChrome,
 }: {
   state: YoutubeCaptionsPrototypeState;
   children?: ReactNode;
   controlsExtra?: ReactNode;
   settingsAnchor?: 'popover' | 'sheet';
   hideSemiaIcon?: boolean;
+  /** before-settings = legacy A/B/C; far-right = after fullscreen (Funlingo-style). */
+  semiaPlacement?: 'before-settings' | 'far-right';
+  semiaChrome?: ReactNode;
 }) {
+  const legacySemia = hideSemiaIcon ? null : (
+    <div className="relative flex shrink-0 items-center">
+      <button
+        type="button"
+        className={[
+          'flex h-9 w-9 items-center justify-center rounded hover:bg-white/10',
+          state.bilingualEnabled ? 'bg-white/10' : '',
+        ].join(' ')}
+        title="Semia subtitles"
+        onClick={() => {
+          state.setSettingsPopoverOpen(!state.settingsPopoverOpen);
+        }}
+      >
+        <SemiaSubtitleIcon active={state.bilingualEnabled} />
+      </button>
+      {settingsAnchor === 'popover' ? (
+        <SubtitleSettingsPopover
+          state={state}
+          className="absolute bottom-full right-0 mb-2"
+        />
+      ) : null}
+    </div>
+  );
+
+  const semiaControl = semiaChrome ?? legacySemia;
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-black">
       <div className="relative min-h-0 flex-1">
@@ -240,6 +271,8 @@ export function YouTubePlayerChrome({
 
           {controlsExtra}
 
+          {semiaPlacement === 'before-settings' ? semiaControl : null}
+
           <button
             type="button"
             className="rounded p-1.5 text-xs font-bold text-white hover:bg-white/10"
@@ -248,38 +281,14 @@ export function YouTubePlayerChrome({
             CC
           </button>
 
-          <div className="relative flex shrink-0 items-center">
-            {hideSemiaIcon ? null : (
-              <>
-                <button
-                  type="button"
-                  className={[
-                    'flex h-9 w-9 items-center justify-center rounded hover:bg-white/10',
-                    state.bilingualEnabled ? 'bg-white/10' : '',
-                  ].join(' ')}
-                  title="Semia subtitles"
-                  onClick={() => {
-                    state.setSettingsPopoverOpen(!state.settingsPopoverOpen);
-                  }}
-                >
-                  <SemiaSubtitleIcon active={state.bilingualEnabled} />
-                </button>
-                {settingsAnchor === 'popover' ? (
-                  <SubtitleSettingsPopover
-                    state={state}
-                    className="absolute bottom-full right-0 mb-2"
-                  />
-                ) : null}
-              </>
-            )}
-          </div>
-
           <button type="button" className="rounded p-2 hover:bg-white/10">
             ⚙
           </button>
           <button type="button" className="rounded p-2 hover:bg-white/10">
             ⛶
           </button>
+
+          {semiaPlacement === 'far-right' ? semiaControl : null}
         </div>
 
         {settingsAnchor === 'sheet' && state.settingsPopoverOpen ? (
