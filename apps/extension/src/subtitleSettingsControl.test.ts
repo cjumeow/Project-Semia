@@ -26,15 +26,9 @@ function installYoutubePlayerFixture(): void {
 }
 
 function getToggleButton(): HTMLButtonElement {
-  const host = document.getElementById(BUTTON_HOST_ID);
-  if (!host?.shadowRoot) {
-    throw new Error('subtitle settings button host missing');
-  }
-  const button = host.shadowRoot.querySelector<HTMLButtonElement>(
-    '[data-action="toggle-popover"]',
-  );
-  if (!button) {
-    throw new Error('toggle button missing');
+  const button = document.getElementById(BUTTON_HOST_ID);
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error('subtitle settings button missing');
   }
   return button;
 }
@@ -76,7 +70,7 @@ describe('createSubtitleSettingsControl interaction', () => {
       .forEach((node) => node.remove());
   });
 
-  it('opens on pointerdown even when the follow-up click is swallowed', async () => {
+  it('opens on pointerdown on the light-DOM ytp-button host', async () => {
     const control = createSubtitleSettingsControl({
       onSettingsChange: vi.fn(),
     });
@@ -90,7 +84,7 @@ describe('createSubtitleSettingsControl interaction', () => {
     button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(isPopoverVisible()).toBe(true);
-    expect(getToggleButton().getAttribute('aria-expanded')).toBe('true');
+    expect(button.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('does not close immediately from a document capture click in the open guard window', async () => {
@@ -100,8 +94,7 @@ describe('createSubtitleSettingsControl interaction', () => {
     destroy = control.destroy;
     await flushControlInit();
 
-    const button = getToggleButton();
-    button.dispatchEvent(
+    getToggleButton().dispatchEvent(
       new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
     );
 

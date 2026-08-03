@@ -1,5 +1,5 @@
 import type { SemiaSettings } from '@semia/shared';
-import buttonCss from './subtitleSettingsControl.css';
+import buttonCss from './subtitleSettingsButton.css';
 import popoverCss from './subtitleSettingsPopover.css';
 import { getSemiaSettings, saveSemiaSettings } from './semiaSettings';
 import { findSubtitleSettingsMountBefore } from './subtitleSettingsMount';
@@ -16,6 +16,7 @@ import {
 } from './subtitleSettingsPopoverMarkup';
 
 const BUTTON_HOST_ID = 'semia-subtitle-settings-host';
+const BUTTON_STYLE_ID = 'semia-subtitle-settings-button-style';
 const POPOVER_HOST_ID = 'semia-subtitle-settings-popover-host';
 const OPEN_GUARD_MS = 300;
 const MOUNT_POLL_MS = 500;
@@ -33,22 +34,27 @@ function semiaSubtitleIconSvg(): string {
   </svg>`;
 }
 
+function ensureButtonStyles(): void {
+  if (document.getElementById(BUTTON_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = BUTTON_STYLE_ID;
+  style.textContent = buttonCss;
+  document.head.appendChild(style);
+}
+
 export function createSubtitleSettingsControl(options: {
   onSettingsChange: (settings: SemiaSettings) => void | Promise<void>;
 }): SubtitleSettingsControl {
   document.getElementById(BUTTON_HOST_ID)?.remove();
   document.getElementById(POPOVER_HOST_ID)?.remove();
+  ensureButtonStyles();
 
-  const buttonHost = document.createElement('div');
+  const buttonHost = document.createElement('button');
   buttonHost.id = BUTTON_HOST_ID;
-
-  const buttonShadow = buttonHost.attachShadow({ mode: 'open' });
-  const buttonStyle = document.createElement('style');
-  buttonStyle.textContent = buttonCss;
-  buttonShadow.appendChild(buttonStyle);
-
-  const buttonRoot = document.createElement('div');
-  buttonShadow.appendChild(buttonRoot);
+  buttonHost.type = 'button';
+  buttonHost.className = 'ytp-button';
+  buttonHost.title = 'Semia subtitles';
+  buttonHost.setAttribute('aria-label', 'Semia subtitles');
 
   const popoverHost = document.createElement('div');
   popoverHost.id = POPOVER_HOST_ID;
@@ -83,12 +89,9 @@ export function createSubtitleSettingsControl(options: {
   }
 
   function positionPopover(): void {
-    const anchor = buttonRoot.querySelector<HTMLElement>(
-      '[data-action="toggle-popover"]',
-    );
-    if (!anchor) return;
+    if (!buttonHost.isConnected) return;
 
-    const anchorRect = anchor.getBoundingClientRect();
+    const anchorRect = buttonHost.getBoundingClientRect();
     const popoverEl = popoverRoot.querySelector<HTMLElement>('.popover');
     const popoverHeight = popoverEl?.getBoundingClientRect().height ?? 220;
     const { top, left } = computePopoverFixedPosition({
@@ -104,19 +107,9 @@ export function createSubtitleSettingsControl(options: {
 
   function renderButton(): void {
     const bilingual = bilingualActive();
-    buttonRoot.innerHTML = `
-      <button
-        type="button"
-        class="icon-btn"
-        aria-label="Semia subtitles"
-        aria-pressed="${bilingual ? 'true' : 'false'}"
-        aria-expanded="${popoverOpen ? 'true' : 'false'}"
-        title="Semia subtitles"
-        data-action="toggle-popover"
-      >
-        ${semiaSubtitleIconSvg()}
-      </button>
-    `;
+    buttonHost.setAttribute('aria-pressed', bilingual ? 'true' : 'false');
+    buttonHost.setAttribute('aria-expanded', popoverOpen ? 'true' : 'false');
+    buttonHost.innerHTML = semiaSubtitleIconSvg();
   }
 
   function renderPopover(): void {
@@ -163,19 +156,11 @@ export function createSubtitleSettingsControl(options: {
   }
 
   function onButtonPointerDown(event: Event): void {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.closest('[data-action="toggle-popover"]')) return;
-
     event.stopPropagation();
     setPopoverOpen(nextPopoverOpenOnToggle(popoverOpen));
   }
 
   function onButtonClick(event: Event): void {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.closest('[data-action="toggle-popover"]')) return;
-
     event.preventDefault();
     event.stopPropagation();
   }
@@ -242,8 +227,8 @@ export function createSubtitleSettingsControl(options: {
     positionPopover();
   }
 
-  buttonRoot.addEventListener('pointerdown', onButtonPointerDown);
-  buttonRoot.addEventListener('click', onButtonClick);
+  buttonHost.addEventListener('pointerdown', onButtonPointerDown);
+  buttonHost.addEventListener('click', onButtonClick);
   popoverRoot.addEventListener('click', onPopoverClick);
   popoverRoot.addEventListener('change', onFieldChange);
   document.addEventListener('click', onDocumentClick, true);
@@ -308,8 +293,8 @@ export function createSubtitleSettingsControl(options: {
     window.removeEventListener('resize', onViewportChange);
     window.removeEventListener('scroll', onViewportChange, true);
     document.removeEventListener('click', onDocumentClick, true);
-    buttonRoot.removeEventListener('pointerdown', onButtonPointerDown);
-    buttonRoot.removeEventListener('click', onButtonClick);
+    buttonHost.removeEventListener('pointerdown', onButtonPointerDown);
+    buttonHost.removeEventListener('click', onButtonClick);
     popoverRoot.removeEventListener('click', onPopoverClick);
     popoverRoot.removeEventListener('change', onFieldChange);
     buttonHost.remove();
