@@ -12,4 +12,6 @@ Tickets: `issues/01` … `issues/05` (v1 workflow, resolved).
 
 **Follow-up:** [#40](https://github.com/cjumeow/Project-Semia/issues/40) — matching error on native-language switch (`issues/10`, resolved).
 
-**v3 follow-up (semantic mismatch / zh-Hant asymmetry):** [#41](https://github.com/cjumeow/Project-Semia/issues/41) → [#42](https://github.com/cjumeow/Project-Semia/issues/42) → [#43](https://github.com/cjumeow/Project-Semia/issues/43) (`issues/11`–`issues/13`). Optional research: [#36](https://github.com/cjumeow/Project-Semia/issues/36) Funlingo parity spike (`issues/06`).
+**v3 follow-up (semantic mismatch / zh-Hant asymmetry):** [#41](https://github.com/cjumeow/Project-Semia/issues/41) → [#42](https://github.com/cjumeow/Project-Semia/issues/42) → [#43](https://github.com/cjumeow/Project-Semia/issues/43) (`issues/11`–`issues/13`).
+
+**Research:** [#36](https://github.com/cjumeow/Project-Semia/issues/36) Funlingo parity spike — [funlingo-parity-report.md](.scratch/youtube-bilingual-captions/funlingo-parity-report.md) (`issues/06`, resolved).

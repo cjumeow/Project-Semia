@@ -19,7 +19,8 @@
       "test:watch": "vitest",
       "typecheck": "npm run typecheck -w @semia/extension && npm run typecheck -w @semia/corpus",
       "verify": "npm run typecheck && npm run test && npm run build",
-      "spike:caption-pairing": "node --experimental-transform-types scripts/caption-pairing-spike.ts"
+      "spike:caption-pairing": "node --experimental-transform-types scripts/caption-pairing-spike.ts",
+      "spike:funlingo-parity": "node --experimental-transform-types scripts/funlingo-parity-spike.ts"
     },
     "devDependencies": {
         "vitest": "^4.1.10"
