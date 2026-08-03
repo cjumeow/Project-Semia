@@ -11,6 +11,7 @@ import * as translateCueBatchModule from './translateCueBatch';
 import * as mtNativeCacheStorage from './mtNativeCacheStorage';
 import { clearMtBatchInflightForTests } from './mtBatchInflight';
 
+
 vi.mock('./translateCueBatch', async (importOriginal) => {
   const actual = await importOriginal<typeof translateCueBatchModule>();
   return { ...actual, translateCueBatch: vi.fn() };
@@ -182,6 +183,7 @@ describe('translateCueBatchIfMissing', () => {
     expect(translations.get(12)).toBe('zh-2');
     expect(translations.get(15)).toBe('zh-5');
   });
+
 });
 
 describe('shouldPrewarmMtNativeLine', () => {

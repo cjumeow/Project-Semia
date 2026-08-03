@@ -220,6 +220,7 @@ function buildOptimisticNativeSwitchTranscript(
   };
 }
 
+
 async function onSemiaSettingsChange(settings: SemiaSettings): Promise<void> {
   currentSettings = settings;
   const videoId = getVideoIdFromUrl() ?? currentVideoId;
@@ -276,6 +277,9 @@ function syncTranscriptToUi(transcript: StoredTranscript | null): void {
     cancelMtPrewarm();
     replaceMtTranslations([]);
     updateMtOverlayState('idle');
+  } else {
+    // Lock MT path before async prewarm starts — avoids a tlang/partial-cache flash.
+    updateMtOverlayState('loading');
   }
   captionOverlay.setTranscript(normalized);
   if (normalized?.nativeLanguageCode) {
