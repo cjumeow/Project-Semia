@@ -112,6 +112,7 @@ trace who wrote it. Do not only inspect React `useEffect` dependencies.
 | Toolbar flicker / selection lost | `webContentScript.ts` | `mouseup` / `pointerdown` / `setTimeout(removeToolbar)` race |
 | `sendMessage` no response | `background.ts`, `messageRouter.ts` | Service worker asleep? Unknown message type? Missing `return true`? |
 | `kQuotaBytes` / quota exceeded | `manifest.json` permissions, stored transcripts | Needs `unlimitedStorage`. User may need to reload extension after update or clear Storage in chrome://extensions. |
+| GTX prewarm all red / `google.com/sorry` | `translateGtx.ts`, `translateCueBatch.ts`, `mtNativePrewarm.ts` | 302/429 rate limit. Check batch is **GET** (not POST). Check fallback is not fan-out to per-cue. See `.scratch/youtube-bilingual-captions/postmortem-gtx-post-batch-cors-sorry.md`. Cool down IP before retesting. |
 | Works in dev, broken in extension page | `extensionContext.ts`, `corpusRepository` factory | Fell through to `MockCorpusRepository`? |
 
 ## Polling and retries

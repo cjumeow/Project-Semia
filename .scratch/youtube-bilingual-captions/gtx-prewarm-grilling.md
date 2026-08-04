@@ -26,7 +26,7 @@ Funlingo’s ~2000 requests include **per-word** `gtx` + `inputtools`, not only 
 
 | # | Assumption | Verdict | Notes |
 |---|------------|---------|-------|
-| A1 | Google won’t rate-limit ~2000 small `gtx`/IP/min | **Unproven** | Funlingo anecdote only; no SLA; Google can change anytime |
+| A1 | Google won’t rate-limit ~2000 small `gtx`/IP/min | **Disproven in practice** | 2026-08-03: POST batch + catch-all fallback → 500+ req → 302 `/sorry/`. See [postmortem-gtx-post-batch-cors-sorry.md](./postmortem-gtx-post-batch-cors-sorry.md) |
 | A2 | Per-cue `q=` always under URL length limit | **Mostly true** | Rare long merged cues may fail (~2k–8k char limits vary) |
 | A3 | `gtx` response shape stable | **False long-term** | Semia already parses nested arrays; breaks silently |
 | A4 | Using `gtx` for core subtitles is acceptable for Semia | **Product risk** | Undocumented API, ToS gray area; OK for **spike**, risky as **only** backend |
@@ -42,6 +42,8 @@ Funlingo’s ~2000 requests include **per-word** `gtx` + `inputtools`, not only 
 **If ship as default** — need degradation story (429 → learning-only), persistent cache, and legal/ToS acknowledgment.
 
 **Decision needed:** Spike-only first, or product commitment?
+
+**Incident (2026-08-03):** Do not ship POST batch from content script; do not catch-all fallback to per-cue. Details: [postmortem-gtx-post-batch-cors-sorry.md](./postmortem-gtx-post-batch-cors-sorry.md).
 
 ### Q2: Replace `tlang` entirely or hybrid?
 
