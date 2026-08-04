@@ -243,12 +243,10 @@
   text-underline-offset: 3px;
 }
 
-.word.selection-start {
-  outline: 1px solid rgba(47, 82, 51, 0.45);
-}
-
+.word.selection-start,
 .word.selection-range {
-  background: var(--semia-accent-soft);
+  background: #ffeb3b;
+  outline: none;
 }
 
 .punct {
