@@ -5,7 +5,6 @@ import { DeletePrototypeApp } from './prototype/delete/DeletePrototypeApp';
 import { InboxPrototypeApp } from './prototype/inbox/InboxPrototypeApp';
 import { LibraryPromotePrototypeApp } from './prototype/library-promote/LibraryPromotePrototypeApp';
 import { LogoPrototypeApp } from './prototype/logo/LogoPrototypeApp';
-import { SidebarNavPrototypeApp } from './prototype/sidebar-nav/SidebarNavPrototypeApp';
 import { SaasThemePrototypeApp } from './prototype/saas-theme/SaasThemePrototypeApp';
 import { YoutubeCaptionsPrototypeApp } from './prototype/youtube-captions/YoutubeCaptionsPrototypeApp';
 import './index.css';
@@ -16,7 +15,6 @@ function readPrototypeMode():
   | 'logo'
   | 'delete'
   | 'youtube-captions'
-  | 'sidebar-nav'
   | 'saas-theme'
   | null {
   const value = new URLSearchParams(window.location.search).get('prototype');
@@ -25,7 +23,6 @@ function readPrototypeMode():
   if (value === 'logo') return 'logo';
   if (value === 'delete') return 'delete';
   if (value === 'youtube-captions') return 'youtube-captions';
-  if (value === 'sidebar-nav') return 'sidebar-nav';
   if (value === 'saas-theme') return 'saas-theme';
   return null;
 }
@@ -44,8 +41,6 @@ createRoot(document.getElementById('root')!).render(
       <DeletePrototypeApp />
     ) : prototypeMode === 'youtube-captions' ? (
       <YoutubeCaptionsPrototypeApp />
-    ) : prototypeMode === 'sidebar-nav' ? (
-      <SidebarNavPrototypeApp />
     ) : prototypeMode === 'saas-theme' ? (
       <SaasThemePrototypeApp />
     ) : (
