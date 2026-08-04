@@ -1,6 +1,10 @@
 import type { TranscriptSegment } from '@semia/shared';
 import { describe, expect, it } from 'vitest';
-import { getContextCueIndices, getContextCuesByTimeRange } from './contextWindow';
+import {
+  getContextCueIndices,
+  getContextCuesByTimeRange,
+  getSidebarContextCueIndices,
+} from './contextWindow';
 
 /** 12 cues of 5s each: cue i covers [i*5, i*5+5). */
 function makeSegments(count = 12): TranscriptSegment[] {
@@ -28,6 +32,35 @@ describe('getContextCueIndices', () => {
     expect(getContextCueIndices(-1, 12)).toEqual([]);
     expect(getContextCueIndices(12, 12)).toEqual([]);
     expect(getContextCueIndices(0, 0)).toEqual([]);
+  });
+});
+
+describe('getSidebarContextCueIndices', () => {
+  /** Mirrors YouTube XML tracks that insert blank timing rows between cues. */
+  const lexSegments: TranscriptSegment[] = [
+    { text: "yeah I mean martial arts is it's kind of", start: 1694, duration: 3 },
+    { text: '', start: 1697, duration: 0.2 },
+    { text: "it's bigger than just combat it's this", start: 1697.2, duration: 2 },
+    { text: '', start: 1699, duration: 0.2 },
+    { text: 'kind of Journey of humility and it has', start: 1699.2, duration: 2 },
+  ];
+
+  it('skips empty-text segments and expands to readable neighbors', () => {
+    expect(getSidebarContextCueIndices(lexSegments, 2)).toEqual([0, 2, 4]);
+  });
+
+  it('never returns indices whose segment text is blank', () => {
+    const indices = getSidebarContextCueIndices(lexSegments, 2, 2, 2);
+    for (const i of indices) {
+      expect(lexSegments[i]!.text.trim()).not.toBe('');
+    }
+  });
+
+  it('falls back to the legacy window when every segment has text', () => {
+    const segments = makeSegments();
+    expect(getSidebarContextCueIndices(segments, 5)).toEqual(
+      getContextCueIndices(5, segments.length),
+    );
   });
 });
 
