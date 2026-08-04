@@ -188,15 +188,6 @@ export default function App() {
     [isLive, refreshLanguageCards],
   );
 
-  const handleSetCardMastered = useCallback(
-    async (cardId: string): Promise<void> => {
-      if (!isLive) return;
-      await corpusRepository.setCardMastered(cardId);
-      await refreshLanguageCards();
-    },
-    [isLive, refreshLanguageCards],
-  );
-
   const handleDeleteSnippet = useCallback(async (): Promise<void> => {
     if (!selectedSnippet || !isLive) return;
     await corpusRepository.deleteFragment(selectedSnippet.id);
@@ -287,10 +278,6 @@ export default function App() {
         cards={languageCards}
         snippets={snippets}
         contextWindowEnabled={contextWindowEnabled}
-        actionsEnabled={isLive}
-        onMarkCardMastered={(cardId) => {
-          void handleSetCardMastered(cardId);
-        }}
       />
     ) : (
       <SourceWorkspace

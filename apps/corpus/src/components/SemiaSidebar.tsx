@@ -390,9 +390,11 @@ function MyCardsPinnedButton({
       >
         <StudyCardsIcon className={isActive ? 'text-accent' : undefined} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold">Study cards</span>
+          <span className="block truncate text-[13px] font-semibold">
+            Learning cards
+          </span>
           <span className="block truncate text-[11px] text-text-muted">
-            Browse {count} saved card{count === 1 ? '' : 's'}
+            Browse {count} learning card{count === 1 ? '' : 's'}
           </span>
         </span>
         <span className="shrink-0 rounded-md border border-border bg-canvas px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-text-muted">
