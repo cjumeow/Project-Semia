@@ -24,7 +24,7 @@
   --color-accent: #4493d4;
   --color-accent-soft: #ebf5ff;
   --color-language-card: #1f57d1;
-  --color-context-collapsed: #f1f5f9;
+  --color-context-collapsed: #e2e8f0;
   --color-section-label: #0f172a;
 }
 
@@ -126,6 +126,10 @@ body {
   border-radius: 0.5rem;
   border: 1px solid var(--color-border);
   background: var(--color-context-collapsed);
+}
+
+.semia-context-body {
+  background: var(--color-surface);
 }
 
 .semia-snippet-badge {

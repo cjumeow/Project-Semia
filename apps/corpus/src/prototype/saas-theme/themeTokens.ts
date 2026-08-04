@@ -22,7 +22,7 @@ export const SAAS_THEME = {
     '--color-accent-soft': '#EBF5FF',
     '--proto-accent-press': '#3580C4',
     '--proto-language-card': '#1F57D1',
-    '--proto-context-collapsed': '#F1F5F9',
+    '--proto-context-collapsed': '#E2E8F0',
     '--proto-section-label': '#0F172A',
     '--proto-hover': 'rgba(15, 23, 42, 0.05)',
   },

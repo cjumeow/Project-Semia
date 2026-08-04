@@ -58,7 +58,7 @@ export function ThemeShell({
             label="Practice"
             count={3}
             icon={<PracticeIcon size={ICON_SIZE} />}
-            className="mt-2 border-t border-border pt-2"
+            className="mt-2"
           />
           <NavItem
             label="Snippets due"
@@ -75,7 +75,7 @@ export function ThemeShell({
             indent
           />
 
-          <div className="mt-2 border-t border-border pt-2">
+          <div className="mt-2">
             <button
               type="button"
               className={[

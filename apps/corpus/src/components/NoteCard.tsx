@@ -217,23 +217,23 @@ function ContextWindowSection({
         ) : null}
       </button>
       {loading ? (
-        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
+        <div className="semia-context-body px-4 py-3 text-sm text-text-muted">
           <TextDots>Generating</TextDots>
         </div>
       ) : expanded && hasContent ? (
-        <div className="border-t border-border px-4 py-3">
+        <div className="semia-context-body px-4 py-3">
           <BilingualBlock
             value={value}
             highlightSelection={highlightSelection}
           />
         </div>
       ) : !hasContent && !loading ? (
-        <div className="border-t border-border px-4 py-3 text-sm text-text-muted">
+        <div className="semia-context-body px-4 py-3 text-sm text-text-muted">
           Waiting for context window…
         </div>
       ) : null}
       {error ? (
-        <p className="border-t border-border px-4 py-3 text-sm text-red-700">
+        <p className="semia-context-body px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       ) : null}
@@ -310,12 +310,9 @@ function BilingualBlock({
         )}
       </p>
       {translation ? (
-        <>
-          <div className="border-t border-border" />
-          <p className="semia-field-zh m-0 text-text-secondary">
-            {translation}
-          </p>
-        </>
+        <p className="semia-field-zh m-0 text-text-secondary">
+          {translation}
+        </p>
       ) : null}
     </div>
   );

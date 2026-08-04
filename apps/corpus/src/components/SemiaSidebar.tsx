@@ -184,7 +184,7 @@ export function SemiaSidebar({
           label="Practice"
           count={dueCount + dueCardCount}
           ariaLabel="Practice"
-          className="mt-2 border-t border-border pt-2"
+          className="mt-2"
         />
 
         {reviewQueueExpanded ? (
@@ -377,7 +377,7 @@ function MyCardsPinnedButton({
   onClick: () => void;
 }) {
   return (
-    <div className="mt-2 border-t border-border pt-2">
+    <div className="mt-2">
       <button
         type="button"
         className={[
