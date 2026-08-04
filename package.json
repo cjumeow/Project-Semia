@@ -12,6 +12,8 @@
         "prototype:logo": "npm run dev -w @semia/corpus",
         "prototype:delete": "npm run dev -w @semia/corpus",
         "prototype:youtube-captions": "npm run dev -w @semia/corpus",
+        "prototype:sidebar-nav": "npm run dev -w @semia/corpus",
+        "prototype:saas-theme": "npm run dev -w @semia/corpus",
         "build:extension": "npm run build -w @semia/extension",
         "build:corpus": "npm run build -w @semia/corpus",
         "build": "npm run build:extension && npm run build:corpus && node scripts/assemble-extension.mjs",

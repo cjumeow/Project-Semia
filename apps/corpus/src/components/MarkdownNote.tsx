@@ -30,7 +30,7 @@ export function MarkdownNote({ markdown, saving = false, onSave }: MarkdownNoteP
 
   if (editing) {
     return (
-      <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+      <section className="rounded-xl border border-border bg-surface p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="semia-section-label">
             My notes

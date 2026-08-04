@@ -48,7 +48,7 @@ export function MyCardsWorkspace({
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
       <header className="shrink-0 border-b border-border bg-surface/80 px-5 py-4">
         <h2 className="font-display text-base font-semibold text-text">
-          My cards
+          Study cards
         </h2>
         <p className="mt-1 text-xs text-text-muted">
           {cards.length} language card{cards.length === 1 ? '' : 's'} across
@@ -131,7 +131,7 @@ export function MyCardsWorkspace({
                     ) : null}
                   </div>
                 </div>
-                <div className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
+                <div className="semia-note-card">
                   <LanguageCardView card={selectedCard} />
                 </div>
               </article>

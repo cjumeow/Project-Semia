@@ -377,7 +377,7 @@ export default function App() {
         <>
           <ResizeHandle onResizeStart={onDetailResizeStart} />
 
-          <div className="flex h-full shrink-0 border-l border-border bg-surface shadow-[inset_1px_0_0_rgba(28,25,23,0.04)]">
+          <div className="flex h-full shrink-0 border-l border-border bg-surface">
             <SnippetDetail
               snippet={selectedSnippet}
               width={detailWidth}

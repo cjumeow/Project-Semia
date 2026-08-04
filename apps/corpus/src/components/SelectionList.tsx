@@ -6,6 +6,7 @@ import {
   snippetSeekSeconds,
 } from '../utils/corpusGrouping';
 import { formatTimestamp } from '../utils/youtubeUrl';
+import { reviewScheduleBadgeClass } from '../utils/semiaUi';
 import { CardCountBadge } from './CardCountBadge';
 import { TriageStatusIcon } from './TriageStatusIcon';
 
@@ -145,12 +146,7 @@ function ReviewScheduleBadge({
 }) {
   return (
     <span
-      className={[
-        'shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums',
-        meta.emphasis === 'urgent'
-          ? 'bg-amber-100 text-amber-900'
-          : 'bg-canvas text-text-muted',
-      ].join(' ')}
+      className={reviewScheduleBadgeClass(meta.emphasis === 'urgent' ? 'urgent' : 'normal')}
     >
       {meta.relativeLabel}
     </span>

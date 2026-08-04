@@ -7,11 +7,11 @@ import {
   webGroups,
   youtubeGroups,
 } from '../utils/corpusGrouping';
-import { SemiaLogo } from './SemiaLogo';
 import {
   InboxIcon,
   LibraryIcon,
-  ReviewQueueIcon,
+  PracticeIcon,
+  StudyCardsIcon,
   WebIcon,
   YouTubeIcon,
 } from './SemiaNavIcons';
@@ -58,14 +58,7 @@ export function SemiaSidebar({
 
   return (
     <aside className="flex h-full flex-col bg-shelf">
-      <header className="shrink-0 border-b border-border/80 px-4 pb-4 pt-5">
-        <SemiaLogo size="md" />
-        <p className="mt-2 text-xs text-text-muted">
-          Snippets from your immersion
-        </p>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3 pt-3">
         <SidebarRow
           variant="section"
           expanded={inboxExpanded}
@@ -88,9 +81,9 @@ export function SemiaSidebar({
                   subtitle={`${sourceSubtitleForGroup(group)} · ${pendingCountForSourceGroup(group)} pending`}
                   icon={
                     group.meta.kind === 'youtube' ? (
-                      <YouTubeIcon size={14} />
+                      <YouTubeIcon size={15} />
                     ) : (
-                      <WebIcon size={14} />
+                      <WebIcon size={15} />
                     )
                   }
                   isActive={
@@ -180,31 +173,6 @@ export function SemiaSidebar({
                 ))
               )}
             </SidebarFolder>
-
-            <button
-              type="button"
-              className={[
-                rowBase,
-                rowHover,
-                'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
-                pane === 'my-cards'
-                  ? 'semia-margin-active text-accent shadow-sm'
-                  : 'text-text-secondary hover:text-text',
-              ].join(' ')}
-              onClick={onSelectMyCards}
-            >
-              <span className="truncate text-xs font-medium leading-snug">
-                My cards
-              </span>
-              <span
-                className={[
-                  'mt-0.5 truncate text-[10px] tabular-nums',
-                  pane === 'my-cards' ? 'text-accent/70' : 'text-text-muted',
-                ].join(' ')}
-              >
-                {myCardsCount} card{myCardsCount === 1 ? '' : 's'}
-              </span>
-            </button>
           </div>
         ) : null}
 
@@ -212,11 +180,11 @@ export function SemiaSidebar({
           variant="section"
           expanded={reviewQueueExpanded}
           onToggle={() => setReviewQueueExpanded((value) => !value)}
-          icon={<ReviewQueueIcon />}
-          label="Review Queue"
+          icon={<PracticeIcon />}
+          label="Practice"
           count={dueCount + dueCardCount}
-          ariaLabel="Review Queue"
-          className="mt-2"
+          ariaLabel="Practice"
+          className="mt-2 border-t border-border pt-2"
         />
 
         {reviewQueueExpanded ? (
@@ -228,7 +196,7 @@ export function SemiaSidebar({
                 rowHover,
                 'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
                 pane === 'review-queue'
-                  ? 'semia-margin-active text-accent shadow-sm'
+                  ? 'semia-margin-active text-accent'
                   : 'text-text-secondary hover:text-text',
               ].join(' ')}
               onClick={onSelectReviewQueue}
@@ -238,7 +206,7 @@ export function SemiaSidebar({
               </span>
               <span
                 className={[
-                  'mt-0.5 truncate text-[10px] tabular-nums',
+                  'mt-0.5 truncate text-[11px] tabular-nums',
                   pane === 'review-queue' ? 'text-accent/70' : 'text-text-muted',
                 ].join(' ')}
               >
@@ -252,7 +220,7 @@ export function SemiaSidebar({
                 rowHover,
                 'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
                 pane === 'card-review-queue'
-                  ? 'semia-margin-active text-accent shadow-sm'
+                  ? 'semia-margin-active text-accent'
                   : 'text-text-secondary hover:text-text',
               ].join(' ')}
               onClick={onSelectCardReviewQueue}
@@ -262,7 +230,7 @@ export function SemiaSidebar({
               </span>
               <span
                 className={[
-                  'mt-0.5 truncate text-[10px] tabular-nums',
+                  'mt-0.5 truncate text-[11px] tabular-nums',
                   pane === 'card-review-queue'
                     ? 'text-accent/70'
                     : 'text-text-muted',
@@ -273,6 +241,12 @@ export function SemiaSidebar({
             </button>
           </div>
         ) : null}
+
+        <MyCardsPinnedButton
+          count={myCardsCount}
+          isActive={pane === 'my-cards'}
+          onClick={onSelectMyCards}
+        />
       </div>
 
       <footer className="shrink-0 border-t border-border/60 px-4 py-2.5">
@@ -294,7 +268,7 @@ export function SemiaSidebar({
 const rowBase =
   'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-[background-color,color,box-shadow,border-color] duration-150';
 
-const rowHover = 'hover:bg-black/[0.04]';
+const rowHover = 'hover:bg-black/[0.05]';
 
 function SidebarRow({
   variant,
@@ -338,16 +312,16 @@ function SidebarRow({
         className={[
           'min-w-0 flex-1 truncate',
           isSection
-            ? 'text-xs font-medium text-text-muted'
+            ? 'semia-sidebar-section-label text-[13px]'
             : isFolder
-              ? 'text-xs font-medium text-text-secondary'
-              : 'text-xs font-medium',
+              ? 'text-[13px] font-medium text-text-secondary'
+              : 'text-[13px] font-medium',
         ].join(' ')}
       >
         {label}
       </span>
       {count !== undefined ? (
-        <span className="shrink-0 text-[10px] tabular-nums text-text-muted">
+        <span className="shrink-0 text-[11px] tabular-nums text-text-muted">
           {count}
         </span>
       ) : null}
@@ -393,6 +367,42 @@ function SidebarFolder({
   );
 }
 
+function MyCardsPinnedButton({
+  count,
+  isActive,
+  onClick,
+}: {
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="mt-2 border-t border-border pt-2">
+      <button
+        type="button"
+        className={[
+          'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
+          isActive
+            ? 'border-accent/40 bg-accent-soft text-accent'
+            : 'border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-canvas',
+        ].join(' ')}
+        onClick={onClick}
+      >
+        <StudyCardsIcon className={isActive ? 'text-accent' : undefined} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold">Study cards</span>
+          <span className="block truncate text-[11px] text-text-muted">
+            Browse {count} saved card{count === 1 ? '' : 's'}
+          </span>
+        </span>
+        <span className="shrink-0 rounded-md border border-border bg-canvas px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-text-muted">
+          {count}
+        </span>
+      </button>
+    </div>
+  );
+}
+
 function SourceButton({
   title,
   subtitle,
@@ -415,7 +425,7 @@ function SourceButton({
         rowHover,
         'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
         isActive
-          ? 'semia-margin-active text-accent shadow-sm'
+          ? 'semia-margin-active text-accent'
           : 'text-text-secondary hover:text-text',
       ].join(' ')}
       onClick={onClick}
@@ -426,11 +436,11 @@ function SourceButton({
             {icon}
           </span>
         ) : null}
-        <span className="truncate text-xs font-medium leading-snug">{title}</span>
+        <span className="truncate text-[13px] font-medium leading-snug">{title}</span>
       </span>
       <span
         className={[
-          'mt-0.5 truncate text-[10px] tabular-nums',
+          'mt-0.5 truncate text-[11px] tabular-nums',
           icon ? 'pl-5' : '',
           isActive ? 'text-accent/70' : 'text-text-muted',
         ].join(' ')}

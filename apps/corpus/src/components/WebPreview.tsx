@@ -66,7 +66,7 @@ export function WebPreview({ snippet }: WebPreviewProps) {
   );
 
   return (
-    <div className="mx-auto w-[85%] overflow-hidden rounded-xl border border-border bg-surface shadow-[0_2px_8px_rgba(28,25,23,0.06)]">
+    <div className="mx-auto w-[85%] overflow-hidden rounded-xl border border-border bg-surface">
       <div className="p-5">
         <div className="flex items-start gap-4">
           {icon ? (

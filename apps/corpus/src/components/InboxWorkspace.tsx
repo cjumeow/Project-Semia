@@ -42,7 +42,6 @@ export function InboxWorkspace({
           selectedSnippetId={selectedSnippetId}
           onSelectSnippet={onSelectSnippet}
           showSourceSubtitle
-          showStatusIcon
           inlineTriage={
             triageEnabled
               ? {

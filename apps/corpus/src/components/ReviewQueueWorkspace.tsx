@@ -50,7 +50,7 @@ export function ReviewQueueWorkspace({
     return (
       <section className="flex min-h-0 min-w-0 flex-1 items-center justify-center bg-canvas px-6">
         <p className="text-center text-sm text-text-muted">
-          Nothing due in your Review Queue — check back later.
+          Nothing due in Practice — check back later.
         </p>
       </section>
     );
@@ -60,7 +60,7 @@ export function ReviewQueueWorkspace({
     return (
       <section className="flex min-h-0 min-w-0 flex-1 items-center justify-center bg-canvas px-6">
         <p className="text-center text-sm text-text-muted">
-          Select a due snippet from Review Queue.
+          Select a due snippet from Practice.
         </p>
       </section>
     );

@@ -38,7 +38,7 @@ export function LanguageCardReviewWorkspace({
     return (
       <section className="flex min-h-0 min-w-0 flex-1 items-center justify-center bg-canvas px-6">
         <p className="text-center text-sm text-text-muted">
-          Select a due language card from Review Queue.
+          Select a due language card from Practice.
         </p>
       </section>
     );
@@ -75,7 +75,7 @@ export function LanguageCardReviewWorkspace({
           <p className="mt-2 text-center text-xs text-text-muted">
             {selectedCard.focusText}
           </p>
-          <div className="mt-6 rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
+          <div className="mt-6 semia-note-card">
             <LanguageCardView card={selectedCard} />
           </div>
         </div>

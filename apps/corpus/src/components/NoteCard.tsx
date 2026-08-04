@@ -1,6 +1,7 @@
 import { effectiveSnippetUnitType } from '@semia/shared';
 import { useEffect, useState } from 'react';
 import type { SnippetNote } from '../types/corpus';
+import { cardCountBadgeClass } from '../utils/semiaUi';
 import { HighlightSelection } from './HighlightSelection';
 import { TextDots } from './TextDots';
 import { TriageStatusIcon } from './TriageStatusIcon';
@@ -56,17 +57,18 @@ export function NoteCard({
   const showToolbar = showLanguageCardRow || onMarkMastered || showCardCount;
 
   return (
-    <article className="rounded-xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
+    <article className="semia-note-card">
       {showToolbar ? (
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0 pt-0.5">
             {showLanguageCardRow ? (
               <button
                 type="button"
-                className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent-soft/80"
+                className="semia-language-card-btn"
                 onClick={onCreateLanguageCard}
               >
-                + Language card
+                <LanguageCardIcon />
+                Language card
               </button>
             ) : null}
           </div>
@@ -76,13 +78,13 @@ export function NoteCard({
                 onOpenLanguageCards ? (
                   <button
                     type="button"
-                    className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-accent underline-offset-2 hover:underline"
+                    className={`${cardCountBadgeClass()} underline-offset-2 hover:underline`}
                     onClick={onOpenLanguageCards}
                   >
                     {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
                   </button>
                 ) : (
-                  <span className="rounded-md bg-canvas px-2 py-1 font-mono text-[10px] tabular-nums text-text-muted">
+                  <span className={cardCountBadgeClass()}>
                     {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
                   </span>
                 )
@@ -90,7 +92,7 @@ export function NoteCard({
               {onMarkMastered ? (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary shadow-sm transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-secondary transition-colors hover:border-emerald-600/30 hover:bg-emerald-50 hover:text-emerald-800"
                   aria-label="Mark as mastered"
                   title="Mark as mastered"
                   onClick={onMarkMastered}
@@ -192,12 +194,12 @@ function ContextWindowSection({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-canvas/50">
+    <div className="semia-context-collapsed">
       <button
         type="button"
         className={[
           'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
-          hasContent ? 'hover:bg-canvas/80' : 'cursor-default',
+          hasContent ? 'hover:bg-black/[0.03]' : 'cursor-default',
         ].join(' ')}
         onClick={() => {
           if (hasContent) {
@@ -316,5 +318,25 @@ function BilingualBlock({
         </>
       ) : null}
     </div>
+  );
+}
+
+function LanguageCardIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="size-5 shrink-0"
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802"
+      />
+    </svg>
   );
 }

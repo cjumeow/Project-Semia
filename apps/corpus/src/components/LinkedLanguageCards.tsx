@@ -30,7 +30,7 @@ export function LinkedLanguageCards({
           <li key={card.id}>
             <button
               type="button"
-              className="w-full rounded-xl border border-border bg-surface p-4 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-colors hover:border-accent/30 hover:bg-accent-soft/20"
+              className="w-full rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent/30 hover:bg-accent-soft/20"
               onClick={() => onPreviewCard(card)}
             >
               <p className="font-reading text-sm font-semibold text-text">

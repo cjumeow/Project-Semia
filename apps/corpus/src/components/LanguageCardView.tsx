@@ -1,18 +1,19 @@
 import type { CardIntent, LanguageCard, LanguageCardExample } from '@semia/shared';
+import type { ReactNode } from 'react';
+import { groupExamplesByKind, intentChipClass } from '../utils/semiaUi';
 
 type LanguageCardViewProps = {
   card: LanguageCard;
 };
 
 export function LanguageCardView({ card }: LanguageCardViewProps) {
+  const { speaking, writing } = groupExamplesByKind(card.examples);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-1.5">
         {card.intents.map((intent) => (
-          <span
-            key={intent}
-            className="rounded-md bg-accent-soft px-2 py-0.5 font-mono text-[10px] uppercase text-accent"
-          >
+          <span key={intent} className={intentChipClass(intent)}>
             {intentLabel(intent)}
           </span>
         ))}
@@ -25,38 +26,68 @@ export function LanguageCardView({ card }: LanguageCardViewProps) {
       {card.examples.length > 0 ? (
         <div>
           <p className="semia-section-label">Examples</p>
-          <ul className="mt-2 flex flex-col gap-2">
-            {card.examples.map((example) => (
-              <ExampleBlock key={`${example.kind}-${example.text}`} example={example} />
-            ))}
-          </ul>
+          <div className="mt-2 flex flex-col gap-2">
+            {renderExampleSections(card.intents, speaking, writing)}
+          </div>
         </div>
       ) : null}
     </div>
   );
 }
 
-function ExampleBlock({ example }: { example: LanguageCardExample }) {
-  const surfaceClass =
-    example.kind === 'speaking'
-      ? 'border-accent/25 bg-accent-soft/70'
-      : 'border-border bg-canvas';
+function renderExampleSections(
+  intents: CardIntent[],
+  speaking: LanguageCardExample[],
+  writing: LanguageCardExample[],
+): ReactNode[] {
+  const sections: ReactNode[] = [];
+  const seen = new Set<CardIntent>();
 
+  for (const intent of intents) {
+    if (seen.has(intent)) continue;
+    seen.add(intent);
+
+    if (intent === 'speaking' && speaking.length > 0) {
+      sections.push(<SpeakingExampleBlock key="speaking" examples={speaking} />);
+    } else if (intent === 'writing') {
+      for (const example of writing) {
+        sections.push(
+          <WritingExampleBlock key={`${example.kind}-${example.text}`} example={example} />,
+        );
+      }
+    }
+  }
+
+  return sections;
+}
+
+function SpeakingExampleBlock({ examples }: { examples: LanguageCardExample[] }) {
   return (
-    <li
-      className={[
-        'rounded-lg border px-3.5 py-3',
-        surfaceClass,
-      ].join(' ')}
-    >
-      <p className="semia-section-label">{intentLabel(example.kind)}</p>
+    <div className="semia-example-block">
+      <p className="text-xs font-medium text-text-secondary">Speaking</p>
+      <ul className="semia-example-list">
+        {examples.map((example) => (
+          <li key={example.text}>
+            <p>{example.text}</p>
+            {example.translation ? (
+              <p className="semia-field-zh semia-example-zh">{example.translation}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function WritingExampleBlock({ example }: { example: LanguageCardExample }) {
+  return (
+    <div className="semia-example-block">
+      <p className="text-xs font-medium text-text-secondary">{intentLabel(example.kind)}</p>
       <p className="mt-2 text-sm leading-relaxed text-text">{example.text}</p>
       {example.translation ? (
-        <p className="semia-field-zh mt-2 text-text-secondary">
-          {example.translation}
-        </p>
+        <p className="semia-field-zh semia-example-zh">{example.translation}</p>
       ) : null}
-    </li>
+    </div>
   );
 }
 
