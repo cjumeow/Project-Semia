@@ -25,7 +25,18 @@ function AssistantChatMarkdown({
 
   return (
     <div className="prose-chat text-sm leading-snug text-text">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table: ({ children }) => (
+            <div className="prose-chat-table-wrap">
+              <table>{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
       {message.streaming ? (
         <span
           aria-hidden
