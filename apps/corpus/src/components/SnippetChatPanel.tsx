@@ -1,5 +1,7 @@
 import { SNIPPET_CHAT_SUGGESTED_PROMPTS } from '@semia/shared';
 import { useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { TextDots } from './TextDots';
 import type { UseSnippetChatResult } from '../hooks/useSnippetChat';
 
@@ -27,10 +29,10 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
         </div>
         <button
           type="button"
-          className="shrink-0 text-xs text-text-muted hover:text-text"
+          className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs text-text-secondary transition-colors hover:bg-canvas hover:text-text"
           onClick={onClose}
         >
-          Close
+          Close chat
         </button>
       </header>
 
@@ -53,7 +55,15 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
                     : 'bg-canvas text-text',
                 ].join(' ')}
               >
-                {message.content}
+                {message.role === 'user' ? (
+                  message.content
+                ) : (
+                  <div className="prose-note text-sm leading-relaxed text-text">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -117,24 +127,14 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
   );
 }
 
-type SnippetChatFabProps = {
-  open: boolean;
-  onClick: () => void;
-};
-
-export function SnippetChatFab({ open, onClick }: SnippetChatFabProps) {
+export function SnippetChatFab({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className={[
-        'absolute bottom-5 right-5 z-20 flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-lg transition-colors',
-        open
-          ? 'border border-border bg-surface text-text-secondary hover:text-text'
-          : 'bg-accent text-white hover:bg-accent/90',
-      ].join(' ')}
+      className="absolute bottom-5 right-5 z-20 flex h-11 items-center gap-2 rounded-full bg-accent px-4 text-sm font-medium text-white shadow-lg transition-colors hover:bg-accent/90"
       onClick={onClick}
     >
-      {open ? 'Close chat' : 'AI assistant'}
+      AI assistant
     </button>
   );
 }
