@@ -15,7 +15,7 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chat.activeMessages.length, chat.sending]);
+  }, [chat.activeMessages, chat.sending]);
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-surface">
@@ -57,6 +57,12 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
               >
                 {message.role === 'user' ? (
                   message.content
+                ) : message.streaming ? (
+                  message.content || (
+                    <span className="text-text-muted">
+                      <TextDots>Thinking</TextDots>
+                    </span>
+                  )
                 ) : (
                   <div className="prose-note text-sm leading-relaxed text-text">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -68,11 +74,6 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
             ))}
           </ul>
         )}
-        {chat.sending ? (
-          <p className="mt-3 text-sm text-text-muted">
-            <TextDots>Thinking</TextDots>
-          </p>
-        ) : null}
         <div ref={bottomRef} />
       </div>
 

@@ -1,9 +1,24 @@
+import type { LanguageFragment } from './types';
+
 export const SNIPPET_CHAT_GENERAL_THREAD_KEY = '__general__';
+export const SNIPPET_CHAT_PORT_NAME = 'semia-snippet-chat';
 
 export type SnippetChatTurn = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+export type SnippetChatPortStart = {
+  type: 'start';
+  fragment?: LanguageFragment;
+  history: SnippetChatTurn[];
+  userMessage: string;
+};
+
+export type SnippetChatPortMessage =
+  | { type: 'chunk'; delta: string }
+  | { type: 'done' }
+  | { type: 'error'; error: string };
 
 export function resolveSnippetChatThreadKey(
   fragmentId: string | null | undefined,

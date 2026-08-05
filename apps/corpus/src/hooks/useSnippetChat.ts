@@ -9,6 +9,7 @@ import type { CorpusSnippet } from '../types/corpus';
 
 export type SnippetChatMessage = SnippetChatTurn & {
   id: string;
+  streaming?: boolean;
 };
 
 function nextMessageId(): string {
@@ -48,10 +49,19 @@ export function useSnippetChat({
         role: 'user',
         content: trimmed,
       };
+      const assistantMessageId = nextMessageId();
+      const assistantMessage: SnippetChatMessage = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        streaming: true,
+      };
+
+      const history = toTurns(messagesByThread[threadKey] ?? []);
 
       setMessagesByThread((prev) => ({
         ...prev,
-        [threadKey]: [...(prev[threadKey] ?? []), userMessage],
+        [threadKey]: [...(prev[threadKey] ?? []), userMessage, assistantMessage],
       }));
       setDraft('');
       setError(null);
@@ -62,26 +72,45 @@ export function useSnippetChat({
           throw new Error('AI chat requires the Chrome extension.');
         }
 
-        const reply = await corpusRepository.sendSnippetChat({
-          fragment: chatSnippet ?? undefined,
-          history: toTurns(messagesByThread[threadKey] ?? []),
-          userMessage: trimmed,
-        });
-
-        const assistantMessage: SnippetChatMessage = {
-          id: nextMessageId(),
-          role: 'assistant',
-          content: reply,
-        };
-
-        setMessagesByThread((prev) => ({
-          ...prev,
-          [threadKey]: [...(prev[threadKey] ?? []), assistantMessage],
-        }));
+        await corpusRepository.streamSnippetChat(
+          {
+            fragment: chatSnippet ?? undefined,
+            history,
+            userMessage: trimmed,
+          },
+          {
+            onChunk: (delta) => {
+              setMessagesByThread((prev) => ({
+                ...prev,
+                [threadKey]: (prev[threadKey] ?? []).map((message) =>
+                  message.id === assistantMessageId
+                    ? { ...message, content: message.content + delta }
+                    : message,
+                ),
+              }));
+            },
+            onDone: () => {
+              setMessagesByThread((prev) => ({
+                ...prev,
+                [threadKey]: (prev[threadKey] ?? []).map((message) =>
+                  message.id === assistantMessageId
+                    ? { ...message, streaming: false }
+                    : message,
+                ),
+              }));
+            },
+          },
+        );
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to send chat message.';
         setError(message);
+        setMessagesByThread((prev) => ({
+          ...prev,
+          [threadKey]: (prev[threadKey] ?? []).filter(
+            (entry) => entry.id !== assistantMessageId,
+          ),
+        }));
       } finally {
         setSending(false);
       }

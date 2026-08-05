@@ -1,14 +1,19 @@
 import type { LanguageFragment, SnippetChatTurn } from '@semia/shared';
 import { buildSnippetChatSystemPrompt } from './buildSnippetChatPrompt';
-import { completeChatMessages } from './chatCompletion';
+import { completeChatMessages, streamChatMessages } from './chatCompletion';
 import { getSemiaSettings } from '../semiaSettings';
 import { getSnippetNote } from '../snippetNotesStorage';
 
-export async function sendSnippetChat(input: {
+type ChatMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
+async function buildSnippetChatRequestMessages(input: {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
-}): Promise<string> {
+}): Promise<ChatMessage[]> {
   const trimmed = input.userMessage.trim();
   if (!trimmed) {
     throw new Error('Message cannot be empty.');
@@ -26,12 +31,34 @@ export async function sendSnippetChat(input: {
     nativeLanguage,
   });
 
-  return completeChatMessages([
+  return [
     { role: 'system', content: system },
     ...input.history.map((turn) => ({
       role: turn.role,
       content: turn.content,
     })),
     { role: 'user', content: trimmed },
-  ]);
+  ];
+}
+
+export async function sendSnippetChat(input: {
+  fragment?: LanguageFragment;
+  history: SnippetChatTurn[];
+  userMessage: string;
+}): Promise<string> {
+  const messages = await buildSnippetChatRequestMessages(input);
+  return completeChatMessages(messages);
+}
+
+export async function streamSnippetChat(
+  input: {
+    fragment?: LanguageFragment;
+    history: SnippetChatTurn[];
+    userMessage: string;
+  },
+  onDelta: (delta: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const messages = await buildSnippetChatRequestMessages(input);
+  await streamChatMessages(messages, onDelta, signal);
 }
