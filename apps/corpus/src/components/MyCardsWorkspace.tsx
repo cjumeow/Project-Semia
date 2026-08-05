@@ -5,25 +5,13 @@ import type { CorpusSnippet } from '../types/corpus';
 import { browseLearningCards } from '../utils/learningCardBrowse';
 import { LanguageCardDetailModal } from './LinkedLanguageCards';
 import { SourceSnipModal } from './SourceSnipModal';
+import { TriageStatusIcon } from './TriageStatusIcon';
 
 type MyCardsWorkspaceProps = {
   cards: LanguageCard[];
   snippets: CorpusSnippet[];
   contextWindowEnabled: boolean;
 };
-
-function CardStatusDot({ card }: { card: LanguageCard }) {
-  const status = effectiveCardTriageStatus(card);
-  const tone = status === 'mastered' ? 'bg-emerald-500' : 'bg-accent';
-  const label = status === 'mastered' ? 'Mastered' : 'In practice';
-  return (
-    <span
-      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${tone}`}
-      role="img"
-      aria-label={label}
-    />
-  );
-}
 
 function LearningCardTile({
   card,
@@ -32,19 +20,21 @@ function LearningCardTile({
   card: LanguageCard;
   onSelect: () => void;
 }) {
+  const status = effectiveCardTriageStatus(card);
+
   return (
     <button
       type="button"
-      className="flex h-full min-h-[5.5rem] w-full flex-col rounded-xl border-2 border-border-strong bg-surface p-4 text-left transition-colors hover:border-accent/40 hover:bg-white"
+      className="relative flex h-full w-full min-w-0 flex-col overflow-x-hidden rounded-xl border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:border-border-strong hover:bg-white"
       onClick={onSelect}
     >
-      <div className="mb-2 flex items-center gap-2">
-        <CardStatusDot card={card} />
-        <span className="font-reading text-base font-semibold leading-tight text-text">
-          {card.focus}
-        </span>
-      </div>
-      <span className="semia-field-zh line-clamp-2 text-sm text-text-secondary">
+      <span className="absolute right-2 top-2">
+        <TriageStatusIcon status={status} size={11} />
+      </span>
+      <span className="block min-w-0 overflow-x-hidden text-ellipsis whitespace-nowrap pr-4 font-reading text-sm font-normal leading-normal text-text">
+        {card.focus}
+      </span>
+      <span className="semia-field-zh mt-0.5 block min-w-0 overflow-x-hidden text-ellipsis whitespace-nowrap text-[11px] leading-normal text-text-secondary">
         {card.meaning}
       </span>
     </button>
@@ -122,7 +112,7 @@ export function MyCardsWorkspace({
             role="list"
           >
             {visibleCards.map((card) => (
-              <li key={card.id} className="min-h-[5.5rem]">
+              <li key={card.id} className="h-[4.25rem] min-w-0">
                 <LearningCardTile
                   card={card}
                   onSelect={() => setSelectedCardId(card.id)}
