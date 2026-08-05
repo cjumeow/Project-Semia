@@ -1,9 +1,43 @@
+import type { LanguageFragment } from './types';
+
 export const SNIPPET_CHAT_GENERAL_THREAD_KEY = '__general__';
+export const SNIPPET_CHAT_PORT_NAME = 'semia-snippet-chat';
 
 export type SnippetChatTurn = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+export type SnippetChatPortStart = {
+  type: 'start';
+  fragment?: LanguageFragment;
+  history: SnippetChatTurn[];
+  userMessage: string;
+};
+
+export type SnippetChatPortMessage =
+  | { type: 'chunk'; delta: string }
+  | { type: 'done' }
+  | { type: 'error'; error: string };
+
+export class SnippetChatAbortedError extends Error {
+  constructor() {
+    super('Snippet chat aborted');
+    this.name = 'SnippetChatAbortedError';
+  }
+}
+
+export function isSnippetChatAbortedError(error: unknown): boolean {
+  return error instanceof SnippetChatAbortedError;
+}
+
+export function finalizeStreamingAssistantMessages<
+  T extends SnippetChatTurn & { streaming?: boolean },
+>(messages: T[]): T[] {
+  return messages.map((message) =>
+    message.streaming ? { ...message, streaming: false } : message,
+  );
+}
 
 export function resolveSnippetChatThreadKey(
   fragmentId: string | null | undefined,

@@ -10,13 +10,17 @@ import {
 import {
   InboxIcon,
   LibraryIcon,
+  ListCollapseIcon,
   PracticeIcon,
+  SettingsIcon,
   StudyCardsIcon,
   WebIcon,
   YouTubeIcon,
 } from './SemiaNavIcons';
 
 type SemiaSidebarProps = {
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   pane: CorpusPane;
   inboxGroups: SourceGroup[];
   libraryGroups: SourceGroup[];
@@ -33,6 +37,8 @@ type SemiaSidebarProps = {
 };
 
 export function SemiaSidebar({
+  collapsed,
+  onToggleCollapsed,
   pane,
   inboxGroups,
   libraryGroups,
@@ -56,8 +62,52 @@ export function SemiaSidebar({
   const youtube = youtubeGroups(libraryGroups);
   const web = webGroups(libraryGroups);
 
+  const expandIfCollapsed = (action: () => void) => {
+    if (collapsed) {
+      onToggleCollapsed();
+    }
+    action();
+  };
+
   return (
     <aside className="flex h-full flex-col bg-shelf">
+      <header
+        className={[
+          'flex shrink-0 items-center border-b border-border/60',
+          collapsed ? 'justify-center px-2 py-2.5' : 'justify-between px-2 py-2',
+        ].join(' ')}
+      >
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-canvas hover:text-text"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!collapsed}
+        >
+          <ListCollapseIcon
+            size={18}
+            className={[
+              'text-text-secondary transition-transform duration-200',
+              collapsed ? 'rotate-180' : '',
+            ].join(' ')}
+          />
+        </button>
+      </header>
+
+      {collapsed ? (
+        <CollapsedSidebarRail
+          pane={pane}
+          dueCount={dueCount}
+          dueCardCount={dueCardCount}
+          myCardsCount={myCardsCount}
+          onSelectInbox={() => expandIfCollapsed(() => setInboxExpanded(true))}
+          onSelectLibrary={() => expandIfCollapsed(() => setLibraryExpanded(true))}
+          onSelectPractice={() => expandIfCollapsed(() => setReviewQueueExpanded(true))}
+          onSelectMyCards={() => expandIfCollapsed(onSelectMyCards)}
+          onOpenSettings={() => expandIfCollapsed(onOpenSettings)}
+        />
+      ) : (
+        <>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3 pt-3">
         <SidebarRow
           variant="section"
@@ -261,6 +311,8 @@ export function SemiaSidebar({
           <p className="font-mono text-[10px] text-text-muted">{SEMIA_BUILD_ID}</p>
         </div>
       </footer>
+        </>
+      )}
     </aside>
   );
 }
@@ -269,6 +321,111 @@ const rowBase =
   'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-[background-color,color,box-shadow,border-color] duration-150';
 
 const rowHover = 'hover:bg-black/[0.05]';
+
+function CollapsedSidebarRail({
+  pane,
+  dueCount,
+  dueCardCount,
+  myCardsCount,
+  onSelectInbox,
+  onSelectLibrary,
+  onSelectPractice,
+  onSelectMyCards,
+  onOpenSettings,
+}: {
+  pane: CorpusPane;
+  dueCount: number;
+  dueCardCount: number;
+  myCardsCount: number;
+  onSelectInbox: () => void;
+  onSelectLibrary: () => void;
+  onSelectPractice: () => void;
+  onSelectMyCards: () => void;
+  onOpenSettings: () => void;
+}) {
+  const practiceCount = dueCount + dueCardCount;
+
+  return (
+    <>
+      <nav
+        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-2 py-3"
+        aria-label="Sidebar"
+      >
+        <CollapsedNavButton
+          label="Inbox"
+          isActive={pane === 'inbox'}
+          onClick={onSelectInbox}
+          icon={<InboxIcon size={16} />}
+        />
+        <CollapsedNavButton
+          label="Library"
+          isActive={pane === 'library'}
+          onClick={onSelectLibrary}
+          icon={<LibraryIcon size={16} />}
+        />
+        <CollapsedNavButton
+          label="Practice"
+          isActive={pane === 'review-queue' || pane === 'card-review-queue'}
+          onClick={onSelectPractice}
+          icon={<PracticeIcon size={16} />}
+          badge={practiceCount > 0 ? practiceCount : undefined}
+        />
+        <CollapsedNavButton
+          label="Learning cards"
+          isActive={pane === 'my-cards'}
+          onClick={onSelectMyCards}
+          icon={<StudyCardsIcon size={16} />}
+          badge={myCardsCount > 0 ? myCardsCount : undefined}
+        />
+      </nav>
+
+      <footer className="flex shrink-0 justify-center border-t border-border/60 py-2.5">
+        <CollapsedNavButton
+          label="Settings"
+          isActive={false}
+          onClick={onOpenSettings}
+          icon={<SettingsIcon size={16} />}
+        />
+      </footer>
+    </>
+  );
+}
+
+function CollapsedNavButton({
+  label,
+  icon,
+  isActive,
+  badge,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  isActive: boolean;
+  badge?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      className={[
+        'relative flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+        isActive
+          ? 'bg-accent-soft text-accent'
+          : 'text-text-secondary hover:bg-canvas hover:text-text',
+      ].join(' ')}
+      onClick={onClick}
+    >
+      {icon}
+      {badge !== undefined ? (
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold tabular-nums text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
 
 function SidebarRow({
   variant,

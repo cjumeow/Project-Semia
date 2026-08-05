@@ -2,6 +2,7 @@ import { handleBackgroundMessage } from './background/messageRouter';
 import {
   onFragmentsStorageChanged,
 } from './background/fragmentPipeline';
+import { handleSnippetChatPortConnection } from './background/snippetChatPort';
 import {
   bootstrapTranscriptPipeline,
   onTranscriptsStorageChanged,
@@ -34,6 +35,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 bootstrapTranscriptPipeline();
+
+chrome.runtime.onConnect.addListener((port) => {
+  handleSnippetChatPortConnection(port);
+});
 
 chrome.runtime.onMessage.addListener(
   (message: BackgroundMessage, sender, sendResponse) => {

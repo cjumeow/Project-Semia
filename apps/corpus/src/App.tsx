@@ -31,6 +31,9 @@ import { useSnippetChat } from './hooks/useSnippetChat';
 import { WorkspaceWithChat } from './components/WorkspaceWithChat';
 import { isEditableTarget } from './utils/isEditableTarget';
 
+const SIDEBAR_COLLAPSED_KEY = 'semia-sidebar-collapsed';
+const SIDEBAR_COLLAPSED_WIDTH = 52;
+
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createCardOpen, setCreateCardOpen] = useState(false);
@@ -86,6 +89,19 @@ export default function App() {
     contextWindowEnabled,
   );
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((current) => !current);
+  }, []);
+
   const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
     useResizableWidth({
       min: 160,
@@ -103,6 +119,10 @@ export default function App() {
       storageKey: 'semia-detail-width',
       edge: 'start',
     });
+
+  const effectiveSidebarWidth = sidebarCollapsed
+    ? SIDEBAR_COLLAPSED_WIDTH
+    : sidebarWidth;
 
   const showEmpty = !loading && !error && groups.length === 0;
 
@@ -312,10 +332,12 @@ export default function App() {
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
-        className="flex h-full shrink-0 flex-col border-r border-border bg-shelf"
-        style={{ width: sidebarWidth }}
+        className="flex h-full shrink-0 flex-col border-r border-border bg-shelf transition-[width] duration-200 ease-out"
+        style={{ width: effectiveSidebarWidth }}
       >
         <SemiaSidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebarCollapsed}
           pane={selection.pane}
           inboxGroups={inboxSourceGroups}
           libraryGroups={librarySourceGroups}
@@ -332,7 +354,9 @@ export default function App() {
         />
       </div>
 
-      <ResizeHandle onResizeStart={onSidebarResizeStart} />
+      {!sidebarCollapsed ? (
+        <ResizeHandle onResizeStart={onSidebarResizeStart} />
+      ) : null}
 
       {loading ? (
         <section className="flex flex-1 items-center justify-center bg-canvas">

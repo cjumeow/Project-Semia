@@ -1,21 +1,60 @@
 import { SNIPPET_CHAT_SUGGESTED_PROMPTS } from '@semia/shared';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { TextDots } from './TextDots';
-import type { UseSnippetChatResult } from '../hooks/useSnippetChat';
+import type { SnippetChatMessage, UseSnippetChatResult } from '../hooks/useSnippetChat';
 
 type SnippetChatPanelProps = {
   chat: UseSnippetChatResult;
   onClose: () => void;
 };
 
-export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+function AssistantChatMarkdown({
+  message,
+}: {
+  message: SnippetChatMessage;
+}) {
+  if (!message.content && message.streaming) {
+    return (
+      <span className="text-text-muted">
+        <TextDots>Thinking</TextDots>
+      </span>
+    );
+  }
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chat.activeMessages.length, chat.sending]);
+  return (
+    <div className="prose-chat text-sm leading-snug text-text">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table: ({ children }) => (
+            <div className="prose-chat-table-wrap">
+              <table>{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+      {message.streaming ? (
+        <span
+          aria-hidden
+          className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-text-muted align-[-0.1em]"
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [chat.threadKey]);
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-surface">
@@ -36,7 +75,7 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {chat.activeMessages.length === 0 ? (
           <p className="text-sm text-text-muted">
             {chat.hasSnippetContext
@@ -49,31 +88,21 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
               <li
                 key={message.id}
                 className={[
-                  'max-w-[92%] rounded-xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+                  'max-w-[92%] rounded-xl px-3 py-2 text-sm',
                   message.role === 'user'
-                    ? 'ml-auto bg-accent text-white'
+                    ? 'ml-auto whitespace-pre-wrap bg-accent leading-relaxed text-white'
                     : 'bg-canvas text-text',
                 ].join(' ')}
               >
                 {message.role === 'user' ? (
                   message.content
                 ) : (
-                  <div className="prose-note text-sm leading-relaxed text-text">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
+                  <AssistantChatMarkdown message={message} />
                 )}
               </li>
             ))}
           </ul>
         )}
-        {chat.sending ? (
-          <p className="mt-3 text-sm text-text-muted">
-            <TextDots>Thinking</TextDots>
-          </p>
-        ) : null}
-        <div ref={bottomRef} />
       </div>
 
       {chat.error ? (

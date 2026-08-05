@@ -2,6 +2,7 @@ import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
   LANGUAGE_CARDS_STORAGE_KEY,
+  SNIPPET_CHAT_PORT_NAME,
   SNIPPET_NOTES_STORAGE_KEY,
   TRANSCRIPTS_STORAGE_KEY,
   WEB_RESTORE_STATUS_STORAGE_KEY,
@@ -11,11 +12,14 @@ import {
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
+  type SnippetChatPortMessage,
+  type SnippetChatPortStart,
   type SnippetChatTurn,
   type SnippetTriageStatus,
   type StoredTranscript,
   type WebRestoreStatus,
   type WebRestoreStatusMap,
+  SnippetChatAbortedError,
   normalizeFragments,
   normalizeLanguageCard,
 } from '@semia/shared';
@@ -38,6 +42,15 @@ export type SnippetChatRequest = {
   userMessage: string;
 };
 
+export type SnippetChatStreamHandlers = {
+  onChunk: (delta: string) => void;
+  onDone: () => void;
+};
+
+export type SnippetChatStreamOptions = {
+  signal?: AbortSignal;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -48,6 +61,11 @@ export interface CorpusRepository {
   getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
   createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
   sendSnippetChat(request: SnippetChatRequest): Promise<string>;
+  streamSnippetChat(
+    request: SnippetChatRequest,
+    handlers: SnippetChatStreamHandlers,
+    options?: SnippetChatStreamOptions,
+  ): Promise<void>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -187,20 +205,101 @@ class ChromeCorpusRepository implements CorpusRepository {
   }
 
   async sendSnippetChat(request: SnippetChatRequest): Promise<string> {
-    const response = (await chrome.runtime.sendMessage({
-      type: 'SNIPPET_CHAT',
-      fragment: request.fragment,
-      history: request.history,
-      userMessage: request.userMessage,
-    })) as OkResponse<{ reply: string }> | ErrResponse | undefined;
+    let reply = '';
+    await this.streamSnippetChat(request, {
+      onChunk: (delta) => {
+        reply += delta;
+      },
+      onDone: () => {},
+    });
+    if (!reply) {
+      throw new Error('AI returned an empty response.');
+    }
+    return reply;
+  }
 
-    if (response?.ok && response.reply) {
-      return response.reply;
+  async streamSnippetChat(
+    request: SnippetChatRequest,
+    handlers: SnippetChatStreamHandlers,
+    options?: SnippetChatStreamOptions,
+  ): Promise<void> {
+    if (options?.signal?.aborted) {
+      throw new SnippetChatAbortedError();
     }
 
-    const message =
-      response && !response.ok ? response.error : 'Failed to send chat message.';
-    throw new Error(message);
+    const port = chrome.runtime.connect({ name: SNIPPET_CHAT_PORT_NAME });
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        port.onMessage.removeListener(onMessage);
+        port.onDisconnect.removeListener(onDisconnect);
+        options?.signal?.removeEventListener('abort', onAbort);
+      };
+
+      const finishAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        port.disconnect();
+        reject(new SnippetChatAbortedError());
+      };
+
+      const onAbort = () => {
+        finishAbort();
+      };
+
+      const onMessage = (message: SnippetChatPortMessage) => {
+        if (message.type === 'chunk') {
+          handlers.onChunk(message.delta);
+          return;
+        }
+
+        if (message.type === 'done') {
+          settled = true;
+          cleanup();
+          handlers.onDone();
+          port.disconnect();
+          resolve();
+          return;
+        }
+
+        if (message.type === 'error') {
+          settled = true;
+          cleanup();
+          port.disconnect();
+          reject(new Error(message.error));
+        }
+      };
+
+      const onDisconnect = () => {
+        cleanup();
+        if (settled) return;
+        if (options?.signal?.aborted) {
+          reject(new SnippetChatAbortedError());
+          return;
+        }
+        const disconnectError = chrome.runtime.lastError?.message;
+        reject(
+          new Error(
+            disconnectError ?? 'Snippet chat connection closed unexpectedly.',
+          ),
+        );
+      };
+
+      port.onMessage.addListener(onMessage);
+      port.onDisconnect.addListener(onDisconnect);
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
+
+      const startMessage: SnippetChatPortStart = {
+        type: 'start',
+        fragment: request.fragment,
+        history: request.history,
+        userMessage: request.userMessage,
+      };
+      port.postMessage(startMessage);
+    });
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {
@@ -387,6 +486,10 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async sendSnippetChat(): Promise<string> {
+    throw new Error('AI chat requires the Chrome extension.');
+  }
+
+  async streamSnippetChat(): Promise<void> {
     throw new Error('AI chat requires the Chrome extension.');
   }
 
