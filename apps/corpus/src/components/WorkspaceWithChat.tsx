@@ -18,7 +18,7 @@ export function WorkspaceWithChat({ children, chat }: WorkspaceWithChatProps) {
       >
         {children}
       </div>
-      <SnippetChatFab open={chat.open} onClick={chat.toggle} />
+      {!chat.open ? <SnippetChatFab onClick={chat.toggle} /> : null}
       {chat.open ? (
         <SnippetChatPanel chat={chat} onClose={() => chat.setOpen(false)} />
       ) : null}
