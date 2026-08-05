@@ -14,6 +14,7 @@ export * from './reviewSchedule';
 export * from './storageKeys';
 export * from './subtitleLanguages';
 export * from './textFragmentUrl';
+export * from './snippetChat';
 export * from './types';
 export * from './webAnchor';
 export * from './webRestoreStatus';

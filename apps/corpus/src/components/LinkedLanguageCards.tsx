@@ -1,17 +1,22 @@
 import type { LanguageCard } from '@semia/shared';
 import { MAX_LANGUAGE_CARDS_PER_FRAGMENT } from '@semia/shared';
+import { useEffect, useRef, useState } from 'react';
 import { LanguageCardView } from './LanguageCardView';
 
-type LinkedLanguageCardsProps = {
-  cards: LanguageCard[];
-  onPreviewCard: (card: LanguageCard) => void;
-};
-
-export function LinkedLanguageCards({
-  cards,
-  onPreviewCard,
-}: LinkedLanguageCardsProps) {
+export function LinkedLanguageCards({ cards }: { cards: LanguageCard[] }) {
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const expandedRef = useRef<HTMLDivElement>(null);
   const visible = cards.slice(0, MAX_LANGUAGE_CARDS_PER_FRAGMENT);
+
+  useEffect(() => {
+    setExpandedCardId(null);
+  }, [cards]);
+
+  useEffect(() => {
+    if (expandedCardId) {
+      expandedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [expandedCardId]);
 
   if (visible.length === 0) {
     return null;
@@ -30,8 +35,17 @@ export function LinkedLanguageCards({
           <li key={card.id}>
             <button
               type="button"
-              className="w-full rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent/30 hover:bg-accent-soft/20"
-              onClick={() => onPreviewCard(card)}
+              className={[
+                'w-full rounded-xl border p-4 text-left transition-colors',
+                expandedCardId === card.id
+                  ? 'border-accent/40 bg-accent-soft/20'
+                  : 'border-border bg-surface hover:border-accent/30 hover:bg-accent-soft/20',
+              ].join(' ')}
+              onClick={() =>
+                setExpandedCardId((current) =>
+                  current === card.id ? null : card.id,
+                )
+              }
             >
               <p className="font-reading text-sm font-semibold text-text">
                 {card.focus}
@@ -40,6 +54,14 @@ export function LinkedLanguageCards({
                 {card.meaning}
               </p>
             </button>
+            {expandedCardId === card.id ? (
+              <div
+                ref={expandedRef}
+                className="mt-2 rounded-xl border border-border bg-canvas p-4"
+              >
+                <LanguageCardView card={card} />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>

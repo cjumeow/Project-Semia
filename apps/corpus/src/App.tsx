@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LanguageCard } from '@semia/shared';
 import { MAX_LANGUAGE_CARDS_PER_FRAGMENT } from '@semia/shared';
 import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
@@ -27,6 +27,8 @@ import { LanguageCardPreviewModal } from './components/LanguageCardPreviewModal'
 import { corpusRepository } from './data/corpusRepository';
 import { isGeneratedNote } from './types/corpus';
 import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGrouping';
+import { useSnippetChat } from './hooks/useSnippetChat';
+import { WorkspaceWithChat } from './components/WorkspaceWithChat';
 import { isEditableTarget } from './utils/isEditableTarget';
 
 export default function App() {
@@ -103,6 +105,16 @@ export default function App() {
     });
 
   const showEmpty = !loading && !error && groups.length === 0;
+
+  const chatSnippet = useMemo(() => {
+    const fragmentId =
+      selectedSnippet?.id ?? selectedCard?.sourceFragmentId ?? null;
+    if (!fragmentId) return null;
+    return snippets.find((snippet) => snippet.id === fragmentId) ?? null;
+  }, [selectedCard?.sourceFragmentId, selectedSnippet?.id, snippets]);
+
+  const snippetChat = useSnippetChat({ chatSnippet, isLive });
+
   const languageCardCount = selectedSnippet
     ? countForFragment(selectedSnippet.id)
     : 0;
@@ -357,7 +369,7 @@ export default function App() {
           </div>
         </section>
       ) : (
-        workspace
+        <WorkspaceWithChat chat={snippetChat}>{workspace}</WorkspaceWithChat>
       )}
 
       {showDetailPanel ? (
@@ -378,7 +390,6 @@ export default function App() {
               contextWindowEnabled={contextWindowEnabled}
               onOpenSettings={() => setSettingsOpen(true)}
               languageCards={snippetLanguageCards}
-              onPreviewLanguageCard={(card) => setLanguageCardDetail(card)}
               {...languageCardProps}
               onMarkMastered={
                 isLive &&

@@ -1,3 +1,4 @@
+import { sendSnippetChat } from '../ai/sendSnippetChat';
 import { finalizeSnippetNote } from '../ai/finalizeSnippetNote';
 import { generateContextWindow } from '../ai/generateContextWindow';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
@@ -42,7 +43,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'RECORD_STILL_LEARNING' }>
   | Extract<BackgroundMessage, { type: 'RECORD_CARD_STILL_LEARNING' }>
   | Extract<BackgroundMessage, { type: 'MARK_CARD_MASTERED' }>
-  | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>;
+  | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>
+  | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -63,7 +65,8 @@ export function isFragmentMessage(
     message.type === 'RECORD_STILL_LEARNING' ||
     message.type === 'RECORD_CARD_STILL_LEARNING' ||
     message.type === 'MARK_CARD_MASTERED' ||
-    message.type === 'SET_CARD_MASTERED'
+    message.type === 'SET_CARD_MASTERED' ||
+    message.type === 'SNIPPET_CHAT'
   );
 }
 
@@ -154,6 +157,15 @@ export async function handleFragmentMessage(
     case 'SET_CARD_MASTERED':
       await setCardTriageStatus(message.cardId, 'mastered');
       return { ok: true };
+
+    case 'SNIPPET_CHAT': {
+      const reply = await sendSnippetChat({
+        fragment: message.fragment,
+        history: message.history,
+        userMessage: message.userMessage,
+      });
+      return { ok: true, reply };
+    }
   }
 }
 

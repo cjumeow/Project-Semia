@@ -21,7 +21,6 @@ type SnippetDetailProps = {
   languageCardCount?: number;
   onCreateLanguageCard?: () => void;
   createLanguageCardEnabled?: boolean;
-  onPreviewLanguageCard?: (card: LanguageCard) => void;
   onOpenLanguageCards?: () => void;
 };
 
@@ -40,7 +39,6 @@ export function SnippetDetail({
   languageCardCount,
   onCreateLanguageCard,
   createLanguageCardEnabled,
-  onPreviewLanguageCard,
   onOpenLanguageCards,
 }: SnippetDetailProps) {
   if (!snippet) {
@@ -109,11 +107,8 @@ export function SnippetDetail({
               : undefined
           }
         />
-        {onPreviewLanguageCard ? (
-          <LinkedLanguageCards
-            cards={languageCards}
-            onPreviewCard={onPreviewLanguageCard}
-          />
+        {languageCards.length > 0 ? (
+          <LinkedLanguageCards cards={languageCards} />
         ) : null}
       </div>
     </section>
