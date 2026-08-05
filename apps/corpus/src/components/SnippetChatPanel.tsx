@@ -3,12 +3,38 @@ import { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { TextDots } from './TextDots';
-import type { UseSnippetChatResult } from '../hooks/useSnippetChat';
+import type { SnippetChatMessage, UseSnippetChatResult } from '../hooks/useSnippetChat';
 
 type SnippetChatPanelProps = {
   chat: UseSnippetChatResult;
   onClose: () => void;
 };
+
+function AssistantChatMarkdown({
+  message,
+}: {
+  message: SnippetChatMessage;
+}) {
+  if (!message.content && message.streaming) {
+    return (
+      <span className="text-text-muted">
+        <TextDots>Thinking</TextDots>
+      </span>
+    );
+  }
+
+  return (
+    <div className="prose-chat text-sm leading-snug text-text">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+      {message.streaming ? (
+        <span
+          aria-hidden
+          className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-text-muted align-[-0.1em]"
+        />
+      ) : null}
+    </div>
+  );
+}
 
 export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -49,26 +75,16 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
               <li
                 key={message.id}
                 className={[
-                  'max-w-[92%] rounded-xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+                  'max-w-[92%] rounded-xl px-3 py-2 text-sm',
                   message.role === 'user'
-                    ? 'ml-auto bg-accent text-white'
+                    ? 'ml-auto whitespace-pre-wrap bg-accent leading-relaxed text-white'
                     : 'bg-canvas text-text',
                 ].join(' ')}
               >
                 {message.role === 'user' ? (
                   message.content
-                ) : message.streaming ? (
-                  message.content || (
-                    <span className="text-text-muted">
-                      <TextDots>Thinking</TextDots>
-                    </span>
-                  )
                 ) : (
-                  <div className="prose-note text-sm leading-relaxed text-text">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
+                  <AssistantChatMarkdown message={message} />
                 )}
               </li>
             ))}
