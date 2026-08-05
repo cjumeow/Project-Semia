@@ -11,6 +11,7 @@ import {
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
+  type SnippetChatTurn,
   type SnippetTriageStatus,
   type StoredTranscript,
   type WebRestoreStatus,
@@ -31,6 +32,12 @@ export type CreateLanguageCardRequest = {
   includeScenario?: boolean;
 };
 
+export type SnippetChatRequest = {
+  fragment?: LanguageFragment;
+  history: SnippetChatTurn[];
+  userMessage: string;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -40,6 +47,7 @@ export interface CorpusRepository {
   getLanguageCards(): Promise<LanguageCard[]>;
   getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
   createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
+  sendSnippetChat(request: SnippetChatRequest): Promise<string>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -175,6 +183,23 @@ class ChromeCorpusRepository implements CorpusRepository {
       response && !response.ok
         ? response.error
         : 'Failed to create language card.';
+    throw new Error(message);
+  }
+
+  async sendSnippetChat(request: SnippetChatRequest): Promise<string> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SNIPPET_CHAT',
+      fragment: request.fragment,
+      history: request.history,
+      userMessage: request.userMessage,
+    })) as OkResponse<{ reply: string }> | ErrResponse | undefined;
+
+    if (response?.ok && response.reply) {
+      return response.reply;
+    }
+
+    const message =
+      response && !response.ok ? response.error : 'Failed to send chat message.';
     throw new Error(message);
   }
 
@@ -359,6 +384,10 @@ class MockCorpusRepository implements CorpusRepository {
 
   async createLanguageCard(): Promise<LanguageCard> {
     throw new Error('Language card creation requires the Chrome extension.');
+  }
+
+  async sendSnippetChat(): Promise<string> {
+    throw new Error('AI chat requires the Chrome extension.');
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {

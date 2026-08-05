@@ -1,6 +1,11 @@
 import { AI_PROVIDER_CONFIG, resolveAiProvider } from './aiProviders';
 import { getSemiaSettings } from '../semiaSettings';
 
+type ChatCompletionMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
 type ChatCompletionResponse = {
   choices?: Array<{
     message?: {
@@ -9,9 +14,8 @@ type ChatCompletionResponse = {
   }>;
 };
 
-export async function completeChat(
-  system: string,
-  user: string,
+export async function completeChatMessages(
+  messages: ChatCompletionMessage[],
 ): Promise<string> {
   const settings = await getSemiaSettings();
   const apiKey = settings.aiApiKey?.trim();
@@ -33,10 +37,7 @@ export async function completeChat(
     body: JSON.stringify({
       model: providerConfig.model,
       temperature: 0.3,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
+      messages,
     }),
   });
 
@@ -54,4 +55,14 @@ export async function completeChat(
   }
 
   return content;
+}
+
+export async function completeChat(
+  system: string,
+  user: string,
+): Promise<string> {
+  return completeChatMessages([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ]);
 }

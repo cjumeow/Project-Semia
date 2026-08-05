@@ -1,6 +1,7 @@
 import type {
   CardIntent,
   LanguageFragment,
+  SnippetChatTurn,
   SnippetTriageStatus,
   StoredTranscript,
 } from '@semia/shared';
@@ -58,4 +59,10 @@ export type BackgroundMessage =
   | { type: 'MARK_CARD_MASTERED'; cardId: string }
   | { type: 'SET_CARD_MASTERED'; cardId: string }
   | { type: 'TAKE_PENDING_WEB_RESTORE' }
-  | { type: 'WEB_RESTORE_RESULT'; fragmentId: string; ok: boolean };
+  | { type: 'WEB_RESTORE_RESULT'; fragmentId: string; ok: boolean }
+  | {
+      type: 'SNIPPET_CHAT';
+      fragment?: LanguageFragment;
+      history: SnippetChatTurn[];
+      userMessage: string;
+    };

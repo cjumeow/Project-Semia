@@ -6,6 +6,7 @@ import { InboxPrototypeApp } from './prototype/inbox/InboxPrototypeApp';
 import { LibraryPromotePrototypeApp } from './prototype/library-promote/LibraryPromotePrototypeApp';
 import { LogoPrototypeApp } from './prototype/logo/LogoPrototypeApp';
 import { LearningCardsPrototypeApp } from './prototype/learning-cards/LearningCardsPrototypeApp';
+import { SnippetChatPrototypeApp } from './prototype/snippet-chat/SnippetChatPrototypeApp';
 import { SaasThemePrototypeApp } from './prototype/saas-theme/SaasThemePrototypeApp';
 import { YoutubeCaptionsPrototypeApp } from './prototype/youtube-captions/YoutubeCaptionsPrototypeApp';
 import './index.css';
@@ -18,6 +19,7 @@ function readPrototypeMode():
   | 'youtube-captions'
   | 'saas-theme'
   | 'learning-cards'
+  | 'snippet-chat'
   | null {
   const value = new URLSearchParams(window.location.search).get('prototype');
   if (value === 'inbox') return 'inbox';
@@ -27,6 +29,7 @@ function readPrototypeMode():
   if (value === 'youtube-captions') return 'youtube-captions';
   if (value === 'saas-theme') return 'saas-theme';
   if (value === 'learning-cards') return 'learning-cards';
+  if (value === 'snippet-chat') return 'snippet-chat';
   return null;
 }
 
@@ -48,6 +51,8 @@ createRoot(document.getElementById('root')!).render(
       <SaasThemePrototypeApp />
     ) : prototypeMode === 'learning-cards' ? (
       <LearningCardsPrototypeApp />
+    ) : prototypeMode === 'snippet-chat' ? (
+      <SnippetChatPrototypeApp />
     ) : (
       <App />
     )}
