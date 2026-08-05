@@ -106,9 +106,13 @@ export function LanguageCardListModal({
 export function LanguageCardDetailModal({
   card,
   onClose,
+  sourceTitle,
+  onViewSource,
 }: {
   card: LanguageCard | null;
   onClose: () => void;
+  sourceTitle?: string;
+  onViewSource?: () => void;
 }) {
   if (!card) return null;
 
@@ -126,19 +130,37 @@ export function LanguageCardDetailModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h2
-            id="language-card-detail-title"
-            className="font-reading text-xl font-semibold text-text"
-          >
-            {card.focus}
-          </h2>
-          <button
-            type="button"
-            className="shrink-0 text-xs text-text-muted hover:text-text"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <div className="min-w-0">
+            <h2
+              id="language-card-detail-title"
+              className="font-reading text-xl font-semibold text-text"
+            >
+              {card.focus}
+            </h2>
+            {sourceTitle ? (
+              <p className="mt-1 truncate text-xs text-text-muted">
+                {sourceTitle} · {card.focusText}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            {onViewSource ? (
+              <button
+                type="button"
+                className="text-[11px] font-medium text-accent hover:underline"
+                onClick={onViewSource}
+              >
+                View source
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="text-xs text-text-muted hover:text-text"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
         </div>
         <LanguageCardView card={card} />
       </div>
