@@ -19,6 +19,7 @@ import {
   type StoredTranscript,
   type WebRestoreStatus,
   type WebRestoreStatusMap,
+  SnippetChatAbortedError,
   normalizeFragments,
   normalizeLanguageCard,
 } from '@semia/shared';
@@ -46,6 +47,10 @@ export type SnippetChatStreamHandlers = {
   onDone: () => void;
 };
 
+export type SnippetChatStreamOptions = {
+  signal?: AbortSignal;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -59,6 +64,7 @@ export interface CorpusRepository {
   streamSnippetChat(
     request: SnippetChatRequest,
     handlers: SnippetChatStreamHandlers,
+    options?: SnippetChatStreamOptions,
   ): Promise<void>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
@@ -215,7 +221,12 @@ class ChromeCorpusRepository implements CorpusRepository {
   async streamSnippetChat(
     request: SnippetChatRequest,
     handlers: SnippetChatStreamHandlers,
+    options?: SnippetChatStreamOptions,
   ): Promise<void> {
+    if (options?.signal?.aborted) {
+      throw new SnippetChatAbortedError();
+    }
+
     const port = chrome.runtime.connect({ name: SNIPPET_CHAT_PORT_NAME });
 
     await new Promise<void>((resolve, reject) => {
@@ -224,6 +235,19 @@ class ChromeCorpusRepository implements CorpusRepository {
       const cleanup = () => {
         port.onMessage.removeListener(onMessage);
         port.onDisconnect.removeListener(onDisconnect);
+        options?.signal?.removeEventListener('abort', onAbort);
+      };
+
+      const finishAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        port.disconnect();
+        reject(new SnippetChatAbortedError());
+      };
+
+      const onAbort = () => {
+        finishAbort();
       };
 
       const onMessage = (message: SnippetChatPortMessage) => {
@@ -252,14 +276,21 @@ class ChromeCorpusRepository implements CorpusRepository {
       const onDisconnect = () => {
         cleanup();
         if (settled) return;
+        if (options?.signal?.aborted) {
+          reject(new SnippetChatAbortedError());
+          return;
+        }
         const disconnectError = chrome.runtime.lastError?.message;
         reject(
-          new Error(disconnectError ?? 'Snippet chat connection closed unexpectedly.'),
+          new Error(
+            disconnectError ?? 'Snippet chat connection closed unexpectedly.',
+          ),
         );
       };
 
       port.onMessage.addListener(onMessage);
       port.onDisconnect.addListener(onDisconnect);
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
 
       const startMessage: SnippetChatPortStart = {
         type: 'start',

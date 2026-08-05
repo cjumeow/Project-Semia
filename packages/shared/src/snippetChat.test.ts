@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   SNIPPET_CHAT_GENERAL_THREAD_KEY,
+  SnippetChatAbortedError,
+  finalizeStreamingAssistantMessages,
+  isSnippetChatAbortedError,
   resolveSnippetChatThreadKey,
   snippetChatContextLabel,
 } from './snippetChat';
@@ -32,5 +35,30 @@ describe('snippetChatContextLabel', () => {
 
   it('returns selected text when present', () => {
     expect(snippetChatContextLabel('naval vessels')).toBe('naval vessels');
+  });
+});
+
+describe('isSnippetChatAbortedError', () => {
+  it('detects snippet chat abort errors', () => {
+    expect(isSnippetChatAbortedError(new SnippetChatAbortedError())).toBe(true);
+    expect(isSnippetChatAbortedError(new Error('Snippet chat aborted'))).toBe(
+      false,
+    );
+  });
+});
+
+describe('finalizeStreamingAssistantMessages', () => {
+  it('clears streaming on in-flight assistant messages only', () => {
+    expect(
+      finalizeStreamingAssistantMessages([
+        { role: 'user', content: 'hi' },
+        { role: 'assistant', content: 'hel', streaming: true },
+        { role: 'assistant', content: 'done', streaming: false },
+      ]),
+    ).toEqual([
+      { role: 'user', content: 'hi' },
+      { role: 'assistant', content: 'hel', streaming: false },
+      { role: 'assistant', content: 'done', streaming: false },
+    ]);
   });
 });

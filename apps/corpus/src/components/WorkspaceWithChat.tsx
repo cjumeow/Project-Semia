@@ -20,7 +20,7 @@ export function WorkspaceWithChat({ children, chat }: WorkspaceWithChatProps) {
       </div>
       {!chat.open ? <SnippetChatFab onClick={chat.toggle} /> : null}
       {chat.open ? (
-        <SnippetChatPanel chat={chat} onClose={() => chat.setOpen(false)} />
+        <SnippetChatPanel chat={chat} onClose={chat.closeChat} />
       ) : null}
     </div>
   );

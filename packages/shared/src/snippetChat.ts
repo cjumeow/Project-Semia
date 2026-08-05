@@ -20,6 +20,25 @@ export type SnippetChatPortMessage =
   | { type: 'done' }
   | { type: 'error'; error: string };
 
+export class SnippetChatAbortedError extends Error {
+  constructor() {
+    super('Snippet chat aborted');
+    this.name = 'SnippetChatAbortedError';
+  }
+}
+
+export function isSnippetChatAbortedError(error: unknown): boolean {
+  return error instanceof SnippetChatAbortedError;
+}
+
+export function finalizeStreamingAssistantMessages<
+  T extends SnippetChatTurn & { streaming?: boolean },
+>(messages: T[]): T[] {
+  return messages.map((message) =>
+    message.streaming ? { ...message, streaming: false } : message,
+  );
+}
+
 export function resolveSnippetChatThreadKey(
   fragmentId: string | null | undefined,
 ): string {

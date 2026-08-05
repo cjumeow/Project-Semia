@@ -19,10 +19,15 @@ export function handleSnippetChatPortConnection(port: chrome.runtime.Port): void
     return;
   }
 
-  const abortController = new AbortController();
+  let activeAbort: AbortController | null = null;
+
+  const abortActiveStream = () => {
+    activeAbort?.abort();
+    activeAbort = null;
+  };
 
   port.onDisconnect.addListener(() => {
-    abortController.abort();
+    abortActiveStream();
   });
 
   port.onMessage.addListener((message: SnippetChatPortStart) => {
@@ -33,6 +38,10 @@ export function handleSnippetChatPortConnection(port: chrome.runtime.Port): void
       });
       return;
     }
+
+    abortActiveStream();
+    const abortController = new AbortController();
+    activeAbort = abortController;
 
     void streamSnippetChat(
       {
@@ -46,12 +55,17 @@ export function handleSnippetChatPortConnection(port: chrome.runtime.Port): void
       abortController.signal,
     )
       .then(() => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+        activeAbort = null;
         postPortMessage(port, { type: 'done' });
       })
       .catch((err) => {
         if (abortController.signal.aborted) {
           return;
         }
+        activeAbort = null;
         postPortMessage(port, {
           type: 'error',
           error: formatStorageError(err),
