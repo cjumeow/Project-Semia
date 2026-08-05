@@ -1,5 +1,5 @@
 import { SNIPPET_CHAT_SUGGESTED_PROMPTS } from '@semia/shared';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { TextDots } from './TextDots';
@@ -48,11 +48,13 @@ function AssistantChatMarkdown({
 }
 
 export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chat.activeMessages, chat.sending]);
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [chat.threadKey]);
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-surface">
@@ -73,7 +75,7 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {chat.activeMessages.length === 0 ? (
           <p className="text-sm text-text-muted">
             {chat.hasSnippetContext
@@ -101,7 +103,6 @@ export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
             ))}
           </ul>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {chat.error ? (
