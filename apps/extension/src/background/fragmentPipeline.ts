@@ -1,9 +1,12 @@
 import { sendSnippetChat } from '../ai/sendSnippetChat';
+import { suggestLanguageCardFields } from '../ai/suggestLanguageCardFields';
 import { finalizeSnippetNote } from '../ai/finalizeSnippetNote';
 import { generateContextWindow } from '../ai/generateContextWindow';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
 import { saveCorpusNote } from '../corpusNotesStorage';
 import { createLanguageCard } from '../createLanguageCard';
+import { createLanguageCardFromDraft } from '../createLanguageCardFromDraft';
+import { updateLanguageCardContent } from '../updateLanguageCardContent';
 import { deleteFragment, deleteSource } from '../deleteCaptures';
 import { ensureSnippetNote } from '../ensureSnippetNote';
 import {
@@ -14,6 +17,11 @@ import {
   recordStillLearning as persistStillLearning,
 } from '../fragmentsStorage';
 import { listLanguageCards } from '../languageCardsStorage';
+import {
+  clearLanguageCardDraft,
+  loadLanguageCardDraft,
+  saveLanguageCardDraft,
+} from '../languageCardDraftsStorage';
 import {
   markCardMasteredInReview,
   recordCardStillLearning,
@@ -33,6 +41,11 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'LIST_FRAGMENTS' }>
   | Extract<BackgroundMessage, { type: 'LIST_SNIPPET_NOTES' }>
   | Extract<BackgroundMessage, { type: 'LIST_LANGUAGE_CARDS' }>
+  | Extract<BackgroundMessage, { type: 'GET_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'SAVE_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'CLEAR_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'UPDATE_LANGUAGE_CARD_CONTENT' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_SNIPPET_NOTE' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
   | Extract<BackgroundMessage, { type: 'CREATE_LANGUAGE_CARD' }>
@@ -44,7 +57,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'RECORD_CARD_STILL_LEARNING' }>
   | Extract<BackgroundMessage, { type: 'MARK_CARD_MASTERED' }>
   | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>
-  | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>;
+  | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>
+  | Extract<BackgroundMessage, { type: 'SUGGEST_LANGUAGE_CARD_FIELDS' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -55,6 +69,11 @@ export function isFragmentMessage(
     message.type === 'LIST_FRAGMENTS' ||
     message.type === 'LIST_SNIPPET_NOTES' ||
     message.type === 'LIST_LANGUAGE_CARDS' ||
+    message.type === 'GET_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'SAVE_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'CLEAR_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'CREATE_LANGUAGE_CARD_FROM_DRAFT' ||
+    message.type === 'UPDATE_LANGUAGE_CARD_CONTENT' ||
     message.type === 'GENERATE_SNIPPET_NOTE' ||
     message.type === 'GENERATE_CONTEXT_WINDOW' ||
     message.type === 'CREATE_LANGUAGE_CARD' ||
@@ -66,7 +85,8 @@ export function isFragmentMessage(
     message.type === 'RECORD_CARD_STILL_LEARNING' ||
     message.type === 'MARK_CARD_MASTERED' ||
     message.type === 'SET_CARD_MASTERED' ||
-    message.type === 'SNIPPET_CHAT'
+    message.type === 'SNIPPET_CHAT' ||
+    message.type === 'SUGGEST_LANGUAGE_CARD_FIELDS'
   );
 }
 
@@ -90,6 +110,36 @@ export async function handleFragmentMessage(
 
     case 'LIST_LANGUAGE_CARDS':
       return { ok: true, cards: await listLanguageCards() };
+
+    case 'GET_LANGUAGE_CARD_DRAFT':
+      return {
+        ok: true,
+        draft: await loadLanguageCardDraft(message.sourceFragmentId),
+      };
+
+    case 'SAVE_LANGUAGE_CARD_DRAFT':
+      await saveLanguageCardDraft(message.draft);
+      return { ok: true };
+
+    case 'CLEAR_LANGUAGE_CARD_DRAFT':
+      await clearLanguageCardDraft(message.sourceFragmentId);
+      return { ok: true };
+
+    case 'CREATE_LANGUAGE_CARD_FROM_DRAFT': {
+      const card = await createLanguageCardFromDraft({
+        fragment: message.fragment,
+        draft: message.draft,
+      });
+      return { ok: true, card };
+    }
+
+    case 'UPDATE_LANGUAGE_CARD_CONTENT': {
+      const card = await updateLanguageCardContent(
+        message.cardId,
+        message.content,
+      );
+      return { ok: true, card };
+    }
 
     case 'GENERATE_SNIPPET_NOTE': {
       const note = await finalizeSnippetNote(
@@ -163,8 +213,18 @@ export async function handleFragmentMessage(
         fragment: message.fragment,
         history: message.history,
         userMessage: message.userMessage,
+        globalThread: message.globalThread,
       });
       return { ok: true, reply };
+    }
+
+    case 'SUGGEST_LANGUAGE_CARD_FIELDS': {
+      const suggestions = await suggestLanguageCardFields({
+        fragment: message.fragment,
+        focusText: message.focusText,
+        fields: message.fields,
+      });
+      return { ok: true, suggestions };
     }
   }
 }

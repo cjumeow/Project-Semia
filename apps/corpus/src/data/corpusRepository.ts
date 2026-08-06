@@ -1,6 +1,7 @@
 import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
+  LANGUAGE_CARD_DRAFTS_STORAGE_KEY,
   LANGUAGE_CARDS_STORAGE_KEY,
   SNIPPET_CHAT_PORT_NAME,
   SNIPPET_NOTES_STORAGE_KEY,
@@ -9,7 +10,11 @@ import {
   type CorpusNotesMap,
   type CardIntent,
   type LanguageCard,
+  type LanguageCardDraft,
+  type LanguageCardDraftContent,
   type LanguageFragment,
+  type LanguageCardFieldSuggestions,
+  type LanguageCardSuggestableField,
   type SnippetNote,
   type SnippetNotesMap,
   type SnippetChatPortMessage,
@@ -20,6 +25,10 @@ import {
   type WebRestoreStatus,
   type WebRestoreStatusMap,
   SnippetChatAbortedError,
+  applyEditorContentToLanguageCard,
+  buildLanguageCardFieldsFromDraftContent,
+  enrollCardInReviewQueue,
+  listCreateValidationFailures,
   normalizeFragments,
   normalizeLanguageCard,
 } from '@semia/shared';
@@ -40,6 +49,7 @@ export type SnippetChatRequest = {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 };
 
 export type SnippetChatStreamHandlers = {
@@ -51,6 +61,12 @@ export type SnippetChatStreamOptions = {
   signal?: AbortSignal;
 };
 
+export type SuggestLanguageCardFieldsRequest = {
+  fragment: LanguageFragment;
+  focusText: string;
+  fields: LanguageCardSuggestableField[];
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -60,12 +76,26 @@ export interface CorpusRepository {
   getLanguageCards(): Promise<LanguageCard[]>;
   getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
   createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
+  createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard>;
+  updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard>;
+  getLanguageCardDraft(sourceFragmentId: string): Promise<LanguageCardDraft | null>;
+  saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void>;
+  clearLanguageCardDraft(sourceFragmentId: string): Promise<void>;
   sendSnippetChat(request: SnippetChatRequest): Promise<string>;
   streamSnippetChat(
     request: SnippetChatRequest,
     handlers: SnippetChatStreamHandlers,
     options?: SnippetChatStreamOptions,
   ): Promise<void>;
+  suggestLanguageCardFields(
+    request: SuggestLanguageCardFieldsRequest,
+  ): Promise<LanguageCardFieldSuggestions>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -204,6 +234,85 @@ class ChromeCorpusRepository implements CorpusRepository {
     throw new Error(message);
   }
 
+  async createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT',
+      fragment,
+      draft,
+    })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
+
+    if (response?.ok && response.card) {
+      return normalizeLanguageCard(response.card);
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to create language card from draft.';
+    throw new Error(message);
+  }
+
+  async updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'UPDATE_LANGUAGE_CARD_CONTENT',
+      cardId,
+      content,
+    })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
+
+    if (response?.ok && response.card) {
+      return normalizeLanguageCard(response.card);
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to update language card.';
+    throw new Error(message);
+  }
+
+  async getLanguageCardDraft(
+    sourceFragmentId: string,
+  ): Promise<LanguageCardDraft | null> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'GET_LANGUAGE_CARD_DRAFT',
+      sourceFragmentId,
+    })) as OkResponse<{ draft: LanguageCardDraft | null }> | ErrResponse | undefined;
+
+    if (response?.ok) {
+      return response.draft ?? null;
+    }
+
+    throw new Error(response?.error ?? 'Failed to load language card draft.');
+  }
+
+  async saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SAVE_LANGUAGE_CARD_DRAFT',
+      draft,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to save language card draft.');
+  }
+
+  async clearLanguageCardDraft(sourceFragmentId: string): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'CLEAR_LANGUAGE_CARD_DRAFT',
+      sourceFragmentId,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to clear language card draft.');
+  }
+
   async sendSnippetChat(request: SnippetChatRequest): Promise<string> {
     let reply = '';
     await this.streamSnippetChat(request, {
@@ -297,9 +406,32 @@ class ChromeCorpusRepository implements CorpusRepository {
         fragment: request.fragment,
         history: request.history,
         userMessage: request.userMessage,
+        globalThread: request.globalThread,
       };
       port.postMessage(startMessage);
     });
+  }
+
+  async suggestLanguageCardFields(
+    request: SuggestLanguageCardFieldsRequest,
+  ): Promise<LanguageCardFieldSuggestions> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SUGGEST_LANGUAGE_CARD_FIELDS',
+      fragment: request.fragment,
+      focusText: request.focusText,
+      fields: request.fields,
+    })) as
+      | OkResponse<{ suggestions: LanguageCardFieldSuggestions }>
+      | ErrResponse
+      | undefined;
+
+    if (response?.ok) {
+      return response.suggestions;
+    }
+
+    throw new Error(
+      response?.error ?? 'Failed to suggest language card fields.',
+    );
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {
@@ -430,6 +562,7 @@ class ChromeCorpusRepository implements CorpusRepository {
         changes[FRAGMENTS_STORAGE_KEY] ||
         changes[SNIPPET_NOTES_STORAGE_KEY] ||
         changes[LANGUAGE_CARDS_STORAGE_KEY] ||
+        changes[LANGUAGE_CARD_DRAFTS_STORAGE_KEY] ||
         changes[CORPUS_NOTES_STORAGE_KEY] ||
         changes[TRANSCRIPTS_STORAGE_KEY] ||
         changes[WEB_RESTORE_STATUS_STORAGE_KEY]
@@ -448,6 +581,8 @@ class ChromeCorpusRepository implements CorpusRepository {
 
 class MockCorpusRepository implements CorpusRepository {
   private notes: CorpusNotesMap = {};
+  private drafts = new Map<string, LanguageCardDraft>();
+  private cards = new Map<string, LanguageCard>();
 
   isLive(): boolean {
     return false;
@@ -474,15 +609,70 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async getLanguageCards(): Promise<LanguageCard[]> {
-    return [];
+    return [...this.cards.values()];
   }
 
-  async getCardsForFragment(): Promise<LanguageCard[]> {
-    return [];
+  async getCardsForFragment(fragmentId: string): Promise<LanguageCard[]> {
+    return [...this.cards.values()].filter(
+      (card) => card.sourceFragmentId === fragmentId,
+    );
   }
 
   async createLanguageCard(): Promise<LanguageCard> {
     throw new Error('Language card creation requires the Chrome extension.');
+  }
+
+  async createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const failures = listCreateValidationFailures(draft);
+    if (failures.length > 0) {
+      throw new Error(`Draft is incomplete. Missing: ${failures.join(', ')}.`);
+    }
+
+    const now = new Date().toISOString();
+    const card = enrollCardInReviewQueue(
+      {
+        id: crypto.randomUUID(),
+        sourceFragmentId: fragment.id,
+        createdAt: now,
+        generatedAt: now,
+        ...buildLanguageCardFieldsFromDraftContent(draft),
+      },
+      now,
+    );
+    this.cards.set(card.id, card);
+    this.drafts.delete(fragment.id);
+    return card;
+  }
+
+  async updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const existing = this.cards.get(cardId);
+    if (!existing) {
+      throw new Error('Language card not found.');
+    }
+
+    const updated = applyEditorContentToLanguageCard(existing, content);
+    this.cards.set(cardId, updated);
+    return updated;
+  }
+
+  async getLanguageCardDraft(
+    sourceFragmentId: string,
+  ): Promise<LanguageCardDraft | null> {
+    return this.drafts.get(sourceFragmentId) ?? null;
+  }
+
+  async saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void> {
+    this.drafts.set(draft.sourceFragmentId, draft);
+  }
+
+  async clearLanguageCardDraft(sourceFragmentId: string): Promise<void> {
+    this.drafts.delete(sourceFragmentId);
   }
 
   async sendSnippetChat(): Promise<string> {
@@ -491,6 +681,10 @@ class MockCorpusRepository implements CorpusRepository {
 
   async streamSnippetChat(): Promise<void> {
     throw new Error('AI chat requires the Chrome extension.');
+  }
+
+  async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
+    throw new Error('AI suggestions require the Chrome extension.');
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {

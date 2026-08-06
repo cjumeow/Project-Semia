@@ -13,6 +13,7 @@ import {
   pruneHiddenAfterExitIds,
   visibleTriageSnippets,
 } from './selectionListTriage';
+import type { InboxProcessTrigger, InboxTriageAction } from './inboxTriageTypes';
 
 type SelectionListProps = {
   snippets: CorpusSnippet[];
@@ -23,9 +24,12 @@ type SelectionListProps = {
   showStatusIcon?: boolean;
   cardCountForSnippet?: (snippetId: string) => number;
   inlineTriage?: {
-    onMarkReview: (snippetId: string) => void;
-    onMarkMastered: (snippetId: string) => void;
+    onRequestProcess: (snippetId: string) => void;
+    onProcessComplete: (snippetId: string) => void;
+    onDelete: (snippetId: string) => void;
     onExitStart?: (snippetId: string) => void;
+    processTrigger?: InboxProcessTrigger | null;
+    onProcessTriggerConsumed?: () => void;
   };
   emptyMessage?: string;
 };
@@ -41,7 +45,7 @@ export function SelectionList({
   inlineTriage,
   emptyMessage = 'No captures for this source yet.',
 }: SelectionListProps) {
-  const exitingActionsRef = useRef(new Map<string, 'review' | 'mastered'>());
+  const exitingActionsRef = useRef(new Map<string, InboxTriageAction>());
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [hiddenAfterExitIds, setHiddenAfterExitIds] = useState<Set<string>>(
     () => new Set(),
@@ -53,7 +57,7 @@ export function SelectionList({
   );
 
   const beginTriageExit = useCallback(
-    (snippetId: string, action: 'review' | 'mastered') => {
+    (snippetId: string, action: InboxTriageAction) => {
       if (exitingActionsRef.current.has(snippetId)) return;
       exitingActionsRef.current.set(snippetId, action);
       inlineTriage?.onExitStart?.(snippetId);
@@ -76,14 +80,25 @@ export function SelectionList({
       });
 
       if (!inlineTriage) return;
-      if (action === 'review') {
-        inlineTriage.onMarkReview(snippetId);
+      if (action === 'processed') {
+        inlineTriage.onProcessComplete(snippetId);
       } else {
-        inlineTriage.onMarkMastered(snippetId);
+        inlineTriage.onDelete(snippetId);
       }
     },
     [inlineTriage],
   );
+
+  useEffect(() => {
+    const trigger = inlineTriage?.processTrigger;
+    if (!trigger) return;
+    beginTriageExit(trigger.snippetId, 'processed');
+    inlineTriage?.onProcessTriggerConsumed?.();
+  }, [
+    beginTriageExit,
+    inlineTriage?.onProcessTriggerConsumed,
+    inlineTriage?.processTrigger,
+  ]);
 
   useEffect(() => {
     const visibleIds = new Set(snippets.map((snippet) => snippet.id));
@@ -189,16 +204,16 @@ export function SelectionList({
               {showInlineActions ? (
                 <div className="flex shrink-0 items-center gap-1 pr-2">
                   <IconTriageButton
-                    label="Mark as review"
-                    onClick={() => beginTriageExit(snippet.id, 'review')}
-                  >
-                    <TriageStatusIcon status="review" size={14} />
-                  </IconTriageButton>
-                  <IconTriageButton
-                    label="Mark as mastered"
-                    onClick={() => beginTriageExit(snippet.id, 'mastered')}
+                    label="Mark capture as processed"
+                    onClick={() => inlineTriage.onRequestProcess(snippet.id)}
                   >
                     <TriageStatusIcon status="mastered" size={14} />
+                  </IconTriageButton>
+                  <IconTriageButton
+                    label="Delete capture"
+                    onClick={() => beginTriageExit(snippet.id, 'delete')}
+                  >
+                    <DeleteSnippetIcon size={14} />
                   </IconTriageButton>
                 </div>
               ) : null}
@@ -283,6 +298,28 @@ function ReviewScheduleBadge({
     >
       {meta.relativeLabel}
     </span>
+  );
+}
+
+function DeleteSnippetIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-text-muted"
+      aria-hidden
+    >
+      <path d="M9 3h6l1 3H8l1-3Z" />
+      <path d="M5 6h14v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6Z" />
+      <path d="M10 10v7" />
+      <path d="M14 10v7" />
+    </svg>
   );
 }
 

@@ -1,6 +1,8 @@
 import type { LanguageFragment } from './types';
 
 export const SNIPPET_CHAT_GENERAL_THREAD_KEY = '__general__';
+/** Single global inbox session (tab memory); grounding still uses current capture per send. */
+export const SNIPPET_CHAT_GLOBAL_THREAD_KEY = SNIPPET_CHAT_GENERAL_THREAD_KEY;
 export const SNIPPET_CHAT_PORT_NAME = 'semia-snippet-chat';
 
 export type SnippetChatTurn = {
@@ -13,6 +15,7 @@ export type SnippetChatPortStart = {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 };
 
 export type SnippetChatPortMessage =
@@ -44,6 +47,10 @@ export function resolveSnippetChatThreadKey(
 ): string {
   const trimmed = fragmentId?.trim();
   return trimmed ? trimmed : SNIPPET_CHAT_GENERAL_THREAD_KEY;
+}
+
+export function resolveGlobalSnippetChatThreadKey(): string {
+  return SNIPPET_CHAT_GLOBAL_THREAD_KEY;
 }
 
 export function snippetChatContextLabel(

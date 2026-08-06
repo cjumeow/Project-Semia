@@ -9,3 +9,10 @@ export function isContextWindowEnabled(settings?: SemiaSettings): boolean {
 export function isLanguageCardsProEnabled(settings?: SemiaSettings): boolean {
   return settings?.languageCardsProEnabled === true;
 }
+
+/** AI field suggestions default on; only an explicit `false` disables them. */
+export function isLanguageCardAiSuggestionsEnabled(
+  settings?: SemiaSettings,
+): boolean {
+  return settings?.languageCardAiSuggestionsEnabled !== false;
+}

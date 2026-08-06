@@ -1,5 +1,6 @@
 import {
   isContextWindowEnabled,
+  isLanguageCardAiSuggestionsEnabled,
   isLanguageCardsProEnabled,
   SEMIA_SETTINGS_STORAGE_KEY,
   type SemiaSettings,
@@ -10,6 +11,7 @@ const DEFAULT_SETTINGS: SemiaSettings = {
   nativeLanguage: 'zh-TW',
   contextWindowEnabled: true,
   languageCardsProEnabled: false,
+  languageCardAiSuggestionsEnabled: true,
 };
 
 function readStoredSettings(): SemiaSettings {
@@ -52,8 +54,11 @@ export function useSemiaSettings(): {
   loading: boolean;
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
+  languageCardAiSuggestionsEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
+  setLanguageCardAiSuggestionsEnabled: (enabled: boolean) => Promise<void>;
+  setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
 } {
   const [settings, setSettings] = useState<SemiaSettings>(readStoredSettings);
   const [loading, setLoading] = useState(true);
@@ -118,12 +123,30 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
+  const setLanguageCardAiSuggestionsEnabled = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      await updateSettings({ languageCardAiSuggestionsEnabled: enabled });
+    },
+    [updateSettings],
+  );
+
+  const setSkipInboxArchiveWithoutFormalCardConfirm = useCallback(
+    async (skip: boolean): Promise<void> => {
+      await updateSettings({ skipInboxArchiveWithoutFormalCardConfirm: skip });
+    },
+    [updateSettings],
+  );
+
   return {
     settings,
     loading,
     contextWindowEnabled: isContextWindowEnabled(settings),
     languageCardsProEnabled: isLanguageCardsProEnabled(settings),
+    languageCardAiSuggestionsEnabled:
+      isLanguageCardAiSuggestionsEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
+    setLanguageCardAiSuggestionsEnabled,
+    setSkipInboxArchiveWithoutFormalCardConfirm,
   };
 }

@@ -1,6 +1,9 @@
 import {
+  didSnippetChatContextChange,
   finalizeStreamingAssistantMessages,
+  formatSnippetChatContextSwitchNotice,
   isSnippetChatAbortedError,
+  resolveGlobalSnippetChatThreadKey,
   resolveSnippetChatThreadKey,
   snippetChatContextLabel,
   type SnippetChatTurn,
@@ -9,9 +12,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
 
+export type SnippetChatMessageKind = 'chat' | 'context-switch';
+
 export type SnippetChatMessage = SnippetChatTurn & {
   id: string;
   streaming?: boolean;
+  kind?: SnippetChatMessageKind;
 };
 
 function nextMessageId(): string {
@@ -19,15 +25,21 @@ function nextMessageId(): string {
 }
 
 function toTurns(messages: SnippetChatMessage[]): SnippetChatTurn[] {
-  return messages.map(({ role, content }) => ({ role, content }));
+  return messages
+    .filter(
+      (message) => !message.streaming && message.kind !== 'context-switch',
+    )
+    .map(({ role, content }) => ({ role, content }));
 }
 
 export function useSnippetChat({
   chatSnippet,
   isLive,
+  globalThread = true,
 }: {
   chatSnippet: CorpusSnippet | null;
   isLive: boolean;
+  globalThread?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
@@ -43,9 +55,59 @@ export function useSnippetChat({
     assistantMessageId: string;
   } | null>(null);
 
-  const threadKey = resolveSnippetChatThreadKey(chatSnippet?.id);
+  const lastGroundedFragmentIdRef = useRef<string | null>(null);
+
+  const threadKey = globalThread
+    ? resolveGlobalSnippetChatThreadKey()
+    : resolveSnippetChatThreadKey(chatSnippet?.id);
   const activeMessages = messagesByThread[threadKey] ?? [];
   const contextLabel = snippetChatContextLabel(chatSnippet?.selectedText);
+
+  const appendContextSwitchNotice = useCallback(
+    (snippet: CorpusSnippet) => {
+      if (!globalThread) return;
+
+      setMessagesByThread((prev) => ({
+        ...prev,
+        [threadKey]: [
+          ...(prev[threadKey] ?? []),
+          {
+            id: nextMessageId(),
+            role: 'assistant',
+            kind: 'context-switch',
+            content: formatSnippetChatContextSwitchNotice(snippet),
+          },
+        ],
+      }));
+    },
+    [globalThread, threadKey],
+  );
+
+  const recordContextSwitch = useCallback(
+    (snippet: CorpusSnippet | null | undefined) => {
+      if (!globalThread || !snippet) return;
+
+      const previousId = lastGroundedFragmentIdRef.current;
+      if (didSnippetChatContextChange(previousId, snippet.id)) {
+        appendContextSwitchNotice(snippet);
+      }
+      lastGroundedFragmentIdRef.current = snippet.id;
+    },
+    [appendContextSwitchNotice, globalThread],
+  );
+
+  useEffect(() => {
+    if (!globalThread || !chatSnippet) {
+      return;
+    }
+
+    if (open) {
+      recordContextSwitch(chatSnippet);
+      return;
+    }
+
+    lastGroundedFragmentIdRef.current = chatSnippet.id;
+  }, [chatSnippet, globalThread, open, recordContextSwitch]);
 
   const finalizeActiveAssistant = useCallback(() => {
     const active = activeStreamRef.current;
@@ -71,8 +133,11 @@ export function useSnippetChat({
   abortActiveStreamRef.current = abortActiveStream;
 
   useEffect(() => {
+    if (globalThread) {
+      return;
+    }
     abortActiveStreamRef.current();
-  }, [threadKey]);
+  }, [globalThread, threadKey]);
 
   useEffect(() => {
     return () => {
@@ -130,6 +195,7 @@ export function useSnippetChat({
             fragment: chatSnippet ?? undefined,
             history,
             userMessage: trimmed,
+            globalThread,
           },
           {
             onChunk: (delta) => {
@@ -179,7 +245,7 @@ export function useSnippetChat({
         setSending(false);
       }
     },
-    [abortActiveStream, chatSnippet, isLive, messagesByThread, threadKey],
+    [abortActiveStream, chatSnippet, globalThread, isLive, messagesByThread, threadKey],
   );
 
   const toggle = useCallback(() => {
@@ -206,6 +272,8 @@ export function useSnippetChat({
     threadKey,
     sendMessage,
     hasSnippetContext: Boolean(chatSnippet),
+    globalThread,
+    recordContextSwitch,
   };
 }
 

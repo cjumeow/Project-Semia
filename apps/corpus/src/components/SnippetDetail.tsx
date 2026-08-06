@@ -8,7 +8,9 @@ import { NoteCard } from './NoteCard';
 
 type SnippetDetailProps = {
   snippet: CorpusSnippet | undefined;
-  width: number;
+  width?: number;
+  embedded?: boolean;
+  variant?: 'default' | 'inbox-snip';
   generating?: boolean;
   error?: string | null;
   onRegenerate?: () => void;
@@ -27,6 +29,8 @@ type SnippetDetailProps = {
 export function SnippetDetail({
   snippet,
   width,
+  embedded = false,
+  variant = 'default',
   generating,
   error,
   onRegenerate,
@@ -41,11 +45,21 @@ export function SnippetDetail({
   createLanguageCardEnabled,
   onOpenLanguageCards,
 }: SnippetDetailProps) {
+  const isInboxSnip = variant === 'inbox-snip';
+  const shellClass = embedded
+    ? 'flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface'
+    : 'flex h-full shrink-0 flex-col overflow-y-auto bg-surface';
+  const shellStyle = embedded ? undefined : { width };
+
   if (!snippet) {
     return (
       <section
-        className="flex h-full shrink-0 items-center justify-center bg-surface"
-        style={{ width }}
+        className={
+          embedded
+            ? 'flex flex-1 items-center justify-center bg-surface'
+            : 'flex h-full shrink-0 items-center justify-center bg-surface'
+        }
+        style={shellStyle}
       >
         <p className="px-6 text-center text-sm text-text-muted">
           Select a snippet to view its note.
@@ -55,15 +69,21 @@ export function SnippetDetail({
   }
 
   return (
-    <section
-      className="flex h-full shrink-0 flex-col overflow-y-auto bg-surface"
-      style={{ width }}
-    >
+    <section className={shellClass} style={shellStyle}>
       <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface/95 px-5 py-4 backdrop-blur-sm">
         <h2 className="font-reading min-w-0 text-xl font-semibold leading-snug tracking-tight text-text">
           {snippet.selectedText}
         </h2>
         <div className="flex shrink-0 flex-col items-end gap-2">
+          {isInboxSnip && languageCardCount && languageCardCount > 0 && onOpenLanguageCards ? (
+            <button
+              type="button"
+              className="rounded-full border border-border bg-canvas px-2.5 py-0.5 text-[10px] font-medium text-text-secondary hover:border-accent/40 hover:text-accent"
+              onClick={onOpenLanguageCards}
+            >
+              {languageCardCount} card{languageCardCount === 1 ? '' : 's'}
+            </button>
+          ) : null}
           {isYouTubeAnchor(snippet.anchor) ? (
             <span className="rounded-md border border-border bg-canvas px-2 py-0.5 font-mono text-xs tabular-nums text-text-secondary">
               {formatTimestamp(snippetSeekSeconds(snippet) ?? 0)}
@@ -97,17 +117,19 @@ export function SnippetDetail({
           contextError={contextError}
           contextWindowEnabled={contextWindowEnabled}
           onOpenSettings={onOpenSettings}
-          languageCardCount={languageCardCount}
-          onOpenLanguageCards={onOpenLanguageCards}
-          onCreateLanguageCard={onCreateLanguageCard}
-          createLanguageCardEnabled={createLanguageCardEnabled}
+          languageCardCount={isInboxSnip ? undefined : languageCardCount}
+          onOpenLanguageCards={isInboxSnip ? undefined : onOpenLanguageCards}
+          onCreateLanguageCard={isInboxSnip ? undefined : onCreateLanguageCard}
+          createLanguageCardEnabled={
+            isInboxSnip ? false : createLanguageCardEnabled
+          }
           onMarkMastered={
             onMarkMastered && effectiveTriageStatus(snippet) === 'review'
               ? onMarkMastered
               : undefined
           }
         />
-        {languageCards.length > 0 ? (
+        {!isInboxSnip && languageCards.length > 0 ? (
           <LinkedLanguageCards cards={languageCards} />
         ) : null}
       </div>

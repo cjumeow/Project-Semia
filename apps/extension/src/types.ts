@@ -36,6 +36,28 @@ export type BackgroundMessage =
   | { type: 'LIST_TRANSCRIPTS' }
   | { type: 'LIST_SNIPPET_NOTES' }
   | { type: 'LIST_LANGUAGE_CARDS' }
+  | {
+      type: 'GET_LANGUAGE_CARD_DRAFT';
+      sourceFragmentId: string;
+    }
+  | {
+      type: 'SAVE_LANGUAGE_CARD_DRAFT';
+      draft: import('@semia/shared').LanguageCardDraft;
+    }
+  | {
+      type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT';
+      fragment: LanguageFragment;
+      draft: import('@semia/shared').LanguageCardDraftContent;
+    }
+  | {
+      type: 'UPDATE_LANGUAGE_CARD_CONTENT';
+      cardId: string;
+      content: import('@semia/shared').LanguageCardDraftContent;
+    }
+  | {
+      type: 'CLEAR_LANGUAGE_CARD_DRAFT';
+      sourceFragmentId: string;
+    }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
   | {
@@ -65,4 +87,11 @@ export type BackgroundMessage =
       fragment?: LanguageFragment;
       history: SnippetChatTurn[];
       userMessage: string;
+      globalThread?: boolean;
+    }
+  | {
+      type: 'SUGGEST_LANGUAGE_CARD_FIELDS';
+      fragment: LanguageFragment;
+      focusText: string;
+      fields: import('@semia/shared').LanguageCardSuggestableField[];
     };

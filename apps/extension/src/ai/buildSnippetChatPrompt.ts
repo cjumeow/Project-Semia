@@ -1,5 +1,10 @@
 import type { LanguageFragment, SnippetNote } from '@semia/shared';
 import {
+  buildActiveCapturePromptBlock,
+  GLOBAL_SNIPPET_CHAT_GROUNDING_RULES,
+  PER_SNIPPET_CHAT_GROUNDING_RULES,
+} from '@semia/shared';
+import {
   buildSnippetContextUserBlock,
   targetLanguageLabel,
 } from './snippetPromptContext';
@@ -8,10 +13,12 @@ export function buildSnippetChatSystemPrompt({
   fragment,
   note,
   nativeLanguage,
+  globalThread = false,
 }: {
   fragment?: LanguageFragment;
   note?: SnippetNote;
   nativeLanguage: string;
+  globalThread?: boolean;
 }): string {
   const targetLang = targetLanguageLabel(nativeLanguage);
 
@@ -23,7 +30,13 @@ Write explanations in ${targetLang} unless quoting example sentences in another 
 Be concise and practical.`;
   }
 
-  const contextParts = [buildSnippetContextUserBlock(fragment), ''];
+  const groundingRules = globalThread
+    ? GLOBAL_SNIPPET_CHAT_GROUNDING_RULES
+    : PER_SNIPPET_CHAT_GROUNDING_RULES;
+
+  const contextParts = globalThread
+    ? [buildActiveCapturePromptBlock(fragment), '', buildSnippetContextUserBlock(fragment), '']
+    : [buildSnippetContextUserBlock(fragment), ''];
 
   if (note?.generatedAt) {
     contextParts.push(
@@ -42,15 +55,14 @@ Be concise and practical.`;
     );
   }
 
-  return `You are a language tutor helping a learner understand a captured snippet from real media.
+  return `${groundingRules}
 Write explanations in ${targetLang} unless the user asks for example sentences in ${fragment.languageCode}.
-
-The following snippet context is attached for this conversation. Use it to give accurate, contextual advice about vocabulary, usage, collocations, and example sentences.
 
 ${contextParts.join('\n')}
 
 Guidelines:
+- When listing study points, collocations, or examples, use single-level markdown bullets (\`- item\`) only; do not nest sub-bullets.
 - Proactively suggest practical study angles (daily usage, example sentences, spoken vs written register) when helpful.
-- Stay grounded in the snippet context; do not invent facts about the source.
+- Stay grounded in the ACTIVE CAPTURE / snippet context; do not invent facts about the source.
 - Be concise unless the user asks for depth.`;
 }
