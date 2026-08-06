@@ -17,6 +17,7 @@ import { useSnippetNoteGeneration } from './hooks/useSnippetNoteGeneration';
 import { useResizableWidth } from './hooks/useResizableWidth';
 import { ResizeHandle } from './components/ResizeHandle';
 import { SemiaSidebar } from './components/SemiaSidebar';
+import { InboxDetailPanel } from './components/InboxDetailPanel';
 import { SnippetDetail } from './components/SnippetDetail';
 import { SourceWorkspace } from './components/SourceWorkspace';
 import { LanguageCardReviewWorkspace } from './components/LanguageCardReviewWorkspace';
@@ -461,30 +462,48 @@ export default function App() {
           <ResizeHandle onResizeStart={onDetailResizeStart} />
 
           <div className="flex h-full shrink-0 border-l border-border bg-surface">
-            <SnippetDetail
-              snippet={selectedSnippet}
-              width={detailWidth}
-              generating={generating}
-              error={noteError}
-              onRegenerate={() => {
-                void regenerate();
-              }}
-              generatingContext={generatingContext}
-              contextError={contextError}
-              contextWindowEnabled={contextWindowEnabled}
-              onOpenSettings={() => setSettingsOpen(true)}
-              languageCards={snippetLanguageCards}
-              {...languageCardProps}
-              onMarkMastered={
-                isLive &&
-                selectedSnippet &&
-                effectiveTriageStatus(selectedSnippet) === 'review'
-                  ? () => {
-                      void handleMarkTriage(selectedSnippet.id, 'mastered');
-                    }
-                  : undefined
-              }
-            />
+            {selection.pane === 'inbox' ? (
+              <InboxDetailPanel
+                snippet={selectedSnippet}
+                width={detailWidth}
+                generating={generating}
+                error={noteError}
+                onRegenerate={() => {
+                  void regenerate();
+                }}
+                generatingContext={generatingContext}
+                contextError={contextError}
+                contextWindowEnabled={contextWindowEnabled}
+                onOpenSettings={() => setSettingsOpen(true)}
+                languageCards={snippetLanguageCards}
+                {...languageCardProps}
+              />
+            ) : (
+              <SnippetDetail
+                snippet={selectedSnippet}
+                width={detailWidth}
+                generating={generating}
+                error={noteError}
+                onRegenerate={() => {
+                  void regenerate();
+                }}
+                generatingContext={generatingContext}
+                contextError={contextError}
+                contextWindowEnabled={contextWindowEnabled}
+                onOpenSettings={() => setSettingsOpen(true)}
+                languageCards={snippetLanguageCards}
+                {...languageCardProps}
+                onMarkMastered={
+                  isLive &&
+                  selectedSnippet &&
+                  effectiveTriageStatus(selectedSnippet) === 'review'
+                    ? () => {
+                        void handleMarkTriage(selectedSnippet.id, 'mastered');
+                      }
+                    : undefined
+                }
+              />
+            )}
           </div>
         </>
       ) : null}

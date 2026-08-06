@@ -34,10 +34,10 @@ export function InboxArchiveConfirmDialog({
           id="inbox-archive-confirm-title"
           className="font-display text-base font-semibold text-text"
         >
-          尚未建立任何卡片
+          No language cards yet
         </h2>
         <p className="mt-2 text-sm text-text-secondary">
-          目前尚未建立任何卡片，仍要歸檔？
+          You have not created any language cards for this capture. Archive anyway?
         </p>
         <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-canvas/40 px-3 py-3">
           <input
@@ -46,7 +46,7 @@ export function InboxArchiveConfirmDialog({
             checked={dontShowAgain}
             onChange={(event) => onDontShowAgainChange(event.target.checked)}
           />
-          <span className="text-sm text-text-secondary">不再顯示此訊息</span>
+          <span className="text-sm text-text-secondary">Do not show this again</span>
         </label>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -54,14 +54,14 @@ export function InboxArchiveConfirmDialog({
             className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:bg-canvas"
             onClick={onCancel}
           >
-            取消
+            Cancel
           </button>
           <button
             type="button"
             className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:brightness-110"
             onClick={onConfirm}
           >
-            仍要歸檔
+            Archive anyway
           </button>
         </div>
       </div>
