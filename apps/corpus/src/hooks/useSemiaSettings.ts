@@ -54,6 +54,7 @@ export function useSemiaSettings(): {
   languageCardsProEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
+  setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
 } {
   const [settings, setSettings] = useState<SemiaSettings>(readStoredSettings);
   const [loading, setLoading] = useState(true);
@@ -118,6 +119,13 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
+  const setSkipInboxArchiveWithoutFormalCardConfirm = useCallback(
+    async (skip: boolean): Promise<void> => {
+      await updateSettings({ skipInboxArchiveWithoutFormalCardConfirm: skip });
+    },
+    [updateSettings],
+  );
+
   return {
     settings,
     loading,
@@ -125,5 +133,6 @@ export function useSemiaSettings(): {
     languageCardsProEnabled: isLanguageCardsProEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
+    setSkipInboxArchiveWithoutFormalCardConfirm,
   };
 }

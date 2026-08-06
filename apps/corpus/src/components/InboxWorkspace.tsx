@@ -1,4 +1,5 @@
 import type { CorpusSnippet } from '../types/corpus';
+import type { InboxProcessTrigger } from './inboxTriageTypes';
 import { SelectionList } from './SelectionList';
 
 type InboxWorkspaceProps = {
@@ -6,9 +7,12 @@ type InboxWorkspaceProps = {
   inboxSourceCount: number;
   selectedSnippetId: string | null;
   onSelectSnippet: (snippetId: string) => void;
-  onMarkReview: (snippetId: string) => void;
-  onMarkMastered: (snippetId: string) => void;
+  onRequestProcess: (snippetId: string) => void;
+  onProcessComplete: (snippetId: string) => void;
+  onDeleteSnippet: (snippetId: string) => void;
   onTriageExitStart?: (snippetId: string) => void;
+  processTrigger?: InboxProcessTrigger | null;
+  onProcessTriggerConsumed?: () => void;
   triageEnabled: boolean;
 };
 
@@ -17,9 +21,12 @@ export function InboxWorkspace({
   inboxSourceCount,
   selectedSnippetId,
   onSelectSnippet,
-  onMarkReview,
-  onMarkMastered,
+  onRequestProcess,
+  onProcessComplete,
+  onDeleteSnippet,
   onTriageExitStart,
+  processTrigger,
+  onProcessTriggerConsumed,
   triageEnabled,
 }: InboxWorkspaceProps) {
   return (
@@ -47,9 +54,12 @@ export function InboxWorkspace({
           inlineTriage={
             triageEnabled
               ? {
-                  onMarkReview,
-                  onMarkMastered,
+                  onRequestProcess,
+                  onProcessComplete,
+                  onDelete: onDeleteSnippet,
                   onExitStart: onTriageExitStart,
+                  processTrigger,
+                  onProcessTriggerConsumed,
                 }
               : undefined
           }

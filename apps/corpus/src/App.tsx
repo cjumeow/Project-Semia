@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LanguageCard } from '@semia/shared';
 import { MAX_LANGUAGE_CARDS_PER_FRAGMENT } from '@semia/shared';
 import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
+import { InboxArchiveConfirmDialog } from './components/InboxArchiveConfirmDialog';
 import { InboxWorkspace } from './components/InboxWorkspace';
 import { MyCardsWorkspace } from './components/MyCardsWorkspace';
 import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
@@ -30,6 +31,10 @@ import { effectiveTriageStatus, snippetSeekSeconds } from './utils/corpusGroupin
 import { useSnippetChat } from './hooks/useSnippetChat';
 import { WorkspaceWithChat } from './components/WorkspaceWithChat';
 import { isEditableTarget } from './utils/isEditableTarget';
+import {
+  shouldPromptArchiveWithoutFormalCards,
+} from './utils/languageCardInboxWorkspaceModel';
+import type { InboxProcessTrigger } from './components/inboxTriageTypes';
 
 const SIDEBAR_COLLAPSED_WIDTH = 52;
 
@@ -39,11 +44,19 @@ export default function App() {
   const [previewCard, setPreviewCard] = useState<LanguageCard | null>(null);
   const [languageCardListOpen, setLanguageCardListOpen] = useState(false);
   const [languageCardDetail, setLanguageCardDetail] = useState<LanguageCard | null>(null);
+  const [archiveConfirmSnippetId, setArchiveConfirmSnippetId] = useState<
+    string | null
+  >(null);
+  const [archiveDontShowAgain, setArchiveDontShowAgain] = useState(false);
+  const [inboxProcessTrigger, setInboxProcessTrigger] =
+    useState<InboxProcessTrigger | null>(null);
   const {
+    settings,
     contextWindowEnabled,
     languageCardsProEnabled,
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
+    setSkipInboxArchiveWithoutFormalCardConfirm,
   } = useSemiaSettings();
   const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
   const {
@@ -219,6 +232,56 @@ export default function App() {
     await refresh();
   }, [isLive, refresh, selectedSnippet]);
 
+  const handleDeleteSnippetById = useCallback(
+    async (snippetId: string): Promise<void> => {
+      if (!isLive) return;
+      await corpusRepository.deleteFragment(snippetId);
+      await refresh();
+    },
+    [isLive, refresh],
+  );
+
+  const completeInboxArchive = useCallback(
+    async (snippetId: string): Promise<void> => {
+      if (!isLive) return;
+      await corpusRepository.setSnippetTriageStatus(snippetId, 'mastered');
+      await refresh();
+    },
+    [isLive, refresh],
+  );
+
+  const handleRequestInboxProcess = useCallback(
+    (snippetId: string): void => {
+      const formalCount = countForFragment(snippetId);
+      if (
+        shouldPromptArchiveWithoutFormalCards(
+          formalCount,
+          settings.skipInboxArchiveWithoutFormalCardConfirm ?? false,
+        )
+      ) {
+        setArchiveDontShowAgain(false);
+        setArchiveConfirmSnippetId(snippetId);
+        return;
+      }
+      setInboxProcessTrigger({ snippetId, nonce: Date.now() });
+    },
+    [countForFragment, settings.skipInboxArchiveWithoutFormalCardConfirm],
+  );
+
+  const handleConfirmInboxArchive = useCallback(async (): Promise<void> => {
+    if (!archiveConfirmSnippetId) return;
+    if (archiveDontShowAgain) {
+      await setSkipInboxArchiveWithoutFormalCardConfirm(true);
+    }
+    const snippetId = archiveConfirmSnippetId;
+    setArchiveConfirmSnippetId(null);
+    setInboxProcessTrigger({ snippetId, nonce: Date.now() });
+  }, [
+    archiveConfirmSnippetId,
+    archiveDontShowAgain,
+    setSkipInboxArchiveWithoutFormalCardConfirm,
+  ]);
+
   const handleDeleteSource = useCallback(async (): Promise<void> => {
     if (!selectedGroup || !isLive) return;
 
@@ -257,13 +320,16 @@ export default function App() {
         inboxSourceCount={inboxSourceGroups.length}
         selectedSnippetId={selection.snippetId}
         onSelectSnippet={selectSnippet}
-        onMarkReview={(snippetId) => {
-          void handleMarkTriage(snippetId, 'review');
+        onRequestProcess={handleRequestInboxProcess}
+        onProcessComplete={(snippetId) => {
+          void completeInboxArchive(snippetId);
         }}
-        onMarkMastered={(snippetId) => {
-          void handleMarkTriage(snippetId, 'mastered');
+        onDeleteSnippet={(snippetId) => {
+          void handleDeleteSnippetById(snippetId);
         }}
         onTriageExitStart={advanceInboxSelectionAfterTriage}
+        processTrigger={inboxProcessTrigger}
+        onProcessTriggerConsumed={() => setInboxProcessTrigger(null)}
         triageEnabled={isLive}
       />
     ) : selection.pane === 'review-queue' ? (
@@ -422,6 +488,15 @@ export default function App() {
           </div>
         </>
       ) : null}
+      <InboxArchiveConfirmDialog
+        open={archiveConfirmSnippetId !== null}
+        dontShowAgain={archiveDontShowAgain}
+        onDontShowAgainChange={setArchiveDontShowAgain}
+        onCancel={() => setArchiveConfirmSnippetId(null)}
+        onConfirm={() => {
+          void handleConfirmInboxArchive();
+        }}
+      />
       <SemiaSettingsDialog
         open={settingsOpen}
         contextWindowEnabled={contextWindowEnabled}

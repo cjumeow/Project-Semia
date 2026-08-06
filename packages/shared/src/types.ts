@@ -189,4 +189,6 @@ export type SemiaSettings = {
   contextWindowEnabled?: boolean;
   /** Dev/billing stub: allow language card creation when true. */
   languageCardsProEnabled?: boolean;
+  /** When true, skip the inbox archive confirm when no formal language card exists. */
+  skipInboxArchiveWithoutFormalCardConfirm?: boolean;
 };
