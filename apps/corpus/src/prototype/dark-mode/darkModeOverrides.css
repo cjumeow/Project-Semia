@@ -14,3 +14,7 @@
   border-color: var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 92%, #000);
 }
+
+.dark-mode-proto .hover\:bg-white:hover {
+  background-color: var(--color-canvas) !important;
+}

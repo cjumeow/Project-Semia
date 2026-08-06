@@ -1,3 +1,8 @@
+import {
+  CURSOR_DARK_CSS_VARS,
+  CURSOR_DARK_DEEP_CSS_VARS,
+} from './cursorThemeTokens';
+
 export type DarkModeVariantKey = 'A' | 'B' | 'C';
 
 export type DarkModeVariant = {
@@ -7,27 +12,15 @@ export type DarkModeVariant = {
   vars: Record<string, string>;
 };
 
-/** Color-only dark palettes — production layout unchanged (real App shell). */
+export type DarkModeViewKey = 'inbox' | 'cards';
+
+/** Color-only dark palettes — layout unchanged; showcase uses mock Inbox + cards grid. */
 export const DARK_MODE_VARIANTS: DarkModeVariant[] = [
   {
     key: 'A',
-    label: 'Slate night',
-    description: 'Cool blue-gray surfaces, balanced contrast',
-    vars: {
-      '--color-shelf': '#0f172a',
-      '--color-canvas': '#111827',
-      '--color-surface': '#1e293b',
-      '--color-border': '#334155',
-      '--color-border-strong': '#475569',
-      '--color-text': '#f1f5f9',
-      '--color-text-secondary': '#cbd5e1',
-      '--color-text-muted': '#94a3b8',
-      '--color-accent': '#60a5fa',
-      '--color-accent-soft': '#1e3a5f',
-      '--color-language-card': '#3b82f6',
-      '--color-context-collapsed': '#1e293b',
-      '--color-section-label': '#e2e8f0',
-    },
+    label: 'Cursor chrome',
+    description: 'VS Code / Cursor editor — #1e1e1e canvas, #252526 sidebar',
+    vars: CURSOR_DARK_CSS_VARS,
   },
   {
     key: 'B',
@@ -51,23 +44,9 @@ export const DARK_MODE_VARIANTS: DarkModeVariant[] = [
   },
   {
     key: 'C',
-    label: 'OLED dim',
-    description: 'Near-black canvas, higher text contrast, brand blue accent',
-    vars: {
-      '--color-shelf': '#000000',
-      '--color-canvas': '#000000',
-      '--color-surface': '#0a0a0a',
-      '--color-border': '#262626',
-      '--color-border-strong': '#404040',
-      '--color-text': '#fafafa',
-      '--color-text-secondary': '#d4d4d4',
-      '--color-text-muted': '#a3a3a3',
-      '--color-accent': '#4493d4',
-      '--color-accent-soft': '#0c2d4a',
-      '--color-language-card': '#2563eb',
-      '--color-context-collapsed': '#171717',
-      '--color-section-label': '#f5f5f5',
-    },
+    label: 'Cursor deep',
+    description: 'Darker #181818 editor well, muted sidebar',
+    vars: CURSOR_DARK_DEEP_CSS_VARS,
   },
 ];
 
@@ -76,4 +55,8 @@ export function darkModeVariantForKey(key: string | null): DarkModeVariant {
     DARK_MODE_VARIANTS.find((variant) => variant.key === key) ??
     DARK_MODE_VARIANTS[0]!
   );
+}
+
+export function darkModeViewForKey(key: string | null): DarkModeViewKey {
+  return key === 'cards' ? 'cards' : 'inbox';
 }
