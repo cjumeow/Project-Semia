@@ -48,6 +48,7 @@ export function handleSnippetChatPortConnection(port: chrome.runtime.Port): void
         fragment: message.fragment,
         history: message.history,
         userMessage: message.userMessage,
+        globalThread: message.globalThread,
       },
       (delta) => {
         postPortMessage(port, { type: 'chunk', delta });

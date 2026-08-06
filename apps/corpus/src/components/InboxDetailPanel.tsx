@@ -20,6 +20,8 @@ type InboxDetailPanelProps = {
   languageCards?: LanguageCard[];
   languageCardCount?: number;
   createLanguageCardEnabled?: boolean;
+  languageCardAiSuggestionsEnabled?: boolean;
+  isLive?: boolean;
   onLanguageCardsChanged?: () => Promise<void>;
 };
 
@@ -36,6 +38,8 @@ export function InboxDetailPanel({
   languageCards = [],
   languageCardCount = 0,
   createLanguageCardEnabled = false,
+  languageCardAiSuggestionsEnabled = true,
+  isLive = false,
   onLanguageCardsChanged,
 }: InboxDetailPanelProps) {
   const [detailTab, setDetailTab] = useState<DetailTab>('snip');
@@ -71,6 +75,8 @@ export function InboxDetailPanel({
             snippet={snippet}
             languageCards={languageCards}
             createEnabled={createLanguageCardEnabled}
+            aiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+            isLive={isLive}
             onCardsChanged={onLanguageCardsChanged ?? (async () => {})}
           />
         )}

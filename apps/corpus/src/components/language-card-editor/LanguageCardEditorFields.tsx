@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import {
   toggleOptionalField,
   type LanguageCardDraftContent,
   type LanguageCardOptionalFieldKey,
 } from '@semia/shared';
+import type { CorpusSnippet } from '../../types/corpus';
+import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
+import { FieldSuggestionChip } from './FieldSuggestionChip';
+import { FocusSourcePicker } from './FocusSourcePicker';
 
 const OPTIONAL_FIELDS: Array<{
   key: LanguageCardOptionalFieldKey;
@@ -25,8 +30,12 @@ const OPTIONAL_FIELDS: Array<{
 ];
 
 type LanguageCardEditorFieldsProps = {
+  snippet?: CorpusSnippet;
   content: LanguageCardDraftContent;
   disabled?: boolean;
+  showFocusPicker?: boolean;
+  showSuggestions?: boolean;
+  suggestions?: LanguageCardFieldSuggestionsView;
   onChange: (patch: Partial<LanguageCardDraftContent>) => void;
   onToggleOptionalField: (
     field: LanguageCardOptionalFieldKey,
@@ -35,24 +44,51 @@ type LanguageCardEditorFieldsProps = {
 };
 
 export function LanguageCardEditorFields({
+  snippet,
   content,
   disabled = false,
+  showFocusPicker = false,
+  showSuggestions = false,
+  suggestions,
   onChange,
   onToggleOptionalField,
 }: LanguageCardEditorFieldsProps) {
+  const [focusPickerOpen, setFocusPickerOpen] = useState(false);
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-4">
       <article className="rounded-xl border border-border bg-canvas p-4">
-        <div className="mb-4">
-          <label className="text-xs font-medium text-text-secondary">Focus</label>
+        <div className="relative mb-4">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <label className="text-xs font-medium text-text-secondary">Focus</label>
+            {showFocusPicker && snippet ? (
+              <button
+                type="button"
+                className="rounded-md border border-border px-2 py-0.5 text-[10px] font-medium text-text-muted hover:bg-surface hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={disabled}
+                onClick={() => setFocusPickerOpen((open) => !open)}
+              >
+                Pick from capture
+              </button>
+            ) : null}
+          </div>
           <input
             type="text"
             value={content.focusText}
             disabled={disabled}
             onChange={(event) => onChange({ focusText: event.target.value })}
             placeholder="Word or phrase from the capture"
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
           />
+          {showFocusPicker && snippet ? (
+            <FocusSourcePicker
+              open={focusPickerOpen}
+              contextWindow={snippet.note.dynamicContextBlock}
+              originalSpeech={snippet.note.originalSpeech}
+              onClose={() => setFocusPickerOpen(false)}
+              onPick={(text) => onChange({ focusText: text })}
+            />
+          ) : null}
         </div>
 
         <div className="mb-4">
@@ -65,6 +101,15 @@ export function LanguageCardEditorFields({
             placeholder="Explanation in your native language"
             className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
           />
+          {showSuggestions && suggestions?.meaning ? (
+            <FieldSuggestionChip
+              label="meaning"
+              suggestion={suggestions.meaning.text}
+              loading={suggestions.meaning.loading}
+              onAccept={suggestions.acceptMeaning}
+              onDismiss={suggestions.dismissMeaning}
+            />
+          ) : null}
         </div>
 
         <div className="space-y-3 border-t border-border pt-4">
@@ -124,6 +169,15 @@ export function LanguageCardEditorFields({
               </div>
             );
           })}
+          {showSuggestions && suggestions?.example ? (
+            <FieldSuggestionChip
+              label="example"
+              suggestion={suggestions.example.text}
+              loading={suggestions.example.loading}
+              onAccept={suggestions.acceptExample}
+              onDismiss={suggestions.dismissExample}
+            />
+          ) : null}
         </div>
       </article>
     </div>

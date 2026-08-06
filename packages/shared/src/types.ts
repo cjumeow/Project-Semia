@@ -189,6 +189,8 @@ export type SemiaSettings = {
   contextWindowEnabled?: boolean;
   /** Dev/billing stub: allow language card creation when true. */
   languageCardsProEnabled?: boolean;
+  /** When false, skip AI suggestions for language card meaning/example. Default: on. */
+  languageCardAiSuggestionsEnabled?: boolean;
   /** When true, skip the inbox archive confirm when no formal language card exists. */
   skipInboxArchiveWithoutFormalCardConfirm?: boolean;
 };

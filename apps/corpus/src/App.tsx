@@ -55,8 +55,10 @@ export default function App() {
     settings,
     contextWindowEnabled,
     languageCardsProEnabled,
+    languageCardAiSuggestionsEnabled,
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
+    setLanguageCardAiSuggestionsEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   } = useSemiaSettings();
   const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
@@ -470,7 +472,15 @@ export default function App() {
           contextSnippets={inboxChatContextSnippets}
           activeContextSnippetId={selectedSnippet?.id}
           onSelectContextSnippet={
-            selection.pane === 'inbox' ? selectSnippet : undefined
+            selection.pane === 'inbox'
+              ? (snippetId) => {
+                  const snippet = pendingQueue.find((item) => item.id === snippetId);
+                  if (snippet) {
+                    snippetChat.recordContextSwitch(snippet);
+                  }
+                  selectSnippet(snippetId);
+                }
+              : undefined
           }
         >
           {workspace}
@@ -498,6 +508,8 @@ export default function App() {
                 languageCards={snippetLanguageCards}
                 languageCardCount={languageCardCount}
                 createLanguageCardEnabled={createLanguageCardEnabled}
+                languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+                isLive={isLive}
                 onLanguageCardsChanged={refreshLanguageCards}
               />
             ) : (
@@ -542,12 +554,16 @@ export default function App() {
         open={settingsOpen}
         contextWindowEnabled={contextWindowEnabled}
         languageCardsProEnabled={languageCardsProEnabled}
+        languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
         onClose={() => setSettingsOpen(false)}
         onContextWindowEnabledChange={(enabled) => {
           void setContextWindowEnabled(enabled);
         }}
         onLanguageCardsProEnabledChange={(enabled) => {
           void setLanguageCardsProEnabled(enabled);
+        }}
+        onLanguageCardAiSuggestionsEnabledChange={(enabled) => {
+          void setLanguageCardAiSuggestionsEnabled(enabled);
         }}
       />
       <CreateLanguageCardModal

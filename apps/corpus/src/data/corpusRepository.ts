@@ -13,6 +13,8 @@ import {
   type LanguageCardDraft,
   type LanguageCardDraftContent,
   type LanguageFragment,
+  type LanguageCardFieldSuggestions,
+  type LanguageCardSuggestableField,
   type SnippetNote,
   type SnippetNotesMap,
   type SnippetChatPortMessage,
@@ -47,6 +49,7 @@ export type SnippetChatRequest = {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 };
 
 export type SnippetChatStreamHandlers = {
@@ -56,6 +59,12 @@ export type SnippetChatStreamHandlers = {
 
 export type SnippetChatStreamOptions = {
   signal?: AbortSignal;
+};
+
+export type SuggestLanguageCardFieldsRequest = {
+  fragment: LanguageFragment;
+  focusText: string;
+  fields: LanguageCardSuggestableField[];
 };
 
 export interface CorpusRepository {
@@ -84,6 +93,9 @@ export interface CorpusRepository {
     handlers: SnippetChatStreamHandlers,
     options?: SnippetChatStreamOptions,
   ): Promise<void>;
+  suggestLanguageCardFields(
+    request: SuggestLanguageCardFieldsRequest,
+  ): Promise<LanguageCardFieldSuggestions>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -394,9 +406,32 @@ class ChromeCorpusRepository implements CorpusRepository {
         fragment: request.fragment,
         history: request.history,
         userMessage: request.userMessage,
+        globalThread: request.globalThread,
       };
       port.postMessage(startMessage);
     });
+  }
+
+  async suggestLanguageCardFields(
+    request: SuggestLanguageCardFieldsRequest,
+  ): Promise<LanguageCardFieldSuggestions> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SUGGEST_LANGUAGE_CARD_FIELDS',
+      fragment: request.fragment,
+      focusText: request.focusText,
+      fields: request.fields,
+    })) as
+      | OkResponse<{ suggestions: LanguageCardFieldSuggestions }>
+      | ErrResponse
+      | undefined;
+
+    if (response?.ok) {
+      return response.suggestions;
+    }
+
+    throw new Error(
+      response?.error ?? 'Failed to suggest language card fields.',
+    );
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {
@@ -646,6 +681,10 @@ class MockCorpusRepository implements CorpusRepository {
 
   async streamSnippetChat(): Promise<void> {
     throw new Error('AI chat requires the Chrome extension.');
+  }
+
+  async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
+    throw new Error('AI suggestions require the Chrome extension.');
   }
 
   async openWebCapture(fragment: LanguageFragment): Promise<void> {

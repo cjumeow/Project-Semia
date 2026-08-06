@@ -13,6 +13,7 @@ async function buildSnippetChatRequestMessages(input: {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 }): Promise<ChatMessage[]> {
   const trimmed = input.userMessage.trim();
   if (!trimmed) {
@@ -29,6 +30,7 @@ async function buildSnippetChatRequestMessages(input: {
     fragment: input.fragment,
     note,
     nativeLanguage,
+    globalThread: input.globalThread,
   });
 
   return [
@@ -45,6 +47,7 @@ export async function sendSnippetChat(input: {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 }): Promise<string> {
   const messages = await buildSnippetChatRequestMessages(input);
   return completeChatMessages(messages);
@@ -55,6 +58,7 @@ export async function streamSnippetChat(
     fragment?: LanguageFragment;
     history: SnippetChatTurn[];
     userMessage: string;
+    globalThread?: boolean;
   },
   onDelta: (delta: string) => void,
   signal?: AbortSignal,

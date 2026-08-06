@@ -44,4 +44,24 @@ describe('buildSnippetChatSystemPrompt', () => {
     expect(prompt).toContain('Historical context.');
     expect(prompt).toContain('Traditional Chinese');
   });
+
+  it('uses global inbox grounding rules when globalThread is enabled', () => {
+    const prompt = buildSnippetChatSystemPrompt({
+      fragment,
+      note: {
+        originalSpeech: 'naval vessels',
+        naturalTranslation: '海軍船艦',
+        dynamicContextBlock: 'Surrounding paragraph.',
+        backgroundNote: 'Historical context.',
+        generatedAt: '2026-08-05T10:00:00.000Z',
+      },
+      nativeLanguage: 'zh-TW',
+      globalThread: true,
+    });
+
+    expect(prompt).toContain('GLOBAL inbox tutoring session');
+    expect(prompt).toContain('[ACTIVE CAPTURE');
+    expect(prompt).toContain('Capture id: frag-1');
+    expect(prompt).toContain('[CONTEXT WINDOW]');
+  });
 });

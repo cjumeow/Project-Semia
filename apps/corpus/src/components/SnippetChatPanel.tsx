@@ -120,14 +120,20 @@ export function SnippetChatPanel({
             {chat.activeMessages.map((message) => (
               <li
                 key={message.id}
-                className={[
-                  'max-w-[92%] rounded-xl px-3 py-2 text-sm',
-                  message.role === 'user'
-                    ? 'ml-auto whitespace-pre-wrap bg-accent leading-relaxed text-white'
-                    : 'bg-canvas text-text',
-                ].join(' ')}
+                className={
+                  message.kind === 'context-switch'
+                    ? 'mx-auto max-w-md rounded-lg border border-border bg-canvas px-3 py-2 text-center text-[11px] text-text-muted'
+                    : [
+                        'max-w-[92%] rounded-xl px-3 py-2 text-sm',
+                        message.role === 'user'
+                          ? 'ml-auto whitespace-pre-wrap bg-accent leading-relaxed text-white'
+                          : 'bg-canvas text-text',
+                      ].join(' ')
+                }
               >
-                {message.role === 'user' ? (
+                {message.kind === 'context-switch' ? (
+                  message.content
+                ) : message.role === 'user' ? (
                   message.content
                 ) : (
                   <AssistantChatMarkdown message={message} />

@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LanguageCard } from '@semia/shared';
 import {
   canCreateLanguageCard,
+  isWholeCaptureFocus,
   type LanguageCardDraftContent,
   type LanguageCardOptionalFieldKey,
+  type LanguageCardSuggestableField,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import { useLanguageCardDraft } from '../../hooks/useLanguageCardDraft';
 import { useLanguageCardEstablishedEdit } from '../../hooks/useLanguageCardEstablishedEdit';
+import { useLanguageCardFieldSuggestions } from '../../hooks/useLanguageCardFieldSuggestions';
 import {
   createInitialEditorState,
   startDraftEditor,
@@ -26,6 +29,8 @@ type LanguageCardsTabProps = {
   snippet: CorpusSnippet | undefined;
   languageCards: LanguageCard[];
   createEnabled: boolean;
+  aiSuggestionsEnabled: boolean;
+  isLive: boolean;
   onCardsChanged: () => Promise<void>;
 };
 
@@ -48,12 +53,15 @@ export function LanguageCardsTab({
   snippet,
   languageCards,
   createEnabled,
+  aiSuggestionsEnabled,
+  isLive,
   onCardsChanged,
 }: LanguageCardsTabProps) {
   const [editorState, setEditorState] =
     useState<EditorWorkspaceState>(createInitialEditorState);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const wholeCapturePrefillFocusRef = useRef<string | null>(null);
 
   const isDraftMode = editorState.mode === 'draft';
   const editingCard = languageCards.find(
@@ -94,6 +102,40 @@ export function LanguageCardsTab({
     }
   }, [draft, draftLoaded, isDraftMode, snippet, updateDraft]);
 
+  useEffect(() => {
+    if (!snippet || !draftLoaded || !isDraftMode) {
+      return;
+    }
+
+    const focus = draft.focusText.trim();
+    const isWhole = isWholeCaptureFocus(focus, {
+      selectedText: snippet.selectedText,
+      originalSpeech: snippet.note.originalSpeech,
+    });
+
+    if (!isWhole) {
+      wholeCapturePrefillFocusRef.current = null;
+      return;
+    }
+
+    if (wholeCapturePrefillFocusRef.current === focus) {
+      return;
+    }
+
+    wholeCapturePrefillFocusRef.current = focus;
+    const translation = snippet.note.naturalTranslation.trim();
+    if (translation && draft.meaning.trim().length === 0) {
+      updateDraft({ meaning: translation });
+    }
+  }, [
+    draft.focusText,
+    draft.meaning,
+    draftLoaded,
+    isDraftMode,
+    snippet,
+    updateDraft,
+  ]);
+
   const editorContent: LanguageCardDraftContent = isDraftMode
     ? draft
     : editContent;
@@ -121,6 +163,36 @@ export function LanguageCardsTab({
     },
     [editorContent, handleContentChange],
   );
+
+  const handleAcceptSuggestion = useCallback(
+    (field: LanguageCardSuggestableField, value: string) => {
+      if (field === 'meaning') {
+        handleContentChange({ meaning: value });
+        return;
+      }
+
+      handleContentChange({
+        enabledOptionalFields: editorContent.enabledOptionalFields.includes(
+          'example',
+        )
+          ? editorContent.enabledOptionalFields
+          : [...editorContent.enabledOptionalFields, 'example'],
+        optionalSlots: {
+          ...editorContent.optionalSlots,
+          example: value,
+        },
+      });
+    },
+    [editorContent, handleContentChange],
+  );
+
+  const suggestions = useLanguageCardFieldSuggestions({
+    snippet,
+    content: isDraftMode ? draft : editorContent,
+    enabled: isDraftMode && aiSuggestionsEnabled,
+    isLive,
+    onAccept: handleAcceptSuggestion,
+  });
 
   const switchToDraft = useCallback(async () => {
     if (!isDraftMode) {
@@ -233,8 +305,12 @@ export function LanguageCardsTab({
       ) : null}
 
       <LanguageCardEditorFields
+        snippet={snippet}
         content={editorContent}
         disabled={!editorLoaded}
+        showFocusPicker={isDraftMode}
+        showSuggestions={isDraftMode && aiSuggestionsEnabled}
+        suggestions={suggestions}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}
       />

@@ -15,6 +15,7 @@ export type SnippetChatPortStart = {
   fragment?: LanguageFragment;
   history: SnippetChatTurn[];
   userMessage: string;
+  globalThread?: boolean;
 };
 
 export type SnippetChatPortMessage =

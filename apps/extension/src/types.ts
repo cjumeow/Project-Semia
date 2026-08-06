@@ -87,4 +87,11 @@ export type BackgroundMessage =
       fragment?: LanguageFragment;
       history: SnippetChatTurn[];
       userMessage: string;
+      globalThread?: boolean;
+    }
+  | {
+      type: 'SUGGEST_LANGUAGE_CARD_FIELDS';
+      fragment: LanguageFragment;
+      focusText: string;
+      fields: import('@semia/shared').LanguageCardSuggestableField[];
     };

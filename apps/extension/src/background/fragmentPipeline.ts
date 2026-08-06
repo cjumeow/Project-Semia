@@ -1,4 +1,5 @@
 import { sendSnippetChat } from '../ai/sendSnippetChat';
+import { suggestLanguageCardFields } from '../ai/suggestLanguageCardFields';
 import { finalizeSnippetNote } from '../ai/finalizeSnippetNote';
 import { generateContextWindow } from '../ai/generateContextWindow';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
@@ -56,7 +57,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'RECORD_CARD_STILL_LEARNING' }>
   | Extract<BackgroundMessage, { type: 'MARK_CARD_MASTERED' }>
   | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>
-  | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>;
+  | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>
+  | Extract<BackgroundMessage, { type: 'SUGGEST_LANGUAGE_CARD_FIELDS' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -83,7 +85,8 @@ export function isFragmentMessage(
     message.type === 'RECORD_CARD_STILL_LEARNING' ||
     message.type === 'MARK_CARD_MASTERED' ||
     message.type === 'SET_CARD_MASTERED' ||
-    message.type === 'SNIPPET_CHAT'
+    message.type === 'SNIPPET_CHAT' ||
+    message.type === 'SUGGEST_LANGUAGE_CARD_FIELDS'
   );
 }
 
@@ -210,8 +213,18 @@ export async function handleFragmentMessage(
         fragment: message.fragment,
         history: message.history,
         userMessage: message.userMessage,
+        globalThread: message.globalThread,
       });
       return { ok: true, reply };
+    }
+
+    case 'SUGGEST_LANGUAGE_CARD_FIELDS': {
+      const suggestions = await suggestLanguageCardFields({
+        fragment: message.fragment,
+        focusText: message.focusText,
+        fields: message.fields,
+      });
+      return { ok: true, suggestions };
     }
   }
 }

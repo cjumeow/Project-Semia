@@ -2,18 +2,22 @@ type SemiaSettingsDialogProps = {
   open: boolean;
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
+  languageCardAiSuggestionsEnabled: boolean;
   onClose: () => void;
   onContextWindowEnabledChange: (enabled: boolean) => void;
   onLanguageCardsProEnabledChange: (enabled: boolean) => void;
+  onLanguageCardAiSuggestionsEnabledChange: (enabled: boolean) => void;
 };
 
 export function SemiaSettingsDialog({
   open,
   contextWindowEnabled,
   languageCardsProEnabled,
+  languageCardAiSuggestionsEnabled,
   onClose,
   onContextWindowEnabledChange,
   onLanguageCardsProEnabledChange,
+  onLanguageCardAiSuggestionsEnabledChange,
 }: SemiaSettingsDialogProps) {
   if (!open) {
     return null;
@@ -91,6 +95,25 @@ export function SemiaSettingsDialog({
               <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
                 Enable local language card creation while Pro billing is not
                 wired yet.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-canvas/40 px-4 py-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-border"
+              checked={languageCardAiSuggestionsEnabled}
+              onChange={(event) => {
+                onLanguageCardAiSuggestionsEnabledChange(event.target.checked);
+              }}
+            />
+            <span className="min-w-0">
+              <span className="block text-base font-medium text-text">
+                Language card AI suggestions
+              </span>
+              <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
+                Suggest meaning and example text while drafting language cards
+                in the inbox.
               </span>
             </span>
           </label>
