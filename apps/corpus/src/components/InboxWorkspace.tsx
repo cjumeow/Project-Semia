@@ -8,6 +8,7 @@ type InboxWorkspaceProps = {
   onSelectSnippet: (snippetId: string) => void;
   onMarkReview: (snippetId: string) => void;
   onMarkMastered: (snippetId: string) => void;
+  onTriageExitStart?: (snippetId: string) => void;
   triageEnabled: boolean;
 };
 
@@ -18,6 +19,7 @@ export function InboxWorkspace({
   onSelectSnippet,
   onMarkReview,
   onMarkMastered,
+  onTriageExitStart,
   triageEnabled,
 }: InboxWorkspaceProps) {
   return (
@@ -47,6 +49,7 @@ export function InboxWorkspace({
               ? {
                   onMarkReview,
                   onMarkMastered,
+                  onExitStart: onTriageExitStart,
                 }
               : undefined
           }

@@ -12,6 +12,10 @@ import {
   libraryGroups,
   pendingSnippets,
 } from '../utils/corpusGrouping';
+import {
+  inboxSelectionAfterTriage,
+  resolveInboxSelectedSnippet,
+} from '../utils/inboxSelectionAfterTriage';
 
 type UseCorpusSelectionResult = {
   selection: CorpusSelection;
@@ -31,6 +35,7 @@ type UseCorpusSelectionResult = {
   selectReviewQueueSnippet: (snippetId: string) => void;
   selectCardReviewQueueCard: (cardId: string) => void;
   selectSnippet: (snippetId: string) => void;
+  advanceInboxSelectionAfterTriage: (triagedSnippetId: string) => void;
 };
 
 function firstPendingForSource(
@@ -191,7 +196,7 @@ export function useCorpusSelection(
     }
 
     if (selection.pane === 'inbox') {
-      return pendingQueue.find((snippet) => snippet.id === selection.snippetId);
+      return resolveInboxSelectedSnippet(selection.snippetId, pendingQueue);
     }
 
     return findSnippet(librarySourceGroups, selection.snippetId);
@@ -284,6 +289,18 @@ export function useCorpusSelection(
     });
   };
 
+  const advanceInboxSelectionAfterTriage = (triagedSnippetId: string): void => {
+    setSelection((prev) => {
+      const next = inboxSelectionAfterTriage(
+        triagedSnippetId,
+        prev,
+        pendingQueue,
+        inboxSourceGroups,
+      );
+      return next ?? prev;
+    });
+  };
+
   return {
     selection,
     inboxSourceGroups,
@@ -302,5 +319,6 @@ export function useCorpusSelection(
     selectReviewQueueSnippet,
     selectCardReviewQueueCard,
     selectSnippet,
+    advanceInboxSelectionAfterTriage,
   };
 }

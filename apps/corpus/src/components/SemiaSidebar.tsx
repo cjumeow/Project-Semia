@@ -53,11 +53,11 @@ export function SemiaSidebar({
   onSelectCardReviewQueue,
   onOpenSettings,
 }: SemiaSidebarProps) {
-  const [inboxExpanded, setInboxExpanded] = useState(true);
-  const [libraryExpanded, setLibraryExpanded] = useState(true);
-  const [reviewQueueExpanded, setReviewQueueExpanded] = useState(true);
-  const [youtubeExpanded, setYoutubeExpanded] = useState(true);
-  const [webExpanded, setWebExpanded] = useState(true);
+  const [inboxExpanded, setInboxExpanded] = useState(false);
+  const [libraryExpanded, setLibraryExpanded] = useState(false);
+  const [reviewQueueExpanded, setReviewQueueExpanded] = useState(false);
+  const [youtubeExpanded, setYoutubeExpanded] = useState(false);
+  const [webExpanded, setWebExpanded] = useState(false);
 
   const youtube = youtubeGroups(libraryGroups);
   const web = webGroups(libraryGroups);
@@ -70,7 +70,7 @@ export function SemiaSidebar({
   };
 
   return (
-    <aside className="flex h-full flex-col bg-shelf">
+    <aside className="flex h-full min-w-0 flex-col overflow-x-hidden bg-shelf">
       <header
         className={[
           'flex shrink-0 items-center border-b border-border/60',
@@ -108,7 +108,7 @@ export function SemiaSidebar({
         />
       ) : (
         <>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 pb-3 pt-3">
         <SidebarRow
           variant="section"
           expanded={inboxExpanded}
@@ -348,7 +348,7 @@ function CollapsedSidebarRail({
   return (
     <>
       <nav
-        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-2 py-3"
+        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-x-hidden overflow-y-auto px-2 py-3"
         aria-label="Sidebar"
       >
         <CollapsedNavButton
@@ -419,7 +419,7 @@ function CollapsedNavButton({
     >
       {icon}
       {badge !== undefined ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold tabular-nums text-white">
+        <span className="absolute right-0 top-0 flex h-4 min-w-4 max-w-[calc(100%+2px)] items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold tabular-nums text-white">
           {badge > 99 ? '99+' : badge}
         </span>
       ) : null}
