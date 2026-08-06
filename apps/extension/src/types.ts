@@ -36,6 +36,18 @@ export type BackgroundMessage =
   | { type: 'LIST_TRANSCRIPTS' }
   | { type: 'LIST_SNIPPET_NOTES' }
   | { type: 'LIST_LANGUAGE_CARDS' }
+  | {
+      type: 'GET_LANGUAGE_CARD_DRAFT';
+      sourceFragmentId: string;
+    }
+  | {
+      type: 'SAVE_LANGUAGE_CARD_DRAFT';
+      draft: import('@semia/shared').LanguageCardDraft;
+    }
+  | {
+      type: 'CLEAR_LANGUAGE_CARD_DRAFT';
+      sourceFragmentId: string;
+    }
   | { type: 'GENERATE_SNIPPET_NOTE'; fragment: LanguageFragment }
   | { type: 'GENERATE_CONTEXT_WINDOW'; fragment: LanguageFragment }
   | {

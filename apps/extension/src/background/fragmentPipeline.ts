@@ -15,6 +15,11 @@ import {
 } from '../fragmentsStorage';
 import { listLanguageCards } from '../languageCardsStorage';
 import {
+  clearLanguageCardDraft,
+  loadLanguageCardDraft,
+  saveLanguageCardDraft,
+} from '../languageCardDraftsStorage';
+import {
   markCardMasteredInReview,
   recordCardStillLearning,
   setCardTriageStatus,
@@ -33,6 +38,9 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'LIST_FRAGMENTS' }>
   | Extract<BackgroundMessage, { type: 'LIST_SNIPPET_NOTES' }>
   | Extract<BackgroundMessage, { type: 'LIST_LANGUAGE_CARDS' }>
+  | Extract<BackgroundMessage, { type: 'GET_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'SAVE_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'CLEAR_LANGUAGE_CARD_DRAFT' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_SNIPPET_NOTE' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
   | Extract<BackgroundMessage, { type: 'CREATE_LANGUAGE_CARD' }>
@@ -55,6 +63,9 @@ export function isFragmentMessage(
     message.type === 'LIST_FRAGMENTS' ||
     message.type === 'LIST_SNIPPET_NOTES' ||
     message.type === 'LIST_LANGUAGE_CARDS' ||
+    message.type === 'GET_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'SAVE_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'CLEAR_LANGUAGE_CARD_DRAFT' ||
     message.type === 'GENERATE_SNIPPET_NOTE' ||
     message.type === 'GENERATE_CONTEXT_WINDOW' ||
     message.type === 'CREATE_LANGUAGE_CARD' ||
@@ -90,6 +101,20 @@ export async function handleFragmentMessage(
 
     case 'LIST_LANGUAGE_CARDS':
       return { ok: true, cards: await listLanguageCards() };
+
+    case 'GET_LANGUAGE_CARD_DRAFT':
+      return {
+        ok: true,
+        draft: await loadLanguageCardDraft(message.sourceFragmentId),
+      };
+
+    case 'SAVE_LANGUAGE_CARD_DRAFT':
+      await saveLanguageCardDraft(message.draft);
+      return { ok: true };
+
+    case 'CLEAR_LANGUAGE_CARD_DRAFT':
+      await clearLanguageCardDraft(message.sourceFragmentId);
+      return { ok: true };
 
     case 'GENERATE_SNIPPET_NOTE': {
       const note = await finalizeSnippetNote(

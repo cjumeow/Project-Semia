@@ -1,6 +1,7 @@
 import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
+  LANGUAGE_CARD_DRAFTS_STORAGE_KEY,
   LANGUAGE_CARDS_STORAGE_KEY,
   SNIPPET_CHAT_PORT_NAME,
   SNIPPET_NOTES_STORAGE_KEY,
@@ -9,6 +10,7 @@ import {
   type CorpusNotesMap,
   type CardIntent,
   type LanguageCard,
+  type LanguageCardDraft,
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
@@ -60,6 +62,9 @@ export interface CorpusRepository {
   getLanguageCards(): Promise<LanguageCard[]>;
   getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
   createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
+  getLanguageCardDraft(sourceFragmentId: string): Promise<LanguageCardDraft | null>;
+  saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void>;
+  clearLanguageCardDraft(sourceFragmentId: string): Promise<void>;
   sendSnippetChat(request: SnippetChatRequest): Promise<string>;
   streamSnippetChat(
     request: SnippetChatRequest,
@@ -202,6 +207,43 @@ class ChromeCorpusRepository implements CorpusRepository {
         ? response.error
         : 'Failed to create language card.';
     throw new Error(message);
+  }
+
+  async getLanguageCardDraft(
+    sourceFragmentId: string,
+  ): Promise<LanguageCardDraft | null> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'GET_LANGUAGE_CARD_DRAFT',
+      sourceFragmentId,
+    })) as OkResponse<{ draft: LanguageCardDraft | null }> | ErrResponse | undefined;
+
+    if (response?.ok) {
+      return response.draft ?? null;
+    }
+
+    throw new Error(response?.error ?? 'Failed to load language card draft.');
+  }
+
+  async saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SAVE_LANGUAGE_CARD_DRAFT',
+      draft,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to save language card draft.');
+  }
+
+  async clearLanguageCardDraft(sourceFragmentId: string): Promise<void> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'CLEAR_LANGUAGE_CARD_DRAFT',
+      sourceFragmentId,
+    })) as OkResponse<Record<string, never>> | ErrResponse | undefined;
+
+    if (response?.ok) return;
+
+    throw new Error(response?.error ?? 'Failed to clear language card draft.');
   }
 
   async sendSnippetChat(request: SnippetChatRequest): Promise<string> {
@@ -430,6 +472,7 @@ class ChromeCorpusRepository implements CorpusRepository {
         changes[FRAGMENTS_STORAGE_KEY] ||
         changes[SNIPPET_NOTES_STORAGE_KEY] ||
         changes[LANGUAGE_CARDS_STORAGE_KEY] ||
+        changes[LANGUAGE_CARD_DRAFTS_STORAGE_KEY] ||
         changes[CORPUS_NOTES_STORAGE_KEY] ||
         changes[TRANSCRIPTS_STORAGE_KEY] ||
         changes[WEB_RESTORE_STATUS_STORAGE_KEY]
@@ -448,6 +491,7 @@ class ChromeCorpusRepository implements CorpusRepository {
 
 class MockCorpusRepository implements CorpusRepository {
   private notes: CorpusNotesMap = {};
+  private drafts = new Map<string, LanguageCardDraft>();
 
   isLive(): boolean {
     return false;
@@ -483,6 +527,20 @@ class MockCorpusRepository implements CorpusRepository {
 
   async createLanguageCard(): Promise<LanguageCard> {
     throw new Error('Language card creation requires the Chrome extension.');
+  }
+
+  async getLanguageCardDraft(
+    sourceFragmentId: string,
+  ): Promise<LanguageCardDraft | null> {
+    return this.drafts.get(sourceFragmentId) ?? null;
+  }
+
+  async saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void> {
+    this.drafts.set(draft.sourceFragmentId, draft);
+  }
+
+  async clearLanguageCardDraft(sourceFragmentId: string): Promise<void> {
+    this.drafts.delete(sourceFragmentId);
   }
 
   async sendSnippetChat(): Promise<string> {
