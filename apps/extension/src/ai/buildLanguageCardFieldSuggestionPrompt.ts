@@ -20,16 +20,28 @@ export function buildLanguageCardFieldSuggestionPrompt({
   contextWindow?: string;
 }): { system: string; user: string } {
   const targetLang = targetLanguageLabel(nativeLanguage);
+  const captureLang = fragment.languageCode;
   const requested = fields
     .map((field) => (field === 'meaning' ? 'MEANING' : 'EXAMPLE'))
     .join(' and ');
 
+  const languageRules = [
+    fields.includes('meaning')
+      ? `MEANING must be a short explanation in ${targetLang}.`
+      : null,
+    fields.includes('example')
+      ? `EXAMPLE must be one natural sentence in ${captureLang} that uses the focus phrase.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   const system = `You help a language learner fill in language-card fields.
-Write in ${targetLang}.
+${languageRules}
 Return ONLY labeled lines for the requested fields. No markdown fences, no extra commentary.
 Format exactly:
 ${fields.includes('meaning') ? 'MEANING: <short explanation>' : ''}
-${fields.includes('example') ? 'EXAMPLE: <one natural example sentence using the focus phrase>' : ''}`.trim();
+${fields.includes('example') ? 'EXAMPLE: <example sentence in capture language>' : ''}`.trim();
 
   const user = [
     `Focus phrase: ${focusText}`,
