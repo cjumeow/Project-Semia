@@ -4,6 +4,7 @@ import {
   SnippetChatAbortedError,
   finalizeStreamingAssistantMessages,
   isSnippetChatAbortedError,
+  resolveGlobalSnippetChatThreadKey,
   resolveSnippetChatThreadKey,
   snippetChatContextLabel,
 } from './snippetChat';
@@ -24,6 +25,14 @@ describe('resolveSnippetChatThreadKey', () => {
   it('uses fragment id when present', () => {
     expect(resolveSnippetChatThreadKey('frag-1')).toBe('frag-1');
     expect(resolveSnippetChatThreadKey('  frag-2  ')).toBe('frag-2');
+  });
+});
+
+describe('resolveGlobalSnippetChatThreadKey', () => {
+  it('returns the shared global inbox thread key', () => {
+    expect(resolveGlobalSnippetChatThreadKey()).toBe(
+      SNIPPET_CHAT_GENERAL_THREAD_KEY,
+    );
   });
 });
 

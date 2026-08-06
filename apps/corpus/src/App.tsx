@@ -142,6 +142,17 @@ export default function App() {
 
   const snippetChat = useSnippetChat({ chatSnippet, isLive });
 
+  const inboxChatContextSnippets = useMemo(
+    () =>
+      selection.pane === 'inbox'
+        ? pendingQueue.map((snippet) => ({
+            id: snippet.id,
+            selectedText: snippet.selectedText,
+          }))
+        : undefined,
+    [pendingQueue, selection.pane],
+  );
+
   const languageCardCount = selectedSnippet
     ? countForFragment(selectedSnippet.id)
     : 0;
@@ -454,7 +465,16 @@ export default function App() {
           </div>
         </section>
       ) : (
-        <WorkspaceWithChat chat={snippetChat}>{workspace}</WorkspaceWithChat>
+        <WorkspaceWithChat
+          chat={snippetChat}
+          contextSnippets={inboxChatContextSnippets}
+          activeContextSnippetId={selectedSnippet?.id}
+          onSelectContextSnippet={
+            selection.pane === 'inbox' ? selectSnippet : undefined
+          }
+        >
+          {workspace}
+        </WorkspaceWithChat>
       )}
 
       {showDetailPanel ? (

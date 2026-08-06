@@ -1,6 +1,7 @@
 import {
   finalizeStreamingAssistantMessages,
   isSnippetChatAbortedError,
+  resolveGlobalSnippetChatThreadKey,
   resolveSnippetChatThreadKey,
   snippetChatContextLabel,
   type SnippetChatTurn,
@@ -25,9 +26,11 @@ function toTurns(messages: SnippetChatMessage[]): SnippetChatTurn[] {
 export function useSnippetChat({
   chatSnippet,
   isLive,
+  globalThread = true,
 }: {
   chatSnippet: CorpusSnippet | null;
   isLive: boolean;
+  globalThread?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
@@ -43,7 +46,9 @@ export function useSnippetChat({
     assistantMessageId: string;
   } | null>(null);
 
-  const threadKey = resolveSnippetChatThreadKey(chatSnippet?.id);
+  const threadKey = globalThread
+    ? resolveGlobalSnippetChatThreadKey()
+    : resolveSnippetChatThreadKey(chatSnippet?.id);
   const activeMessages = messagesByThread[threadKey] ?? [];
   const contextLabel = snippetChatContextLabel(chatSnippet?.selectedText);
 
@@ -71,8 +76,11 @@ export function useSnippetChat({
   abortActiveStreamRef.current = abortActiveStream;
 
   useEffect(() => {
+    if (globalThread) {
+      return;
+    }
     abortActiveStreamRef.current();
-  }, [threadKey]);
+  }, [globalThread, threadKey]);
 
   useEffect(() => {
     return () => {
@@ -206,6 +214,7 @@ export function useSnippetChat({
     threadKey,
     sendMessage,
     hasSnippetContext: Boolean(chatSnippet),
+    globalThread,
   };
 }
 

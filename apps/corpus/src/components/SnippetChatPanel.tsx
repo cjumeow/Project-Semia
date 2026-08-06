@@ -4,10 +4,17 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { TextDots } from './TextDots';
 import type { SnippetChatMessage, UseSnippetChatResult } from '../hooks/useSnippetChat';
+import {
+  SnippetChatContextSwitcher,
+  type SnippetChatContextOption,
+} from './SnippetChatContextSwitcher';
 
 type SnippetChatPanelProps = {
   chat: UseSnippetChatResult;
   onClose: () => void;
+  contextSnippets?: SnippetChatContextOption[];
+  activeContextSnippetId?: string | null;
+  onSelectContextSnippet?: (snippetId: string) => void;
 };
 
 function AssistantChatMarkdown({
@@ -47,32 +54,58 @@ function AssistantChatMarkdown({
   );
 }
 
-export function SnippetChatPanel({ chat, onClose }: SnippetChatPanelProps) {
+export function SnippetChatPanel({
+  chat,
+  onClose,
+  contextSnippets,
+  activeContextSnippetId,
+  onSelectContextSnippet,
+}: SnippetChatPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
     container.scrollTop = container.scrollHeight;
-  }, [chat.threadKey]);
+  }, [chat.activeMessages.length, chat.threadKey]);
+
+  const showContextSwitcher =
+    contextSnippets &&
+    contextSnippets.length > 0 &&
+    onSelectContextSnippet;
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col bg-surface">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+    <div className="absolute inset-0 z-10 flex flex-col bg-surface shadow-xl">
+      <header className="relative flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <p className="font-display text-sm font-semibold text-text">AI assistant</p>
           <p className="truncate text-[11px] text-text-muted">
-            context:{' '}
-            <span className="text-text-secondary">{chat.contextLabel}</span>
+            {chat.globalThread ? 'Global thread' : 'Per-capture thread'}
+            {chat.hasSnippetContext ? (
+              <>
+                {' '}
+                · grounding:{' '}
+                <span className="text-text-secondary">{chat.contextLabel}</span>
+              </>
+            ) : null}
           </p>
         </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs text-text-secondary transition-colors hover:bg-canvas hover:text-text"
-          onClick={onClose}
-        >
-          Close chat
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {showContextSwitcher ? (
+            <SnippetChatContextSwitcher
+              snippets={contextSnippets}
+              activeSnippetId={activeContextSnippetId ?? null}
+              onSelectSnippet={onSelectContextSnippet}
+            />
+          ) : null}
+          <button
+            type="button"
+            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs text-text-secondary transition-colors hover:bg-canvas hover:text-text"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
       </header>
 
       <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
