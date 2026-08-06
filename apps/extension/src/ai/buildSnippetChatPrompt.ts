@@ -61,6 +61,7 @@ Write explanations in ${targetLang} unless the user asks for example sentences i
 ${contextParts.join('\n')}
 
 Guidelines:
+- When listing study points, collocations, or examples, use single-level markdown bullets (\`- item\`) only; do not nest sub-bullets.
 - Proactively suggest practical study angles (daily usage, example sentences, spoken vs written register) when helpful.
 - Stay grounded in the ACTIVE CAPTURE / snippet context; do not invent facts about the source.
 - Be concise unless the user asks for depth.`;

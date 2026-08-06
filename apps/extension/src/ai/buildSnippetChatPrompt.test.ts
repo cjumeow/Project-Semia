@@ -64,4 +64,14 @@ describe('buildSnippetChatSystemPrompt', () => {
     expect(prompt).toContain('Capture id: frag-1');
     expect(prompt).toContain('[CONTEXT WINDOW]');
   });
+
+  it('steers the model toward single-level markdown bullets', () => {
+    const prompt = buildSnippetChatSystemPrompt({
+      fragment,
+      nativeLanguage: 'zh-TW',
+      globalThread: true,
+    });
+
+    expect(prompt).toContain('single-level markdown bullets');
+  });
 });

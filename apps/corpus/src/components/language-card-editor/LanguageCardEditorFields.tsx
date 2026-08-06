@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   toggleOptionalField,
   type LanguageCardDraftContent,
+  type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
 import { FieldSuggestionChip } from './FieldSuggestionChip';
 import { FocusSourcePicker } from './FocusSourcePicker';
+import { LanguageCardSlotDropZone } from './LanguageCardSlotDropZone';
 
 const OPTIONAL_FIELDS: Array<{
   key: LanguageCardOptionalFieldKey;
@@ -41,6 +43,7 @@ type LanguageCardEditorFieldsProps = {
     field: LanguageCardOptionalFieldKey,
     enabled: boolean,
   ) => void;
+  onAppendSlot?: (slot: LanguageCardEditorSlotKey, text: string) => void;
 };
 
 export function LanguageCardEditorFields({
@@ -52,8 +55,28 @@ export function LanguageCardEditorFields({
   suggestions,
   onChange,
   onToggleOptionalField,
+  onAppendSlot,
 }: LanguageCardEditorFieldsProps) {
   const [focusPickerOpen, setFocusPickerOpen] = useState(false);
+  const dropEnabled = Boolean(onAppendSlot) && !disabled;
+
+  const wrapDrop = (
+    slot: LanguageCardEditorSlotKey,
+    node: ReactNode,
+    className?: string,
+  ) =>
+    onAppendSlot ? (
+      <LanguageCardSlotDropZone
+        slot={slot}
+        disabled={!dropEnabled}
+        onAppend={onAppendSlot}
+        className={className}
+      >
+        {node}
+      </LanguageCardSlotDropZone>
+    ) : (
+      node
+    );
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -72,14 +95,17 @@ export function LanguageCardEditorFields({
               </button>
             ) : null}
           </div>
-          <input
-            type="text"
-            value={content.focusText}
-            disabled={disabled}
-            onChange={(event) => onChange({ focusText: event.target.value })}
-            placeholder="Word or phrase from the capture"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
-          />
+          {wrapDrop(
+            'focus',
+            <input
+              type="text"
+              value={content.focusText}
+              disabled={disabled}
+              onChange={(event) => onChange({ focusText: event.target.value })}
+              placeholder="Word or phrase from the capture"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+            />,
+          )}
           {showFocusPicker && snippet ? (
             <FocusSourcePicker
               open={focusPickerOpen}
@@ -93,14 +119,18 @@ export function LanguageCardEditorFields({
 
         <div className="mb-4">
           <label className="text-xs font-medium text-text-secondary">Meaning</label>
-          <textarea
-            value={content.meaning}
-            disabled={disabled}
-            onChange={(event) => onChange({ meaning: event.target.value })}
-            rows={3}
-            placeholder="Explanation in your native language"
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
-          />
+          {wrapDrop(
+            'meaning',
+            <textarea
+              value={content.meaning}
+              disabled={disabled}
+              onChange={(event) => onChange({ meaning: event.target.value })}
+              rows={3}
+              placeholder="Explanation in your native language"
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+            />,
+            'mt-1',
+          )}
           {showSuggestions && suggestions?.meaning ? (
             <FieldSuggestionChip
               label="meaning"
@@ -132,39 +162,54 @@ export function LanguageCardEditorFields({
                   {field.label}
                 </label>
                 {enabled ? (
-                  field.multiline ? (
-                    <textarea
-                      value={content.optionalSlots[field.key] ?? ''}
-                      disabled={disabled}
-                      onChange={(event) => {
-                        onChange({
-                          optionalSlots: {
-                            ...content.optionalSlots,
-                            [field.key]: event.target.value,
-                          },
-                        });
-                      }}
-                      rows={3}
-                      placeholder={field.placeholder}
-                      className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={content.optionalSlots[field.key] ?? ''}
-                      disabled={disabled}
-                      onChange={(event) => {
-                        onChange({
-                          optionalSlots: {
-                            ...content.optionalSlots,
-                            [field.key]: event.target.value,
-                          },
-                        });
-                      }}
-                      placeholder={field.placeholder}
-                      className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
-                    />
+                  wrapDrop(
+                    field.key,
+                    field.multiline ? (
+                      <textarea
+                        value={content.optionalSlots[field.key] ?? ''}
+                        disabled={disabled}
+                        onChange={(event) => {
+                          onChange({
+                            optionalSlots: {
+                              ...content.optionalSlots,
+                              [field.key]: event.target.value,
+                            },
+                          });
+                        }}
+                        rows={3}
+                        placeholder={field.placeholder}
+                        className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={content.optionalSlots[field.key] ?? ''}
+                        disabled={disabled}
+                        onChange={(event) => {
+                          onChange({
+                            optionalSlots: {
+                              ...content.optionalSlots,
+                              [field.key]: event.target.value,
+                            },
+                          });
+                        }}
+                        placeholder={field.placeholder}
+                        className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
+                      />
+                    ),
+                    'mt-2',
                   )
+                ) : onAppendSlot ? (
+                  <LanguageCardSlotDropZone
+                    slot={field.key}
+                    disabled={!dropEnabled}
+                    onAppend={onAppendSlot}
+                    className="mt-2"
+                  >
+                    <p className="rounded-lg border border-dashed border-border bg-canvas/40 px-3 py-2 text-[11px] text-text-muted">
+                      Enable {field.label.toLowerCase()} or drop a chat bullet here
+                    </p>
+                  </LanguageCardSlotDropZone>
                 ) : null}
               </div>
             );

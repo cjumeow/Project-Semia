@@ -1,13 +1,11 @@
 import { SNIPPET_CHAT_SUGGESTED_PROMPTS } from '@semia/shared';
 import { useLayoutEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { TextDots } from './TextDots';
-import type { SnippetChatMessage, UseSnippetChatResult } from '../hooks/useSnippetChat';
+import type { UseSnippetChatResult } from '../hooks/useSnippetChat';
 import {
   SnippetChatContextSwitcher,
   type SnippetChatContextOption,
 } from './SnippetChatContextSwitcher';
+import { DraggableAssistantMarkdown } from './snippet-chat/DraggableAssistantMarkdown';
 
 type SnippetChatPanelProps = {
   chat: UseSnippetChatResult;
@@ -16,43 +14,6 @@ type SnippetChatPanelProps = {
   activeContextSnippetId?: string | null;
   onSelectContextSnippet?: (snippetId: string) => void;
 };
-
-function AssistantChatMarkdown({
-  message,
-}: {
-  message: SnippetChatMessage;
-}) {
-  if (!message.content && message.streaming) {
-    return (
-      <span className="text-text-muted">
-        <TextDots>Thinking</TextDots>
-      </span>
-    );
-  }
-
-  return (
-    <div className="prose-chat text-sm leading-snug text-text">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          table: ({ children }) => (
-            <div className="prose-chat-table-wrap">
-              <table>{children}</table>
-            </div>
-          ),
-        }}
-      >
-        {message.content}
-      </ReactMarkdown>
-      {message.streaming ? (
-        <span
-          aria-hidden
-          className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-text-muted align-[-0.1em]"
-        />
-      ) : null}
-    </div>
-  );
-}
 
 export function SnippetChatPanel({
   chat,
@@ -136,7 +97,7 @@ export function SnippetChatPanel({
                 ) : message.role === 'user' ? (
                   message.content
                 ) : (
-                  <AssistantChatMarkdown message={message} />
+                  <DraggableAssistantMarkdown message={message} />
                 )}
               </li>
             ))}

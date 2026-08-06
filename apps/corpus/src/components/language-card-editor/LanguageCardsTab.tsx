@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LanguageCard } from '@semia/shared';
 import {
+  appendMarkdownToSlot,
   canCreateLanguageCard,
   isWholeCaptureFocus,
   type LanguageCardDraftContent,
+  type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
   type LanguageCardSuggestableField,
 } from '@semia/shared';
@@ -186,6 +188,43 @@ export function LanguageCardsTab({
     [editorContent, handleContentChange],
   );
 
+  const handleAppendSlot = useCallback(
+    (slot: LanguageCardEditorSlotKey, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      if (slot === 'focus') {
+        handleContentChange({
+          focusText: appendMarkdownToSlot(editorContent.focusText, trimmed),
+        });
+        return;
+      }
+
+      if (slot === 'meaning') {
+        handleContentChange({
+          meaning: appendMarkdownToSlot(editorContent.meaning, trimmed),
+        });
+        return;
+      }
+
+      const optionalField = slot;
+      const enabled = editorContent.enabledOptionalFields.includes(optionalField);
+      const current = editorContent.optionalSlots[optionalField] ?? '';
+      handleContentChange({
+        enabledOptionalFields: enabled
+          ? editorContent.enabledOptionalFields
+          : [...editorContent.enabledOptionalFields, optionalField],
+        optionalSlots: {
+          ...editorContent.optionalSlots,
+          [optionalField]: appendMarkdownToSlot(current, trimmed),
+        },
+      });
+    },
+    [editorContent, handleContentChange],
+  );
+
   const suggestions = useLanguageCardFieldSuggestions({
     snippet,
     content: isDraftMode ? draft : editorContent,
@@ -313,6 +352,7 @@ export function LanguageCardsTab({
         suggestions={suggestions}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}
+        onAppendSlot={handleAppendSlot}
       />
 
       <EstablishedCardsStrip
