@@ -31,7 +31,6 @@ import { useSnippetChat } from './hooks/useSnippetChat';
 import { WorkspaceWithChat } from './components/WorkspaceWithChat';
 import { isEditableTarget } from './utils/isEditableTarget';
 
-const SIDEBAR_COLLAPSED_KEY = 'semia-sidebar-collapsed';
 const SIDEBAR_COLLAPSED_WIDTH = 52;
 
 export default function App() {
@@ -73,6 +72,7 @@ export default function App() {
     selectReviewQueueSnippet,
     selectCardReviewQueueCard,
     selectSnippet,
+    advanceInboxSelectionAfterTriage,
   } = useCorpusSelection(groups, snippets, languageCards);
 
   const { generating, error: noteError, regenerate } = useSnippetNoteGeneration(
@@ -89,14 +89,7 @@ export default function App() {
     contextWindowEnabled,
   );
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
-  });
-
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
-  }, [sidebarCollapsed]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const toggleSidebarCollapsed = useCallback(() => {
     setSidebarCollapsed((current) => !current);
@@ -270,6 +263,7 @@ export default function App() {
         onMarkMastered={(snippetId) => {
           void handleMarkTriage(snippetId, 'mastered');
         }}
+        onTriageExitStart={advanceInboxSelectionAfterTriage}
         triageEnabled={isLive}
       />
     ) : selection.pane === 'review-queue' ? (
@@ -332,7 +326,7 @@ export default function App() {
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
-        className="flex h-full shrink-0 flex-col border-r border-border bg-shelf transition-[width] duration-200 ease-out"
+        className="flex h-full shrink-0 flex-col overflow-x-hidden border-r border-border bg-shelf transition-[width] duration-200 ease-out"
         style={{ width: effectiveSidebarWidth }}
       >
         <SemiaSidebar
