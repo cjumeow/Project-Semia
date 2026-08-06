@@ -45,6 +45,16 @@ export type BackgroundMessage =
       draft: import('@semia/shared').LanguageCardDraft;
     }
   | {
+      type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT';
+      fragment: LanguageFragment;
+      draft: import('@semia/shared').LanguageCardDraftContent;
+    }
+  | {
+      type: 'UPDATE_LANGUAGE_CARD_CONTENT';
+      cardId: string;
+      content: import('@semia/shared').LanguageCardDraftContent;
+    }
+  | {
       type: 'CLEAR_LANGUAGE_CARD_DRAFT';
       sourceFragmentId: string;
     }

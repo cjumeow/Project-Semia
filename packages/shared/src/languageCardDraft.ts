@@ -7,6 +7,9 @@ export type LanguageCardDraftContent = {
   optionalSlots: Partial<Record<LanguageCardOptionalFieldKey, string>>;
 };
 
+/** Alias used by inbox workspace model validation. */
+export type DraftSlotState = LanguageCardDraftContent;
+
 export type LanguageCardDraft = LanguageCardDraftContent & {
   sourceFragmentId: string;
   updatedAt: string;
@@ -151,4 +154,34 @@ export function isLanguageCardDraftContentEmpty(
   }
 
   return true;
+}
+
+function isNonEmpty(value: string): boolean {
+  return value.trim().length > 0;
+}
+
+export function listCreateValidationFailures(
+  draft: LanguageCardDraftContent,
+): string[] {
+  const failures: string[] = [];
+
+  if (!isNonEmpty(draft.focusText)) {
+    failures.push('focusText');
+  }
+  if (!isNonEmpty(draft.meaning)) {
+    failures.push('meaning');
+  }
+
+  for (const field of draft.enabledOptionalFields) {
+    const value = draft.optionalSlots[field] ?? '';
+    if (!isNonEmpty(value)) {
+      failures.push(field);
+    }
+  }
+
+  return failures;
+}
+
+export function canCreateLanguageCard(draft: LanguageCardDraftContent): boolean {
+  return listCreateValidationFailures(draft).length === 0;
 }

@@ -476,7 +476,9 @@ export default function App() {
                 contextWindowEnabled={contextWindowEnabled}
                 onOpenSettings={() => setSettingsOpen(true)}
                 languageCards={snippetLanguageCards}
-                {...languageCardProps}
+                languageCardCount={languageCardCount}
+                createLanguageCardEnabled={createLanguageCardEnabled}
+                onLanguageCardsChanged={refreshLanguageCards}
               />
             ) : (
               <SnippetDetail

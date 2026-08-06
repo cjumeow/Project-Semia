@@ -17,6 +17,7 @@ type UseLanguageCardDraftResult = {
   saveState: LanguageCardDraftSaveState;
   updateDraft: (patch: Partial<LanguageCardDraftContent>) => void;
   flushDraft: () => Promise<void>;
+  resetDraftToCapture: (selectedText: string) => void;
 };
 
 function toDraftContent(draft: LanguageCardDraft): LanguageCardDraftContent {
@@ -128,11 +129,23 @@ export function useLanguageCardDraft(
     }
   }, []);
 
+  const resetDraftToCapture = useCallback((selectedText: string) => {
+    const next = {
+      ...createEmptyLanguageCardDraftContent(),
+      focusText: selectedText,
+    };
+    setDraft(next);
+    draftRef.current = next;
+    saverRef.current.schedule(next);
+    setSaveState('idle');
+  }, []);
+
   return {
     draft,
     loaded,
     saveState,
     updateDraft,
     flushDraft,
+    resetDraftToCapture,
   };
 }

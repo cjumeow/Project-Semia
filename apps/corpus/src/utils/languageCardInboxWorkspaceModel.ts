@@ -1,8 +1,8 @@
+export type { DraftSlotState } from '@semia/shared';
+
 export type DetailTab = 'snip' | 'language';
 
 export type EditorMode = 'draft' | 'edit';
-
-export type OptionalCardFieldKey = 'example' | 'usageNote';
 
 export type InboxArchivePath = 'library-with-practice' | 'library-only';
 
@@ -15,13 +15,6 @@ export type WorkspaceSelectionState = {
 export type EditorWorkspaceState = {
   mode: EditorMode;
   editingCardId: string | null;
-};
-
-export type DraftSlotState = {
-  focusText: string;
-  meaning: string;
-  enabledOptionalFields: ReadonlyArray<OptionalCardFieldKey>;
-  optionalSlots: Partial<Record<OptionalCardFieldKey, string>>;
 };
 
 export function createInitialWorkspaceSelection(
@@ -81,34 +74,10 @@ export function startEditEstablishedCard(cardId: string): EditorWorkspaceState {
   };
 }
 
-function isNonEmpty(value: string): boolean {
-  return value.trim().length > 0;
-}
-
-export function listCreateValidationFailures(draft: DraftSlotState): string[] {
-  const failures: string[] = [];
-
-  if (!isNonEmpty(draft.focusText)) {
-    failures.push('focusText');
-  }
-  if (!isNonEmpty(draft.meaning)) {
-    failures.push('meaning');
-  }
-
-  for (const field of draft.enabledOptionalFields) {
-    const value = draft.optionalSlots[field] ?? '';
-    if (!isNonEmpty(value)) {
-      failures.push(field);
-    }
-  }
-
-  return failures;
-}
-
-export function canCreateLanguageCard(draft: DraftSlotState): boolean {
-  return listCreateValidationFailures(draft).length === 0;
-}
-
+export {
+  canCreateLanguageCard,
+  listCreateValidationFailures,
+} from '@semia/shared';
 export function resolveInboxArchivePath(
   formalCardCount: number,
 ): InboxArchivePath {

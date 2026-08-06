@@ -4,6 +4,8 @@ import { generateContextWindow } from '../ai/generateContextWindow';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
 import { saveCorpusNote } from '../corpusNotesStorage';
 import { createLanguageCard } from '../createLanguageCard';
+import { createLanguageCardFromDraft } from '../createLanguageCardFromDraft';
+import { updateLanguageCardContent } from '../updateLanguageCardContent';
 import { deleteFragment, deleteSource } from '../deleteCaptures';
 import { ensureSnippetNote } from '../ensureSnippetNote';
 import {
@@ -41,6 +43,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'GET_LANGUAGE_CARD_DRAFT' }>
   | Extract<BackgroundMessage, { type: 'SAVE_LANGUAGE_CARD_DRAFT' }>
   | Extract<BackgroundMessage, { type: 'CLEAR_LANGUAGE_CARD_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT' }>
+  | Extract<BackgroundMessage, { type: 'UPDATE_LANGUAGE_CARD_CONTENT' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_SNIPPET_NOTE' }>
   | Extract<BackgroundMessage, { type: 'GENERATE_CONTEXT_WINDOW' }>
   | Extract<BackgroundMessage, { type: 'CREATE_LANGUAGE_CARD' }>
@@ -66,6 +70,8 @@ export function isFragmentMessage(
     message.type === 'GET_LANGUAGE_CARD_DRAFT' ||
     message.type === 'SAVE_LANGUAGE_CARD_DRAFT' ||
     message.type === 'CLEAR_LANGUAGE_CARD_DRAFT' ||
+    message.type === 'CREATE_LANGUAGE_CARD_FROM_DRAFT' ||
+    message.type === 'UPDATE_LANGUAGE_CARD_CONTENT' ||
     message.type === 'GENERATE_SNIPPET_NOTE' ||
     message.type === 'GENERATE_CONTEXT_WINDOW' ||
     message.type === 'CREATE_LANGUAGE_CARD' ||
@@ -115,6 +121,22 @@ export async function handleFragmentMessage(
     case 'CLEAR_LANGUAGE_CARD_DRAFT':
       await clearLanguageCardDraft(message.sourceFragmentId);
       return { ok: true };
+
+    case 'CREATE_LANGUAGE_CARD_FROM_DRAFT': {
+      const card = await createLanguageCardFromDraft({
+        fragment: message.fragment,
+        draft: message.draft,
+      });
+      return { ok: true, card };
+    }
+
+    case 'UPDATE_LANGUAGE_CARD_CONTENT': {
+      const card = await updateLanguageCardContent(
+        message.cardId,
+        message.content,
+      );
+      return { ok: true, card };
+    }
 
     case 'GENERATE_SNIPPET_NOTE': {
       const note = await finalizeSnippetNote(

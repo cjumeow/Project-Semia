@@ -4,7 +4,7 @@ import type { CorpusSnippet } from '../types/corpus';
 import type { DetailTab } from '../utils/languageCardInboxWorkspaceModel';
 import { DetailTabBar } from './DetailTabBar';
 import { LanguageCardDetailModal, LanguageCardListModal } from './LinkedLanguageCards';
-import { LanguageCardsTabPlaceholder } from './LanguageCardsTabPlaceholder';
+import { LanguageCardsTab } from './language-card-editor/LanguageCardsTab';
 import { SnippetDetail } from './SnippetDetail';
 
 type InboxDetailPanelProps = {
@@ -19,8 +19,8 @@ type InboxDetailPanelProps = {
   onOpenSettings?: () => void;
   languageCards?: LanguageCard[];
   languageCardCount?: number;
-  onCreateLanguageCard?: () => void;
   createLanguageCardEnabled?: boolean;
+  onLanguageCardsChanged?: () => Promise<void>;
 };
 
 export function InboxDetailPanel({
@@ -35,8 +35,8 @@ export function InboxDetailPanel({
   onOpenSettings,
   languageCards = [],
   languageCardCount = 0,
-  onCreateLanguageCard,
-  createLanguageCardEnabled,
+  createLanguageCardEnabled = false,
+  onLanguageCardsChanged,
 }: InboxDetailPanelProps) {
   const [detailTab, setDetailTab] = useState<DetailTab>('snip');
   const [languageListOpen, setLanguageListOpen] = useState(false);
@@ -65,11 +65,14 @@ export function InboxDetailPanel({
             onOpenLanguageCards={
               languageCardCount > 0 ? () => setLanguageListOpen(true) : undefined
             }
-            onCreateLanguageCard={onCreateLanguageCard}
-            createLanguageCardEnabled={createLanguageCardEnabled}
           />
         ) : (
-          <LanguageCardsTabPlaceholder snippet={snippet} />
+          <LanguageCardsTab
+            snippet={snippet}
+            languageCards={languageCards}
+            createEnabled={createLanguageCardEnabled}
+            onCardsChanged={onLanguageCardsChanged ?? (async () => {})}
+          />
         )}
       </section>
 

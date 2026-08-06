@@ -11,6 +11,7 @@ import {
   type CardIntent,
   type LanguageCard,
   type LanguageCardDraft,
+  type LanguageCardDraftContent,
   type LanguageFragment,
   type SnippetNote,
   type SnippetNotesMap,
@@ -22,6 +23,10 @@ import {
   type WebRestoreStatus,
   type WebRestoreStatusMap,
   SnippetChatAbortedError,
+  applyEditorContentToLanguageCard,
+  buildLanguageCardFieldsFromDraftContent,
+  enrollCardInReviewQueue,
+  listCreateValidationFailures,
   normalizeFragments,
   normalizeLanguageCard,
 } from '@semia/shared';
@@ -62,6 +67,14 @@ export interface CorpusRepository {
   getLanguageCards(): Promise<LanguageCard[]>;
   getCardsForFragment(fragmentId: string): Promise<LanguageCard[]>;
   createLanguageCard(request: CreateLanguageCardRequest): Promise<LanguageCard>;
+  createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard>;
+  updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard>;
   getLanguageCardDraft(sourceFragmentId: string): Promise<LanguageCardDraft | null>;
   saveLanguageCardDraft(draft: LanguageCardDraft): Promise<void>;
   clearLanguageCardDraft(sourceFragmentId: string): Promise<void>;
@@ -206,6 +219,48 @@ class ChromeCorpusRepository implements CorpusRepository {
       response && !response.ok
         ? response.error
         : 'Failed to create language card.';
+    throw new Error(message);
+  }
+
+  async createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'CREATE_LANGUAGE_CARD_FROM_DRAFT',
+      fragment,
+      draft,
+    })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
+
+    if (response?.ok && response.card) {
+      return normalizeLanguageCard(response.card);
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to create language card from draft.';
+    throw new Error(message);
+  }
+
+  async updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'UPDATE_LANGUAGE_CARD_CONTENT',
+      cardId,
+      content,
+    })) as OkResponse<{ card: LanguageCard }> | ErrResponse | undefined;
+
+    if (response?.ok && response.card) {
+      return normalizeLanguageCard(response.card);
+    }
+
+    const message =
+      response && !response.ok
+        ? response.error
+        : 'Failed to update language card.';
     throw new Error(message);
   }
 
@@ -492,6 +547,7 @@ class ChromeCorpusRepository implements CorpusRepository {
 class MockCorpusRepository implements CorpusRepository {
   private notes: CorpusNotesMap = {};
   private drafts = new Map<string, LanguageCardDraft>();
+  private cards = new Map<string, LanguageCard>();
 
   isLive(): boolean {
     return false;
@@ -518,15 +574,56 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async getLanguageCards(): Promise<LanguageCard[]> {
-    return [];
+    return [...this.cards.values()];
   }
 
-  async getCardsForFragment(): Promise<LanguageCard[]> {
-    return [];
+  async getCardsForFragment(fragmentId: string): Promise<LanguageCard[]> {
+    return [...this.cards.values()].filter(
+      (card) => card.sourceFragmentId === fragmentId,
+    );
   }
 
   async createLanguageCard(): Promise<LanguageCard> {
     throw new Error('Language card creation requires the Chrome extension.');
+  }
+
+  async createLanguageCardFromDraft(
+    fragment: LanguageFragment,
+    draft: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const failures = listCreateValidationFailures(draft);
+    if (failures.length > 0) {
+      throw new Error(`Draft is incomplete. Missing: ${failures.join(', ')}.`);
+    }
+
+    const now = new Date().toISOString();
+    const card = enrollCardInReviewQueue(
+      {
+        id: crypto.randomUUID(),
+        sourceFragmentId: fragment.id,
+        createdAt: now,
+        generatedAt: now,
+        ...buildLanguageCardFieldsFromDraftContent(draft),
+      },
+      now,
+    );
+    this.cards.set(card.id, card);
+    this.drafts.delete(fragment.id);
+    return card;
+  }
+
+  async updateLanguageCardContent(
+    cardId: string,
+    content: LanguageCardDraftContent,
+  ): Promise<LanguageCard> {
+    const existing = this.cards.get(cardId);
+    if (!existing) {
+      throw new Error('Language card not found.');
+    }
+
+    const updated = applyEditorContentToLanguageCard(existing, content);
+    this.cards.set(cardId, updated);
+    return updated;
   }
 
   async getLanguageCardDraft(
