@@ -1,10 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { DarkModePrototypeApp } from './prototype/dark-mode/DarkModePrototypeApp';
 import './index.css';
+
+const isDarkModePrototype =
+  new URLSearchParams(window.location.search).get('prototype') === 'dark-mode';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {isDarkModePrototype ? <DarkModePrototypeApp /> : <App />}
   </StrictMode>,
 );
