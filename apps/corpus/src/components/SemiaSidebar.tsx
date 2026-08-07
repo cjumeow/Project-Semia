@@ -246,7 +246,7 @@ export function SemiaSidebar({
                 rowHover,
                 'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
                 pane === 'review-queue'
-                  ? 'semia-margin-active text-accent'
+                  ? 'semia-margin-active text-text'
                   : 'text-text-secondary hover:text-text',
               ].join(' ')}
               onClick={onSelectReviewQueue}
@@ -257,7 +257,7 @@ export function SemiaSidebar({
               <span
                 className={[
                   'mt-0.5 truncate text-[11px] tabular-nums',
-                  pane === 'review-queue' ? 'text-accent/70' : 'text-text-muted',
+                  pane === 'review-queue' ? 'text-text-muted' : 'text-text-muted',
                 ].join(' ')}
               >
                 {dueCount} snippet{dueCount === 1 ? '' : 's'}
@@ -270,7 +270,7 @@ export function SemiaSidebar({
                 rowHover,
                 'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
                 pane === 'card-review-queue'
-                  ? 'semia-margin-active text-accent'
+                  ? 'semia-margin-active text-text'
                   : 'text-text-secondary hover:text-text',
               ].join(' ')}
               onClick={onSelectCardReviewQueue}
@@ -282,7 +282,7 @@ export function SemiaSidebar({
                 className={[
                   'mt-0.5 truncate text-[11px] tabular-nums',
                   pane === 'card-review-queue'
-                    ? 'text-accent/70'
+                    ? 'text-text-muted'
                     : 'text-text-muted',
                 ].join(' ')}
               >
@@ -412,7 +412,7 @@ function CollapsedNavButton({
       className={[
         'relative flex h-9 w-9 items-center justify-center rounded-md transition-colors',
         isActive
-          ? 'bg-accent-soft text-accent'
+          ? 'semia-selection-icon-active'
           : 'text-text-secondary hover:bg-canvas hover:text-text',
       ].join(' ')}
       onClick={onClick}
@@ -540,12 +540,12 @@ function MyCardsPinnedButton({
         className={[
           'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
           isActive
-            ? 'border-accent/40 bg-accent-soft text-accent'
-            : 'border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-canvas',
+            ? 'semia-selection-chip-active border-2 border-accent text-text'
+            : 'border border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-canvas',
         ].join(' ')}
         onClick={onClick}
       >
-        <StudyCardsIcon className={isActive ? 'text-accent' : undefined} />
+        <StudyCardsIcon />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-semibold">
             Learning cards
@@ -584,7 +584,7 @@ function SourceButton({
         rowHover,
         'my-0.5 flex-col items-stretch gap-0 border-l-[3px] border-transparent py-2 pl-[calc(0.625rem-3px)]',
         isActive
-          ? 'semia-margin-active text-accent'
+          ? 'semia-margin-active text-text'
           : 'text-text-secondary hover:text-text',
       ].join(' ')}
       onClick={onClick}
@@ -601,7 +601,7 @@ function SourceButton({
         className={[
           'mt-0.5 truncate text-[11px] tabular-nums',
           icon ? 'pl-5' : '',
-          isActive ? 'text-accent/70' : 'text-text-muted',
+          isActive ? 'text-text-muted' : 'text-text-muted',
         ].join(' ')}
       >
         {subtitle}

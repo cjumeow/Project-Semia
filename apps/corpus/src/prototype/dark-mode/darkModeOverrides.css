@@ -1,0 +1,20 @@
+.dark-mode-proto {
+  color-scheme: dark;
+  height: 100%;
+  min-height: 0;
+}
+
+.dark-mode-proto .semia-badge-due {
+  border-color: #7f1d1d;
+  background: #450a0a;
+  color: #fecdd3;
+}
+
+.dark-mode-proto .proto-switcher-pill {
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 92%, #000);
+}
+
+.dark-mode-proto .hover\:bg-white:hover {
+  background-color: var(--color-canvas) !important;
+}

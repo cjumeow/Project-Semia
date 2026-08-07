@@ -1,7 +1,11 @@
-import { SNIPPET_CHAT_BULLET_DRAG_MIME } from '@semia/shared';
+import {
+  SNIPPET_CHAT_BULLET_DRAG_MIME,
+  serializeDragElements,
+} from '@semia/shared';
 import {
   createContext,
   useContext,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from 'react';
@@ -9,49 +13,112 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { TextDots } from '../TextDots';
 import type { SnippetChatMessage } from '../../hooks/useSnippetChat';
+import { applyMultiBlockDragGhost } from './chatDragGhost';
+import {
+  ChatDragBlockSelectionProvider,
+  useChatDragBlockSelection,
+} from './ChatDragBlockSelection';
 
-const MarkdownListDepthContext = createContext(0);
 const BulletsDraggableContext = createContext(false);
 
-function MarkdownUl({ children }: { children?: ReactNode }) {
-  const depth = useContext(MarkdownListDepthContext);
+const draggableItemClass =
+  'cursor-grab rounded-md border border-transparent px-1 -mx-1 transition-colors hover:border-accent/30 hover:bg-accent/5 active:cursor-grabbing';
+
+const selectedItemClass =
+  'ring-2 ring-accent/40 bg-accent/10 border-accent/20';
+
+function setDragMarkdownPayload(event: React.DragEvent, elements: HTMLElement[]) {
+  const markdownText = serializeDragElements(elements);
+  if (!markdownText) {
+    event.preventDefault();
+    return;
+  }
+
+  event.dataTransfer.setData(SNIPPET_CHAT_BULLET_DRAG_MIME, markdownText);
+  event.dataTransfer.setData('text/plain', markdownText);
+  event.dataTransfer.effectAllowed = 'copy';
+  applyMultiBlockDragGhost(event, elements.length);
+}
+
+function useDraggableBlock<T extends HTMLElement>() {
+  const bulletsDraggable = useContext(BulletsDraggableContext);
+  const selection = useChatDragBlockSelection();
+  const itemRef = useRef<T>(null);
+  const blockIdRef = useRef<string | null>(null);
+
+  if (bulletsDraggable && selection && blockIdRef.current === null) {
+    blockIdRef.current = selection.allocateBlockId();
+  }
+
+  const blockId = blockIdRef.current;
+  const selected =
+    bulletsDraggable && blockId != null && selection?.isSelected(blockId);
+
+  useLayoutEffect(() => {
+    if (!selection || !blockId) {
+      return;
+    }
+    selection.registerBlockElement(blockId, itemRef.current);
+    return () => {
+      selection.registerBlockElement(blockId, null);
+    };
+  }, [blockId, selection]);
+
+  const className = bulletsDraggable
+    ? [draggableItemClass, selected ? selectedItemClass : null]
+        .filter(Boolean)
+        .join(' ')
+    : undefined;
+
+  const dragHandlers = bulletsDraggable
+    ? {
+        draggable: true as const,
+        onMouseDown: (event: React.MouseEvent) => {
+          if (event.shiftKey || event.metaKey || event.ctrlKey) {
+            event.preventDefault();
+          }
+        },
+        onClick: (event: React.MouseEvent) => {
+          if (!selection || !blockId) {
+            return;
+          }
+          event.preventDefault();
+          const multiSelect =
+            event.shiftKey || event.metaKey || event.ctrlKey;
+          selection.handleBlockClick(blockId, multiSelect);
+        },
+        onDragStart: (event: React.DragEvent) => {
+          if (!selection || !blockId) {
+            return;
+          }
+          event.stopPropagation();
+          setDragMarkdownPayload(
+            event,
+            selection.getDragPayloadElements(blockId),
+          );
+        },
+      }
+    : {};
+
+  return { itemRef, className, dragHandlers };
+}
+
+function MarkdownP({ children }: { children?: ReactNode }) {
+  const { itemRef, className, dragHandlers } =
+    useDraggableBlock<HTMLParagraphElement>();
+
   return (
-    <MarkdownListDepthContext.Provider value={depth + 1}>
-      <ul>{children}</ul>
-    </MarkdownListDepthContext.Provider>
+    <p ref={itemRef} className={className} {...dragHandlers}>
+      {children}
+    </p>
   );
 }
 
 function MarkdownLi({ children }: { children?: ReactNode }) {
-  const depth = useContext(MarkdownListDepthContext);
-  const bulletsDraggable = useContext(BulletsDraggableContext);
-  const itemRef = useRef<HTMLLIElement>(null);
-  const isTopLevelBullet = depth === 1;
-  const draggable = bulletsDraggable && isTopLevelBullet;
+  const { itemRef, className, dragHandlers } = useDraggableBlock<HTMLLIElement>();
 
   return (
-    <li
-      ref={itemRef}
-      draggable={draggable}
-      className={
-        draggable
-          ? 'cursor-grab rounded-md border border-transparent px-1 -mx-1 transition-colors hover:border-accent/30 hover:bg-accent/5 active:cursor-grabbing'
-          : undefined
-      }
-      onDragStart={(event) => {
-        if (!draggable) {
-          return;
-        }
-        const text = itemRef.current?.textContent?.trim() ?? '';
-        if (!text) {
-          event.preventDefault();
-          return;
-        }
-        event.dataTransfer.setData(SNIPPET_CHAT_BULLET_DRAG_MIME, text);
-        event.dataTransfer.setData('text/plain', text);
-        event.dataTransfer.effectAllowed = 'copy';
-      }}
-    >
+    <li ref={itemRef} className={className} {...dragHandlers}>
       {children}
     </li>
   );
@@ -63,7 +130,7 @@ const markdownComponents = {
       <table>{children}</table>
     </div>
   ),
-  ul: MarkdownUl,
+  p: MarkdownP,
   li: MarkdownLi,
 };
 
@@ -74,6 +141,8 @@ type DraggableAssistantMarkdownProps = {
 export function DraggableAssistantMarkdown({
   message,
 }: DraggableAssistantMarkdownProps) {
+  const bulletsDraggable = !message.streaming;
+
   if (!message.content && message.streaming) {
     return (
       <span className="text-text-muted">
@@ -83,20 +152,23 @@ export function DraggableAssistantMarkdown({
   }
 
   return (
-    <div className="prose-chat text-sm leading-snug text-text">
-      <BulletsDraggableContext.Provider value={!message.streaming}>
-        <MarkdownListDepthContext.Provider value={0}>
+    <ChatDragBlockSelectionProvider
+      messageId={message.id}
+      draggable={bulletsDraggable}
+    >
+      <div className="prose-chat text-sm leading-snug text-text">
+        <BulletsDraggableContext.Provider value={bulletsDraggable}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {message.content}
           </ReactMarkdown>
-        </MarkdownListDepthContext.Provider>
-      </BulletsDraggableContext.Provider>
-      {message.streaming ? (
-        <span
-          aria-hidden
-          className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-text-muted align-[-0.1em]"
-        />
-      ) : null}
-    </div>
+        </BulletsDraggableContext.Provider>
+        {message.streaming ? (
+          <span
+            aria-hidden
+            className="ml-0.5 inline-block h-[1em] w-0.5 animate-pulse bg-text-muted align-[-0.1em]"
+          />
+        ) : null}
+      </div>
+    </ChatDragBlockSelectionProvider>
   );
 }

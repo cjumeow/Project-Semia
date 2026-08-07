@@ -201,8 +201,8 @@ export function CreateLanguageCardModal({
                         className={[
                           'flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors',
                           selected
-                            ? 'border-accent/40 bg-accent-soft text-accent'
-                            : 'border-border text-text-secondary hover:border-accent/30',
+                            ? 'semia-selection-chip-active border border-accent text-text'
+                            : 'border border-border text-text-secondary hover:border-accent/30',
                         ].join(' ')}
                       >
                         <input

@@ -29,8 +29,8 @@ export function DetailTabBar({ activeTab, onTabChange }: DetailTabBarProps) {
               className={[
                 'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                 active
-                  ? 'border-accent bg-accent-soft text-accent'
-                  : 'border-border text-text-secondary hover:border-accent/40 hover:text-text',
+                  ? 'semia-selection-tab-active'
+                  : 'border border-border text-text-secondary hover:border-accent/50 hover:text-text',
               ].join(' ')}
               onClick={() => onTabChange(tab.key)}
             >

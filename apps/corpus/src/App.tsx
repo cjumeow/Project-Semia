@@ -56,9 +56,11 @@ export default function App() {
     contextWindowEnabled,
     languageCardsProEnabled,
     languageCardAiSuggestionsEnabled,
+    darkModeEnabled,
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
+    setDarkModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   } = useSemiaSettings();
   const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
@@ -552,10 +554,14 @@ export default function App() {
       />
       <SemiaSettingsDialog
         open={settingsOpen}
+        darkModeEnabled={darkModeEnabled}
         contextWindowEnabled={contextWindowEnabled}
         languageCardsProEnabled={languageCardsProEnabled}
         languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
         onClose={() => setSettingsOpen(false)}
+        onDarkModeEnabledChange={(enabled) => {
+          void setDarkModeEnabled(enabled);
+        }}
         onContextWindowEnabledChange={(enabled) => {
           void setContextWindowEnabled(enabled);
         }}

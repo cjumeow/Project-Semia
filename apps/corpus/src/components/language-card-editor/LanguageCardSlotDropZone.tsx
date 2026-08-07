@@ -53,16 +53,30 @@ export function LanguageCardSlotDropZone({
         }
         setDragOver(false);
       }}
-      onDrop={(event) => {
-        event.preventDefault();
-        setDragOver(false);
-        if (disabled) {
+      onDragOverCapture={(event) => {
+        if (disabled || !hasSnippetChatBulletDrag(event.dataTransfer)) {
           return;
         }
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'copy';
+        setDragOver(true);
+      }}
+      onDropCapture={(event) => {
+        if (disabled || !hasSnippetChatBulletDrag(event.dataTransfer)) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        setDragOver(false);
         const text = readSnippetChatBulletDragText(event.dataTransfer);
         if (text) {
           onAppend(slot, text);
         }
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragOver(false);
       }}
     >
       {children}

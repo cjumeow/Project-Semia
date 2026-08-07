@@ -16,3 +16,8 @@ export function isLanguageCardAiSuggestionsEnabled(
 ): boolean {
   return settings?.languageCardAiSuggestionsEnabled !== false;
 }
+
+/** Dark mode (Cursor deep) is off unless explicitly enabled. */
+export function isDarkModeEnabled(settings?: SemiaSettings): boolean {
+  return settings?.darkModeEnabled === true;
+}

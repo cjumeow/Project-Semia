@@ -73,7 +73,7 @@ export function WebPreview({ snippet }: WebPreviewProps) {
             <img
               src={icon}
               alt=""
-              className="mt-0.5 h-10 w-10 rounded-lg border border-border bg-white object-contain"
+              className="mt-0.5 h-10 w-10 rounded-lg border border-border bg-surface object-contain"
             />
           ) : (
             <div

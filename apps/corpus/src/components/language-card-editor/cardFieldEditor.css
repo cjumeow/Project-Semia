@@ -1,0 +1,58 @@
+.semia-card-field-editor {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.semia-card-field-editor--dashed {
+  border-style: dashed;
+  background: var(--color-canvas);
+}
+
+.semia-card-field-editor .tiptap {
+  outline: none;
+  min-height: 4.5rem;
+}
+
+.semia-card-field-editor .tiptap p {
+  margin: 0;
+}
+
+.semia-card-field-editor .tiptap p + p {
+  margin-top: 0.5rem;
+}
+
+.semia-card-field-editor .tiptap ul,
+.semia-card-field-editor .tiptap ol {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.semia-card-field-editor .tiptap ul {
+  list-style: disc;
+}
+
+.semia-card-field-editor .tiptap ol {
+  list-style: decimal;
+}
+
+.semia-card-field-editor .tiptap li + li {
+  margin-top: 0.125rem;
+}
+
+.semia-card-field-editor .tiptap p.is-editor-empty:first-child::before {
+  color: var(--color-text-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.semia-card-field-editor .ProseMirror-focused {
+  outline: none;
+}

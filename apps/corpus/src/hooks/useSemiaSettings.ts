@@ -1,11 +1,14 @@
 import {
+  applySemiaThemeToDocument,
   isContextWindowEnabled,
+  isDarkModeEnabled,
   isLanguageCardAiSuggestionsEnabled,
   isLanguageCardsProEnabled,
   SEMIA_SETTINGS_STORAGE_KEY,
+  semiaThemeModeForDarkModeEnabled,
   type SemiaSettings,
 } from '@semia/shared';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 const DEFAULT_SETTINGS: SemiaSettings = {
   nativeLanguage: 'zh-TW',
@@ -55,9 +58,11 @@ export function useSemiaSettings(): {
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
+  darkModeEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardAiSuggestionsEnabled: (enabled: boolean) => Promise<void>;
+  setDarkModeEnabled: (enabled: boolean) => Promise<void>;
   setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
 } {
   const [settings, setSettings] = useState<SemiaSettings>(readStoredSettings);
@@ -100,6 +105,12 @@ export function useSemiaSettings(): {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    applySemiaThemeToDocument(
+      semiaThemeModeForDarkModeEnabled(isDarkModeEnabled(settings)),
+    );
+  }, [settings]);
+
   const updateSettings = useCallback(
     async (patch: Partial<SemiaSettings>): Promise<void> => {
       const next = { ...settings, ...patch };
@@ -130,6 +141,13 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
+  const setDarkModeEnabled = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      await updateSettings({ darkModeEnabled: enabled });
+    },
+    [updateSettings],
+  );
+
   const setSkipInboxArchiveWithoutFormalCardConfirm = useCallback(
     async (skip: boolean): Promise<void> => {
       await updateSettings({ skipInboxArchiveWithoutFormalCardConfirm: skip });
@@ -144,9 +162,11 @@ export function useSemiaSettings(): {
     languageCardsProEnabled: isLanguageCardsProEnabled(settings),
     languageCardAiSuggestionsEnabled:
       isLanguageCardAiSuggestionsEnabled(settings),
+    darkModeEnabled: isDarkModeEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
+    setDarkModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   };
 }

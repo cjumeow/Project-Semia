@@ -1,0 +1,110 @@
+import { Markdown } from '@tiptap/markdown';
+import Placeholder from '@tiptap/extension-placeholder';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { hasSnippetChatBulletDrag } from '@semia/shared';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
+import './cardFieldEditor.css';
+
+export type CardFieldEditorHandle = {
+  insertMarkdown: (markdown: string) => void;
+};
+
+type CardFieldEditorProps = {
+  value: string;
+  disabled?: boolean;
+  placeholder?: string;
+  minHeight?: number;
+  className?: string;
+  onChange: (value: string) => void;
+};
+
+export const CardFieldEditor = forwardRef<
+  CardFieldEditorHandle,
+  CardFieldEditorProps
+>(function CardFieldEditor(
+  {
+    value,
+    disabled = false,
+    placeholder,
+    minHeight = 120,
+    className = '',
+    onChange,
+  },
+  ref,
+) {
+  const lastEmittedRef = useRef(value);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Markdown,
+      Placeholder.configure({
+        placeholder: placeholder ?? '',
+      }),
+    ],
+    content: value,
+    contentType: 'markdown',
+    editable: !disabled,
+    editorProps: {
+      handleDrop: (_view, event) =>
+        event.dataTransfer !== null &&
+        hasSnippetChatBulletDrag(event.dataTransfer),
+    },
+    onUpdate: ({ editor: nextEditor }) => {
+      const markdown = nextEditor.getMarkdown();
+      lastEmittedRef.current = markdown;
+      onChange(markdown);
+    },
+  });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      insertMarkdown(markdown: string) {
+        const trimmed = markdown.trim();
+        if (!editor || !trimmed) {
+          return;
+        }
+
+        const hasContent = editor.getText().trim().length > 0;
+        const fragment = hasContent ? `\n\n${trimmed}` : trimmed;
+        const end = editor.state.doc.content.size;
+        editor.commands.insertContentAt(end, fragment, { contentType: 'markdown' });
+      },
+    }),
+    [editor],
+  );
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    editor.setEditable(!disabled);
+  }, [disabled, editor]);
+
+  useEffect(() => {
+    if (!editor || value === lastEmittedRef.current) {
+      return;
+    }
+    lastEmittedRef.current = value;
+    editor.commands.setContent(value, {
+      contentType: 'markdown',
+      emitUpdate: false,
+    });
+  }, [editor, value]);
+
+  return (
+    <div
+      className={`semia-card-field-editor ${className}`.trim()}
+      style={{ minHeight }}
+    >
+      <EditorContent editor={editor} />
+    </div>
+  );
+});

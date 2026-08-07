@@ -18,7 +18,7 @@ export function HighlightSelection({
         segment.highlighted ? (
           <mark
             key={index}
-            className="rounded-sm bg-[#FFEB3B] px-0.5 text-inherit"
+            className="rounded-sm px-0.5 semia-selection-mark"
           >
             {segment.text}
           </mark>
