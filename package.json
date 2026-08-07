@@ -8,6 +8,7 @@
     "scripts": {
         "dev:corpus": "npm run dev -w @semia/corpus",
         "prototype:dark-mode": "npm run dev -w @semia/corpus",
+        "prototype:drag-mode-switch": "npm run dev -w @semia/corpus -- --open \"/?prototype=drag-mode-switch\"",
         "build:extension": "npm run build -w @semia/extension",
         "build:corpus": "npm run build -w @semia/corpus",
         "build": "npm run build:extension && npm run build:corpus && node scripts/assemble-extension.mjs",

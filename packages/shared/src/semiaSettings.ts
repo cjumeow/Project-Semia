@@ -21,3 +21,8 @@ export function isLanguageCardAiSuggestionsEnabled(
 export function isDarkModeEnabled(settings?: SemiaSettings): boolean {
   return settings?.darkModeEnabled === true;
 }
+
+/** Chat drag mode is off unless explicitly enabled. */
+export function isSnippetChatDragModeEnabled(settings?: SemiaSettings): boolean {
+  return settings?.snippetChatDragModeEnabled === true;
+}

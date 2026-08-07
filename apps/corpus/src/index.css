@@ -384,12 +384,15 @@ body {
 
 /* Chat drag blocks — unified inset for paragraphs and list markers */
 .prose-chat .semia-chat-drag-block {
-  cursor: grab;
   position: relative;
   border-radius: 0.375rem;
   border: 2px solid transparent;
   background: transparent;
   transition: border-color 150ms ease;
+}
+
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block {
+  cursor: grab;
 }
 
 .prose-chat p.semia-chat-drag-block,
@@ -425,27 +428,28 @@ body {
   );
 }
 
-.prose-chat .semia-chat-drag-block:hover::before {
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block:hover::before {
   border-color: rgb(251 191 36 / 0.4);
   background-color: rgb(251 191 36 / 0.05);
   box-shadow: none;
 }
 
-.prose-chat .semia-chat-drag-block.semia-chat-drag-block-selected::before {
+.prose-chat[data-drag-mode='on']
+  .semia-chat-drag-block.semia-chat-drag-block-selected::before {
   border-color: rgb(251 191 36 / 0.8);
   background-color: rgb(251 191 36 / 0.15);
   box-shadow: 0 1px 2px 0 rgb(245 158 11 / 0.1);
 }
 
-.prose-chat p.semia-chat-drag-block:hover,
-.prose-chat p.semia-chat-drag-block.semia-chat-drag-block-selected,
-.prose-chat li.semia-chat-drag-block:hover,
-.prose-chat li.semia-chat-drag-block.semia-chat-drag-block-selected {
+.prose-chat[data-drag-mode='on'] p.semia-chat-drag-block:hover,
+.prose-chat[data-drag-mode='on'] p.semia-chat-drag-block.semia-chat-drag-block-selected,
+.prose-chat[data-drag-mode='on'] li.semia-chat-drag-block:hover,
+.prose-chat[data-drag-mode='on'] li.semia-chat-drag-block.semia-chat-drag-block-selected {
   border-color: transparent;
   background: transparent;
 }
 
-.prose-chat .semia-chat-drag-block:active {
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block:active {
   cursor: grabbing;
 }
 

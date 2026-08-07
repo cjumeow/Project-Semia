@@ -67,6 +67,12 @@ export function ChatDragBlockSelectionProvider({
   }, []);
 
   useEffect(() => {
+    if (!draggable) {
+      setSelectedIds(new Set());
+    }
+  }, [draggable]);
+
+  useEffect(() => {
     if (!draggable || selectedIds.size === 0) {
       return;
     }

@@ -3,6 +3,7 @@ import {
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardsProEnabled,
+  isSnippetChatDragModeEnabled,
 } from './semiaSettings';
 
 describe('isContextWindowEnabled', () => {
@@ -45,5 +46,21 @@ describe('isDarkModeEnabled', () => {
   it('is enabled only when explicitly true', () => {
     expect(isDarkModeEnabled({ darkModeEnabled: true })).toBe(true);
     expect(isDarkModeEnabled({ darkModeEnabled: false })).toBe(false);
+  });
+});
+
+describe('isSnippetChatDragModeEnabled', () => {
+  it('defaults to disabled when setting is missing', () => {
+    expect(isSnippetChatDragModeEnabled()).toBe(false);
+    expect(isSnippetChatDragModeEnabled({})).toBe(false);
+  });
+
+  it('is enabled only when explicitly true', () => {
+    expect(
+      isSnippetChatDragModeEnabled({ snippetChatDragModeEnabled: true }),
+    ).toBe(true);
+    expect(
+      isSnippetChatDragModeEnabled({ snippetChatDragModeEnabled: false }),
+    ).toBe(false);
   });
 });

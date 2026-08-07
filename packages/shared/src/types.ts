@@ -195,4 +195,6 @@ export type SemiaSettings = {
   skipInboxArchiveWithoutFormalCardConfirm?: boolean;
   /** Cursor deep dark theme for corpus UI. Default: off (light). */
   darkModeEnabled?: boolean;
+  /** When true, assistant chat blocks are draggable into language cards. Default: off (read). */
+  snippetChatDragModeEnabled?: boolean;
 };

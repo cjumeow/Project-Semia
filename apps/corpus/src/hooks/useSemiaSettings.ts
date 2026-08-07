@@ -4,6 +4,7 @@ import {
   isDarkModeEnabled,
   isLanguageCardAiSuggestionsEnabled,
   isLanguageCardsProEnabled,
+  isSnippetChatDragModeEnabled,
   SEMIA_SETTINGS_STORAGE_KEY,
   semiaThemeModeForDarkModeEnabled,
   type SemiaSettings,
@@ -59,10 +60,12 @@ export function useSemiaSettings(): {
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
   darkModeEnabled: boolean;
+  snippetChatDragModeEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardAiSuggestionsEnabled: (enabled: boolean) => Promise<void>;
   setDarkModeEnabled: (enabled: boolean) => Promise<void>;
+  setSnippetChatDragModeEnabled: (enabled: boolean) => Promise<void>;
   setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
 } {
   const [settings, setSettings] = useState<SemiaSettings>(readStoredSettings);
@@ -148,6 +151,13 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
+  const setSnippetChatDragModeEnabled = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      await updateSettings({ snippetChatDragModeEnabled: enabled });
+    },
+    [updateSettings],
+  );
+
   const setSkipInboxArchiveWithoutFormalCardConfirm = useCallback(
     async (skip: boolean): Promise<void> => {
       await updateSettings({ skipInboxArchiveWithoutFormalCardConfirm: skip });
@@ -163,10 +173,12 @@ export function useSemiaSettings(): {
     languageCardAiSuggestionsEnabled:
       isLanguageCardAiSuggestionsEnabled(settings),
     darkModeEnabled: isDarkModeEnabled(settings),
+    snippetChatDragModeEnabled: isSnippetChatDragModeEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
     setDarkModeEnabled,
+    setSnippetChatDragModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   };
 }
