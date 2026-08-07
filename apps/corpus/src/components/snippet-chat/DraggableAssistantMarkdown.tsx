@@ -20,6 +20,8 @@ import {
 } from './ChatDragBlockSelection';
 
 const BulletsDraggableContext = createContext(false);
+/** Paragraphs inside `<li>` are not separate drag blocks — the list item is the container. */
+const InsideListItemContext = createContext(false);
 
 const draggableItemClass =
   'cursor-grab rounded-md border border-transparent px-1 -mx-1 transition-colors hover:border-accent/30 hover:bg-accent/5 active:cursor-grabbing';
@@ -104,6 +106,11 @@ function useDraggableBlock<T extends HTMLElement>() {
 }
 
 function MarkdownP({ children }: { children?: ReactNode }) {
+  const insideLi = useContext(InsideListItemContext);
+  if (insideLi) {
+    return <p>{children}</p>;
+  }
+
   const { itemRef, className, dragHandlers } =
     useDraggableBlock<HTMLParagraphElement>();
 
@@ -118,9 +125,11 @@ function MarkdownLi({ children }: { children?: ReactNode }) {
   const { itemRef, className, dragHandlers } = useDraggableBlock<HTMLLIElement>();
 
   return (
-    <li ref={itemRef} className={className} {...dragHandlers}>
-      {children}
-    </li>
+    <InsideListItemContext.Provider value={true}>
+      <li ref={itemRef} className={className} {...dragHandlers}>
+        {children}
+      </li>
+    </InsideListItemContext.Provider>
   );
 }
 
