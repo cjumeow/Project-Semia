@@ -199,8 +199,8 @@ function ContextWindowSection({
       <button
         type="button"
         className={[
-          'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
-          hasContent ? 'hover:bg-black/[0.03]' : 'cursor-default',
+          'flex w-full items-center gap-1.5 px-4 py-3 text-left transition-colors',
+          hasContent ? 'hover:bg-black/[0.04]' : 'cursor-default',
         ].join(' ')}
         onClick={() => {
           if (hasContent) {
@@ -210,12 +210,10 @@ function ContextWindowSection({
         aria-expanded={hasContent ? expanded : undefined}
         disabled={!hasContent && !loading}
       >
-        <span className="text-sm font-medium text-text">Context window</span>
         {hasContent ? (
-          <span className="text-base leading-none text-text-muted" aria-hidden>
-            {expanded ? '▾' : '▸'}
-          </span>
+          <ContextWindowDisclosureIcon expanded={expanded} />
         ) : null}
+        <span className="text-sm font-medium text-text">Context window</span>
       </button>
       {loading ? (
         <div className="semia-context-body px-4 py-3 text-sm text-text-muted">
@@ -226,6 +224,7 @@ function ContextWindowSection({
           <BilingualBlock
             value={value}
             highlightSelection={highlightSelection}
+            highlightMarkClassName="rounded-sm px-0.5 semia-context-highlight"
           />
         </div>
       ) : !hasContent && !loading ? (
@@ -289,9 +288,11 @@ function NoteField({
 function BilingualBlock({
   value,
   highlightSelection,
+  highlightMarkClassName,
 }: {
   value: string;
   highlightSelection?: string;
+  highlightMarkClassName?: string;
 }) {
   const parts = value.split(/\s*---\s*/);
   const original = parts[0]?.trim() ?? '';
@@ -305,7 +306,11 @@ function BilingualBlock({
     <div className="flex flex-col gap-3">
       <p className="m-0 text-sm leading-relaxed text-text">
         {highlightSelection?.trim() ? (
-          <HighlightSelection text={original} selection={highlightSelection} />
+          <HighlightSelection
+            text={original}
+            selection={highlightSelection}
+            markClassName={highlightMarkClassName}
+          />
         ) : (
           original
         )}
@@ -316,5 +321,21 @@ function BilingualBlock({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function ContextWindowDisclosureIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      className={[
+        'h-[0.85em] w-[0.85em] shrink-0 text-text-muted transition-transform duration-150',
+        expanded ? 'rotate-90' : '',
+      ].join(' ')}
+      viewBox="0 0 10 10"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M2.5 1.5 7.5 5 2.5 8.5Z" />
+    </svg>
   );
 }
