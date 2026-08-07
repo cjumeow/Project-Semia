@@ -193,4 +193,6 @@ export type SemiaSettings = {
   languageCardAiSuggestionsEnabled?: boolean;
   /** When true, skip the inbox archive confirm when no formal language card exists. */
   skipInboxArchiveWithoutFormalCardConfirm?: boolean;
+  /** Cursor deep dark theme for corpus UI. Default: off (light). */
+  darkModeEnabled?: boolean;
 };

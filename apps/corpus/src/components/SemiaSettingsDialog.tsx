@@ -1,9 +1,11 @@
 type SemiaSettingsDialogProps = {
   open: boolean;
+  darkModeEnabled: boolean;
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
   onClose: () => void;
+  onDarkModeEnabledChange: (enabled: boolean) => void;
   onContextWindowEnabledChange: (enabled: boolean) => void;
   onLanguageCardsProEnabledChange: (enabled: boolean) => void;
   onLanguageCardAiSuggestionsEnabledChange: (enabled: boolean) => void;
@@ -11,10 +13,12 @@ type SemiaSettingsDialogProps = {
 
 export function SemiaSettingsDialog({
   open,
+  darkModeEnabled,
   contextWindowEnabled,
   languageCardsProEnabled,
   languageCardAiSuggestionsEnabled,
   onClose,
+  onDarkModeEnabledChange,
   onContextWindowEnabledChange,
   onLanguageCardsProEnabledChange,
   onLanguageCardAiSuggestionsEnabledChange,
@@ -59,6 +63,24 @@ export function SemiaSettingsDialog({
         </div>
 
         <div className="mt-5 space-y-4">
+          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-canvas/40 px-4 py-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-border"
+              checked={darkModeEnabled}
+              onChange={(event) => {
+                onDarkModeEnabledChange(event.target.checked);
+              }}
+            />
+            <span className="min-w-0">
+              <span className="block text-base font-medium text-text">
+                Dark mode
+              </span>
+              <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
+                Use the Cursor deep palette for the corpus workspace.
+              </span>
+            </span>
+          </label>
           <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-canvas/40 px-4 py-4">
             <input
               type="checkbox"

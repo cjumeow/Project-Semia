@@ -31,8 +31,8 @@ export function SnippetChatContextSwitcher({
         className={[
           'flex max-w-[11rem] items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors',
           open
-            ? 'border-accent/40 bg-accent-soft text-accent'
-            : 'border-border bg-canvas text-text-secondary hover:bg-surface hover:text-text',
+            ? 'semia-selection-chip-active border border-accent text-text'
+            : 'border border-border bg-canvas text-text-secondary hover:bg-surface hover:text-text',
         ].join(' ')}
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
@@ -61,7 +61,7 @@ export function SnippetChatContextSwitcher({
                     className={[
                       'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
                       active
-                        ? 'bg-accent-soft text-accent'
+                        ? 'semia-selection-chip-active border border-transparent text-text'
                         : 'text-text-secondary hover:bg-canvas hover:text-text',
                     ].join(' ')}
                     onClick={() => {

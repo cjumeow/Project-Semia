@@ -8,6 +8,7 @@ export * from './languageCardFocus';
 export * from './normalizeLanguageCard';
 export * from './parseLanguageCard';
 export * from './semiaSettings';
+export * from './semiaTheme';
 export * from './parseSnippetNote';
 export * from './libraryReviewSchedule';
 export * from './contextText';

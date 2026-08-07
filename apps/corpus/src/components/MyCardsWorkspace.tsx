@@ -25,7 +25,7 @@ function LearningCardTile({
   return (
     <button
       type="button"
-      className="relative flex h-full w-full min-w-0 flex-col overflow-x-hidden rounded-xl border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:border-border-strong hover:bg-white"
+      className="relative flex h-full w-full min-w-0 flex-col overflow-x-hidden rounded-xl border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:border-border-strong hover:bg-canvas"
       onClick={onSelect}
     >
       <span className="absolute right-2 top-2">

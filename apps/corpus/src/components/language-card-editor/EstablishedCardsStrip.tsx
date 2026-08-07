@@ -14,8 +14,8 @@ function NewDraftChip({
       className={[
         'flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors',
         active
-          ? 'border-accent bg-accent-soft'
-          : 'border-dashed border-accent/60 bg-surface hover:border-accent',
+          ? 'semia-selection-chip-active border border-accent'
+          : 'border border-dashed border-accent/60 bg-surface hover:border-accent',
       ].join(' ')}
     >
       <span className="flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-accent text-sm text-accent">
@@ -45,8 +45,8 @@ function EstablishedCardChip({
       className={[
         'shrink-0 rounded-lg border px-3 py-2 text-left transition-colors',
         active
-          ? 'border-accent bg-accent-soft'
-          : 'border-border bg-surface hover:border-accent/40',
+          ? 'semia-selection-chip-active border border-accent'
+          : 'border border-border bg-surface hover:border-accent/40',
       ].join(' ')}
     >
       <p className="text-xs font-medium text-text">{card.focusText}</p>
