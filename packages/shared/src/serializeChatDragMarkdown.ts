@@ -53,6 +53,126 @@ function serializeShallowListItem(li: HTMLLIElement): string {
   return `- ${text}`;
 }
 
+function listItemHasNestedList(li: HTMLLIElement): boolean {
+  return Array.from(li.children).some(
+    (child) => child.tagName === 'UL' || child.tagName === 'OL',
+  );
+}
+
+/**
+ * GFM often renders sub-bullets after a numbered item as a sibling `<ul>`,
+ * not nested inside the `<ol><li>`. Absorb that list when dragging the
+ * last item of an ordered list.
+ */
+function followingSiblingSublist(
+  li: HTMLLIElement,
+): HTMLUListElement | HTMLOListElement | null {
+  const parentList = li.parentElement;
+  if (!parentList || parentList.tagName !== 'OL' || li !== parentList.lastElementChild) {
+    return null;
+  }
+
+  let sibling = parentList.nextElementSibling;
+  while (sibling) {
+    if (sibling.tagName === 'UL' || sibling.tagName === 'OL') {
+      return sibling as HTMLUListElement | HTMLOListElement;
+    }
+    if (
+      sibling.tagName === 'P' ||
+      sibling.tagName === 'H1' ||
+      sibling.tagName === 'H2' ||
+      sibling.tagName === 'H3' ||
+      sibling.tagName === 'H4' ||
+      sibling.tagName === 'H5' ||
+      sibling.tagName === 'H6' ||
+      sibling.tagName === 'TABLE'
+    ) {
+      return null;
+    }
+    sibling = sibling.nextElementSibling;
+  }
+
+  return null;
+}
+
+/** List item that semantically groups sub-bullets (nested DOM or flat ol→ul). */
+export function isListContainerLi(li: HTMLLIElement): boolean {
+  return listItemHasNestedList(li) || followingSiblingSublist(li) != null;
+}
+
+function indentMarkdownLines(markdown: string, spaces: number): string {
+  const prefix = ' '.repeat(spaces);
+  return markdown
+    .split('\n')
+    .map((line) => (line.length > 0 ? `${prefix}${line}` : line))
+    .join('\n');
+}
+
+function serializeListItemWithFollowingSiblingList(li: HTMLLIElement): string | null {
+  const subList = followingSiblingSublist(li);
+  if (!subList) {
+    return null;
+  }
+
+  const text = listItemTextWithoutNestedLists(li);
+  if (!text) {
+    return null;
+  }
+
+  const depth = listDepth(li);
+  const indent = '  '.repeat(Math.max(0, depth - 1));
+  const line = `${indent}- ${text}`;
+  const nestedLines: string[] = [];
+
+  for (const child of Array.from(subList.children)) {
+    if (child.tagName !== 'LI') {
+      continue;
+    }
+    const nestedMarkdown = serializeDragRootElement(child as HTMLLIElement);
+    if (nestedMarkdown) {
+      nestedLines.push(indentMarkdownLines(nestedMarkdown, 2));
+    }
+  }
+
+  if (nestedLines.length === 0) {
+    return null;
+  }
+
+  return [line, ...nestedLines].join('\n');
+}
+
+function isLiAbsorbedByFollowingSiblingList(
+  li: HTMLLIElement,
+  absorber: HTMLLIElement,
+): boolean {
+  const subList = followingSiblingSublist(absorber);
+  return subList != null && subList.contains(li);
+}
+
+/** Drop list items already included via a preceding ordered-list absorber. */
+function filterOutSiblingAbsorbedDragRoots(roots: HTMLElement[]): HTMLElement[] {
+  return roots.filter((root) => {
+    if (root.tagName !== 'LI') {
+      return true;
+    }
+
+    return !roots.some(
+      (other) =>
+        other !== root &&
+        other.tagName === 'LI' &&
+        isLiAbsorbedByFollowingSiblingList(root as HTMLLIElement, other as HTMLLIElement),
+    );
+  });
+}
+
+/** Drop descendant roots when an ancestor is already in the drag set. */
+function filterOutNestedDragRoots(roots: HTMLElement[]): HTMLElement[] {
+  return roots.filter(
+    (root) =>
+      !roots.some((other) => other !== root && other.contains(root)),
+  );
+}
+
 function joinDragMarkdownBlocks(blocks: string[]): string {
   return blocks.reduce((result, block) => {
     if (!result) {
@@ -76,7 +196,17 @@ export function serializeDragRootElement(root: HTMLElement | null): string {
   }
 
   if (root.tagName === 'LI') {
-    return serializeShallowListItem(root as HTMLLIElement);
+    const li = root as HTMLLIElement;
+    if (listItemHasNestedList(li)) {
+      return serializeListItem(li);
+    }
+
+    const withFollowingSiblingList = serializeListItemWithFollowingSiblingList(li);
+    if (withFollowingSiblingList) {
+      return withFollowingSiblingList;
+    }
+
+    return serializeShallowListItem(li);
   }
 
   return root.textContent?.trim() ?? '';
@@ -86,8 +216,13 @@ export function serializeDragRootElement(root: HTMLElement | null): string {
 export function serializeDragElements(
   roots: Array<HTMLElement | null | undefined>,
 ): string {
-  const blocks = roots
-    .map((root) => (root ? serializeDragRootElement(root) : ''))
+  const filtered = filterOutSiblingAbsorbedDragRoots(
+    filterOutNestedDragRoots(
+      roots.filter((root): root is HTMLElement => root != null),
+    ),
+  );
+  const blocks = filtered
+    .map((root) => serializeDragRootElement(root))
     .filter((markdown) => markdown.length > 0);
 
   return joinDragMarkdownBlocks(blocks);

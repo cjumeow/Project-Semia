@@ -19,13 +19,16 @@ import {
   useChatDragBlockSelection,
 } from './ChatDragBlockSelection';
 
-const BulletsDraggableContext = createContext(false);
+const DragBlockChromeContext = createContext({
+  styled: false,
+  interactive: false,
+});
+/** Paragraphs inside `<li>` are not separate drag blocks — the list item is the container. */
+const InsideListItemContext = createContext(false);
 
-const draggableItemClass =
-  'cursor-grab rounded-md border border-transparent px-1 -mx-1 transition-colors hover:border-accent/30 hover:bg-accent/5 active:cursor-grabbing';
+const draggableItemClass = 'semia-chat-drag-block';
 
-const selectedItemClass =
-  'ring-2 ring-accent/40 bg-accent/10 border-accent/20';
+const selectedItemClass = 'semia-chat-drag-block-selected';
 
 function setDragMarkdownPayload(event: React.DragEvent, elements: HTMLElement[]) {
   const markdownText = serializeDragElements(elements);
@@ -41,18 +44,18 @@ function setDragMarkdownPayload(event: React.DragEvent, elements: HTMLElement[])
 }
 
 function useDraggableBlock<T extends HTMLElement>() {
-  const bulletsDraggable = useContext(BulletsDraggableContext);
+  const { styled, interactive } = useContext(DragBlockChromeContext);
   const selection = useChatDragBlockSelection();
   const itemRef = useRef<T>(null);
   const blockIdRef = useRef<string | null>(null);
 
-  if (bulletsDraggable && selection && blockIdRef.current === null) {
+  if (interactive && selection && blockIdRef.current === null) {
     blockIdRef.current = selection.allocateBlockId();
   }
 
   const blockId = blockIdRef.current;
   const selected =
-    bulletsDraggable && blockId != null && selection?.isSelected(blockId);
+    interactive && blockId != null && selection?.isSelected(blockId);
 
   useLayoutEffect(() => {
     if (!selection || !blockId) {
@@ -64,13 +67,13 @@ function useDraggableBlock<T extends HTMLElement>() {
     };
   }, [blockId, selection]);
 
-  const className = bulletsDraggable
+  const className = styled
     ? [draggableItemClass, selected ? selectedItemClass : null]
         .filter(Boolean)
         .join(' ')
     : undefined;
 
-  const dragHandlers = bulletsDraggable
+  const dragHandlers = interactive
     ? {
         draggable: true as const,
         onMouseDown: (event: React.MouseEvent) => {
@@ -104,6 +107,11 @@ function useDraggableBlock<T extends HTMLElement>() {
 }
 
 function MarkdownP({ children }: { children?: ReactNode }) {
+  const insideLi = useContext(InsideListItemContext);
+  if (insideLi) {
+    return <>{children}</>;
+  }
+
   const { itemRef, className, dragHandlers } =
     useDraggableBlock<HTMLParagraphElement>();
 
@@ -118,9 +126,11 @@ function MarkdownLi({ children }: { children?: ReactNode }) {
   const { itemRef, className, dragHandlers } = useDraggableBlock<HTMLLIElement>();
 
   return (
-    <li ref={itemRef} className={className} {...dragHandlers}>
-      {children}
-    </li>
+    <InsideListItemContext.Provider value={true}>
+      <li ref={itemRef} className={className} {...dragHandlers}>
+        {children}
+      </li>
+    </InsideListItemContext.Provider>
   );
 }
 
@@ -141,7 +151,10 @@ type DraggableAssistantMarkdownProps = {
 export function DraggableAssistantMarkdown({
   message,
 }: DraggableAssistantMarkdownProps) {
-  const bulletsDraggable = !message.streaming;
+  const dragChrome = {
+    styled: Boolean(message.content),
+    interactive: Boolean(message.content) && !message.streaming,
+  };
 
   if (!message.content && message.streaming) {
     return (
@@ -154,14 +167,14 @@ export function DraggableAssistantMarkdown({
   return (
     <ChatDragBlockSelectionProvider
       messageId={message.id}
-      draggable={bulletsDraggable}
+      draggable={dragChrome.interactive}
     >
       <div className="prose-chat text-sm leading-snug text-text">
-        <BulletsDraggableContext.Provider value={bulletsDraggable}>
+        <DragBlockChromeContext.Provider value={dragChrome}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {message.content}
           </ReactMarkdown>
-        </BulletsDraggableContext.Provider>
+        </DragBlockChromeContext.Provider>
         {message.streaming ? (
           <span
             aria-hidden
