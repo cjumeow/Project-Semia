@@ -348,7 +348,7 @@ export function LanguageCardsTab({
         content={editorContent}
         disabled={!editorLoaded}
         showFocusPicker={isDraftMode}
-        showSuggestions={isDraftMode && aiSuggestionsEnabled}
+        showSuggestions={false}
         suggestions={suggestions}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}

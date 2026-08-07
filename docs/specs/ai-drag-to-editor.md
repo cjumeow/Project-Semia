@@ -1,39 +1,35 @@
 # AI drag → editor (narrow spec)
 
-**Status:** draft — replaces all prior `apps/corpus/src/prototype/*` throwaways.
+**Status:** in progress on `feat/card-field-tiptap-editor`.
 
 ## One sentence
 
-AI-generated rich content must be draggable into the language-card BlockNote editor at an insertion position; once dropped, it becomes native editable BlockNote content with formatting preserved.
+AI-generated rich content must be draggable into language-card fields; once dropped, it becomes native editable WYSIWYG content with formatting preserved.
 
 ## In scope (MVP)
 
-1. **Drag source** — AI chat message (or segment) as a draggable payload (markdown and/or BlockNote `PartialBlock[]`).
-2. **Drop target** — the card editor surface (BlockNote).
-3. **Insertion** — insert blocks at a position BlockNote understands (block before/after, or native drop if sufficient). No custom depth geometry engine.
-4. **After drop** — user can click, type, bold, delete, Enter, reorder via BlockNote; content is normal document state.
+1. **Drag source** — AI chat `<p>` / `<li>` segments serialized to markdown (`serializeDragRootElement`). Shift+click selects a range; dragging any selected block drops all selected blocks (`serializeDragElements`).
+2. **Drop target** — `meaning`, `example`, `usageNote` via `LanguageCardSlotDropZone`.
+3. **Insertion** — Tiptap `insertContentAt` with `contentType: 'markdown'` (bullets render as list nodes).
+4. **After drop** — user can click, type, bold, delete in a single-pane WYSIWYG field (no split preview, no toolbar).
+5. **Multi-select drag ghost** — when ≥2 blocks are selected, drag preview shows a Language card icon chip with block count (not initiator text only).
 
 ## Explicitly out of scope (for now)
 
-- Notion-style hierarchy rails, bulletX measurement, scope overlays, depth-candidate snap UI
-- Custom `TreeBlock` / insert-intent framework unless a single call site needs it
+- BlockNote / custom block geometry engine
+- AI field suggestions (disabled until editor merge is stable)
 - Visual parity with Notion/Heptabase beyond “feels draggable and editable”
-- Persistence/sync (prototype uses in-memory editor only until product seam exists)
 
 ## Architecture principle
 
 ```
-AI output → parse to blocks → drag → BlockNote insert API → editable document
+AI output → serializeDragRootElement → drag → CardFieldEditor.insertMarkdown → markdown draft state
 ```
 
-BlockNote owns editor behavior. We own: chat UI, drag payload, card schema, and the thinnest bridge between them.
+Tiptap owns in-field editing. We own: chat UI, drag payload, card schema, and markdown persistence on `LanguageCardDraftContent`.
 
 ## Acceptance (manual)
 
-- [ ] Drag an AI markdown segment into the editor; it lands where the user expects (good enough for demo).
-- [ ] Dropped content is immediately editable (cursor, selection, formatting).
-- [ ] No prototype-only geometry modules; diff stays small and reviewable.
-
-## Next step
-
-When ready to spike again: one route or dev-only page, **≤5 files**, no `?prototype=` router zoo. Use `.agents/skills/prototype` UI branch only if comparing layouts; otherwise ship a minimal integration behind a feature flag or scratch route.
+- [ ] Drag an AI markdown segment into Meaning; bullets render as `•`, bold as bold.
+- [ ] Dropped content is immediately editable in place (single pane).
+- [ ] No split preview or toolbar chrome in card fields.

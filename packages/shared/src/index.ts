@@ -19,6 +19,7 @@ export * from './reviewSchedule';
 export * from './storageKeys';
 export * from './subtitleLanguages';
 export * from './textFragmentUrl';
+export * from './serializeChatDragMarkdown';
 export * from './snippetChat';
 export * from './snippetChatPrompt';
 export * from './types';

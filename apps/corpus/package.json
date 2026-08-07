@@ -11,6 +11,11 @@
   },
   "dependencies": {
     "@semia/shared": "^0.0.0",
+    "@tiptap/extension-placeholder": "^3.29.2",
+    "@tiptap/markdown": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",

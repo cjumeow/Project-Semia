@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   toggleOptionalField,
   type LanguageCardDraftContent,
@@ -7,6 +7,7 @@ import {
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
+import { CardFieldEditor, type CardFieldEditorHandle } from './CardFieldEditor';
 import { FieldSuggestionChip } from './FieldSuggestionChip';
 import { FocusSourcePicker } from './FocusSourcePicker';
 import { LanguageCardSlotDropZone } from './LanguageCardSlotDropZone';
@@ -15,21 +16,24 @@ const OPTIONAL_FIELDS: Array<{
   key: LanguageCardOptionalFieldKey;
   label: string;
   placeholder: string;
-  multiline?: boolean;
 }> = [
   {
     key: 'example',
     label: 'Example',
     placeholder: 'Example sentence using the focus word or phrase',
-    multiline: true,
   },
   {
     key: 'usageNote',
     label: 'Usage note',
     placeholder: 'When or how to use this expression',
-    multiline: true,
   },
 ];
+
+const RICH_TEXT_SLOTS = new Set<LanguageCardEditorSlotKey>([
+  'meaning',
+  'example',
+  'usageNote',
+]);
 
 type LanguageCardEditorFieldsProps = {
   snippet?: CorpusSnippet;
@@ -60,6 +64,72 @@ export function LanguageCardEditorFields({
   const [focusPickerOpen, setFocusPickerOpen] = useState(false);
   const dropEnabled = Boolean(onAppendSlot) && !disabled;
 
+  const meaningRef = useRef<CardFieldEditorHandle>(null);
+  const exampleRef = useRef<CardFieldEditorHandle>(null);
+  const usageNoteRef = useRef<CardFieldEditorHandle>(null);
+  const pendingAppendRef = useRef<{
+    slot: LanguageCardEditorSlotKey;
+    text: string;
+  } | null>(null);
+
+  const editorRefForSlot = (
+    slot: LanguageCardEditorSlotKey,
+  ): React.RefObject<CardFieldEditorHandle | null> | null => {
+    switch (slot) {
+      case 'meaning':
+        return meaningRef;
+      case 'example':
+        return exampleRef;
+      case 'usageNote':
+        return usageNoteRef;
+      default:
+        return null;
+    }
+  };
+
+  const insertIntoRichSlot = (
+    slot: LanguageCardEditorSlotKey,
+    text: string,
+  ): boolean => {
+    const editorRef = editorRefForSlot(slot);
+    if (!editorRef?.current) {
+      return false;
+    }
+    editorRef.current.insertMarkdown(text);
+    return true;
+  };
+
+  const handleAppend = (slot: LanguageCardEditorSlotKey, text: string) => {
+    if (!RICH_TEXT_SLOTS.has(slot)) {
+      onAppendSlot?.(slot, text);
+      return;
+    }
+
+    if (
+      (slot === 'example' || slot === 'usageNote') &&
+      !content.enabledOptionalFields.includes(slot)
+    ) {
+      onToggleOptionalField(slot, true);
+      pendingAppendRef.current = { slot, text };
+      return;
+    }
+
+    if (!insertIntoRichSlot(slot, text)) {
+      onAppendSlot?.(slot, text);
+    }
+  };
+
+  useEffect(() => {
+    const pending = pendingAppendRef.current;
+    if (!pending) {
+      return;
+    }
+
+    if (insertIntoRichSlot(pending.slot, pending.text)) {
+      pendingAppendRef.current = null;
+    }
+  }, [content.enabledOptionalFields, content.optionalSlots]);
+
   const wrapDrop = (
     slot: LanguageCardEditorSlotKey,
     node: ReactNode,
@@ -69,7 +139,7 @@ export function LanguageCardEditorFields({
       <LanguageCardSlotDropZone
         slot={slot}
         disabled={!dropEnabled}
-        onAppend={onAppendSlot}
+        onAppend={handleAppend}
         className={className}
       >
         {node}
@@ -121,15 +191,14 @@ export function LanguageCardEditorFields({
           <label className="text-xs font-medium text-text-secondary">Meaning</label>
           {wrapDrop(
             'meaning',
-            <textarea
+            <CardFieldEditor
+              ref={meaningRef}
               value={content.meaning}
               disabled={disabled}
-              onChange={(event) => onChange({ meaning: event.target.value })}
-              rows={3}
               placeholder="Explanation in your native language"
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+              className="mt-1"
+              onChange={(meaning) => onChange({ meaning })}
             />,
-            'mt-1',
           )}
           {showSuggestions && suggestions?.meaning ? (
             <FieldSuggestionChip
@@ -164,46 +233,28 @@ export function LanguageCardEditorFields({
                 {enabled ? (
                   wrapDrop(
                     field.key,
-                    field.multiline ? (
-                      <textarea
-                        value={content.optionalSlots[field.key] ?? ''}
-                        disabled={disabled}
-                        onChange={(event) => {
-                          onChange({
-                            optionalSlots: {
-                              ...content.optionalSlots,
-                              [field.key]: event.target.value,
-                            },
-                          });
-                        }}
-                        rows={3}
-                        placeholder={field.placeholder}
-                        className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={content.optionalSlots[field.key] ?? ''}
-                        disabled={disabled}
-                        onChange={(event) => {
-                          onChange({
-                            optionalSlots: {
-                              ...content.optionalSlots,
-                              [field.key]: event.target.value,
-                            },
-                          });
-                        }}
-                        placeholder={field.placeholder}
-                        className="mt-2 w-full rounded-lg border border-dashed border-border bg-canvas px-3 py-2 text-sm text-text"
-                      />
-                    ),
+                    <CardFieldEditor
+                      ref={field.key === 'example' ? exampleRef : usageNoteRef}
+                      value={content.optionalSlots[field.key] ?? ''}
+                      disabled={disabled}
+                      placeholder={field.placeholder}
+                      className="mt-2 semia-card-field-editor--dashed"
+                      onChange={(nextValue) => {
+                        onChange({
+                          optionalSlots: {
+                            ...content.optionalSlots,
+                            [field.key]: nextValue,
+                          },
+                        });
+                      }}
+                    />,
                     'mt-2',
                   )
                 ) : onAppendSlot ? (
                   <LanguageCardSlotDropZone
                     slot={field.key}
                     disabled={!dropEnabled}
-                    onAppend={onAppendSlot}
+                    onAppend={handleAppend}
                     className="mt-2"
                   >
                     <p className="rounded-lg border border-dashed border-border bg-canvas/40 px-3 py-2 text-[11px] text-text-muted">
