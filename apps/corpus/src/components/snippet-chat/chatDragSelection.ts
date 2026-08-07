@@ -1,3 +1,14 @@
+/** Whether a pointer event hit a chat drag block (or its descendants). */
+export function eventTargetsChatDragBlock(event: {
+  composedPath(): EventTarget[];
+}): boolean {
+  return event.composedPath().some(
+    (node) =>
+      node instanceof Element &&
+      node.classList.contains('semia-chat-drag-block'),
+  );
+}
+
 /** Toggle/add selection for multi-select clicks; replace selection on plain click. */
 export function applyBlockClickSelection(
   selectedIds: ReadonlySet<string>,

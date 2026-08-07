@@ -8,13 +8,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { applyBlockClickSelection } from './chatDragSelection';
+import { applyBlockClickSelection, eventTargetsChatDragBlock } from './chatDragSelection';
 
 type ChatDragBlockSelectionContextValue = {
   draggable: boolean;
   allocateBlockId: () => string;
   isSelected: (blockId: string) => boolean;
   handleBlockClick: (blockId: string, multiSelect: boolean) => void;
+  clearSelection: () => void;
   registerBlockElement: (blockId: string, element: HTMLElement | null) => void;
   getDragPayloadElements: (initiatorId: string) => HTMLElement[];
 };
@@ -61,6 +62,28 @@ export function ChatDragBlockSelectionProvider({
     );
   }, []);
 
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  useEffect(() => {
+    if (!draggable || selectedIds.size === 0) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (eventTargetsChatDragBlock(event)) {
+        return;
+      }
+      setSelectedIds(new Set());
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [draggable, selectedIds.size]);
+
   const registerBlockElement = useCallback(
     (blockId: string, element: HTMLElement | null) => {
       if (element) {
@@ -97,6 +120,7 @@ export function ChatDragBlockSelectionProvider({
       allocateBlockId,
       isSelected,
       handleBlockClick,
+      clearSelection,
       registerBlockElement,
       getDragPayloadElements,
     }),
@@ -105,13 +129,18 @@ export function ChatDragBlockSelectionProvider({
       allocateBlockId,
       isSelected,
       handleBlockClick,
+      clearSelection,
       registerBlockElement,
       getDragPayloadElements,
     ],
   );
 
   if (!draggable) {
-    return <>{children}</>;
+    return (
+      <ChatDragBlockSelectionContext.Provider value={value}>
+        {children}
+      </ChatDragBlockSelectionContext.Provider>
+    );
   }
 
   return (
