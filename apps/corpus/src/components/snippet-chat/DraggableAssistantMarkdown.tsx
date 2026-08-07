@@ -23,11 +23,9 @@ const BulletsDraggableContext = createContext(false);
 /** Paragraphs inside `<li>` are not separate drag blocks — the list item is the container. */
 const InsideListItemContext = createContext(false);
 
-const draggableItemClass =
-  'cursor-grab rounded-md border border-transparent px-1 -mx-1 transition-colors hover:border-accent/30 hover:bg-accent/5 active:cursor-grabbing';
+const draggableItemClass = 'semia-chat-drag-block';
 
-const selectedItemClass =
-  'ring-2 ring-accent/40 bg-accent/10 border-accent/20';
+const selectedItemClass = 'semia-chat-drag-block-selected';
 
 function setDragMarkdownPayload(event: React.DragEvent, elements: HTMLElement[]) {
   const markdownText = serializeDragElements(elements);
