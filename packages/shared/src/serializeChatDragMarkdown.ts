@@ -18,15 +18,26 @@ function listItemTextWithoutNestedLists(li: HTMLLIElement): string {
   return clone.textContent?.trim() ?? '';
 }
 
+function listItemPrefix(li: HTMLLIElement, depth: number): string {
+  const indent = '  '.repeat(Math.max(0, depth - 1));
+  const parent = li.parentElement;
+  if (parent?.tagName === 'OL') {
+    const index =
+      Array.from(parent.children).filter((child) => child.tagName === 'LI').indexOf(li) +
+      1;
+    return `${indent}${index}. `;
+  }
+  return `${indent}- `;
+}
+
 function serializeListItem(li: HTMLLIElement): string {
   const depth = listDepth(li);
-  const indent = '  '.repeat(Math.max(0, depth - 1));
   const text = listItemTextWithoutNestedLists(li);
   if (!text) {
     return '';
   }
 
-  const line = `${indent}- ${text}`;
+  const line = `${listItemPrefix(li, depth)}${text}`;
   const nestedLines: string[] = [];
   for (const child of Array.from(li.children)) {
     if (child.tagName === 'UL' || child.tagName === 'OL') {
@@ -50,6 +61,15 @@ function serializeShallowListItem(li: HTMLLIElement): string {
   if (!text) {
     return '';
   }
+
+  const parent = li.parentElement;
+  if (parent?.tagName === 'OL') {
+    const index =
+      Array.from(parent.children).filter((child) => child.tagName === 'LI').indexOf(li) +
+      1;
+    return `${index}. ${text}`;
+  }
+
   return `- ${text}`;
 }
 
@@ -120,8 +140,7 @@ function serializeListItemWithFollowingSiblingList(li: HTMLLIElement): string | 
   }
 
   const depth = listDepth(li);
-  const indent = '  '.repeat(Math.max(0, depth - 1));
-  const line = `${indent}- ${text}`;
+  const line = `${listItemPrefix(li, depth)}${text}`;
   const nestedLines: string[] = [];
 
   for (const child of Array.from(subList.children)) {
@@ -173,14 +192,20 @@ function filterOutNestedDragRoots(roots: HTMLElement[]): HTMLElement[] {
   );
 }
 
+function isListMarkdownLine(line: string): boolean {
+  return /^\s*(-\s|\d+\.\s)/.test(line);
+}
+
 function joinDragMarkdownBlocks(blocks: string[]): string {
   return blocks.reduce((result, block) => {
     if (!result) {
       return block;
     }
 
+    const lastLine = result.split('\n').at(-1) ?? '';
+    const firstLine = block.split('\n')[0] ?? '';
     const continuesList =
-      /^- /.test(result.split('\n').at(-1) ?? '') && block.startsWith('- ');
+      isListMarkdownLine(lastLine) && isListMarkdownLine(firstLine);
     return continuesList ? `${result}\n${block}` : `${result}\n\n${block}`;
   }, '');
 }

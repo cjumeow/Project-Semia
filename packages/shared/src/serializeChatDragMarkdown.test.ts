@@ -52,7 +52,7 @@ describe('serializeDragRootElement', () => {
     `);
     const parentLi = root.querySelector('ol > li') as HTMLLIElement;
     expect(serializeDragRootElement(parentLi)).toBe(
-      '- 123\n  - 456\n  - 789',
+      '1. 123\n  - 456\n  - 789',
     );
   });
 
@@ -70,7 +70,7 @@ describe('serializeDragRootElement', () => {
     `);
     const parentLi = root.querySelector('ol > li') as HTMLLIElement;
     expect(serializeDragRootElement(parentLi)).toBe(
-      '- 123\n  - 456\n  - 789',
+      '1. 123\n  - 456\n  - 789',
     );
     expect(isListContainerLi(parentLi)).toBe(true);
   });
@@ -90,7 +90,7 @@ describe('serializeDragRootElement', () => {
     const parentLi = root.querySelector('ol > li') as HTMLLIElement;
     expect(isListContainerLi(parentLi)).toBe(true);
     expect(serializeDragRootElement(parentLi)).toBe(
-      '- 核心差异\n  - 口语\n  - 书面',
+      '1. 核心差异\n  - 口语\n  - 书面',
     );
     expect(serializeDragRootElement(root.querySelector('ul > li') as HTMLLIElement)).toBe(
       '- 口语',
@@ -166,7 +166,25 @@ describe('serializeDragElements', () => {
     ) as HTMLLIElement[];
 
     expect(serializeDragElements([parentLi, ...childLis])).toBe(
-      '- 123\n  - 456\n  - 789',
+      '1. 123\n  - 456\n  - 789',
+    );
+  });
+
+  it('preserves ordered list markers when dragging multiple ol siblings', () => {
+    const root = el(`
+      <ol>
+        <li>第一項</li>
+        <li>口語：常省略「系統」「架構」等詞</li>
+        <li>書面：用完整詞組，如「後端架構」</li>
+      </ol>
+    `);
+    const items = Array.from(root.querySelectorAll('ol > li')) as HTMLLIElement[];
+
+    expect(serializeDragRootElement(items[1]!)).toBe(
+      '2. 口語：常省略「系統」「架構」等詞',
+    );
+    expect(serializeDragElements([items[1]!, items[2]!])).toBe(
+      '2. 口語：常省略「系統」「架構」等詞\n3. 書面：用完整詞組，如「後端架構」',
     );
   });
 });
