@@ -74,7 +74,7 @@ function useDraggableBlock<T extends HTMLElement>() {
     ? {
         draggable: true as const,
         onMouseDown: (event: React.MouseEvent) => {
-          if (event.shiftKey) {
+          if (event.shiftKey || event.metaKey || event.ctrlKey) {
             event.preventDefault();
           }
         },
@@ -83,7 +83,9 @@ function useDraggableBlock<T extends HTMLElement>() {
             return;
           }
           event.preventDefault();
-          selection.handleBlockClick(blockId, event.shiftKey);
+          const multiSelect =
+            event.shiftKey || event.metaKey || event.ctrlKey;
+          selection.handleBlockClick(blockId, multiSelect);
         },
         onDragStart: (event: React.DragEvent) => {
           if (!selection || !blockId) {

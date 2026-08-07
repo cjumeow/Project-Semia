@@ -8,7 +8,7 @@ AI-generated rich content must be draggable into language-card fields; once drop
 
 ## In scope (MVP)
 
-1. **Drag source** — AI chat `<p>` / `<li>` segments serialized to markdown (`serializeDragRootElement`). Shift+click selects a range; dragging any selected block drops all selected blocks (`serializeDragElements`).
+1. **Drag source** — AI chat `<p>` / `<li>` segments serialized to markdown (`serializeDragRootElement`). Shift/Cmd/Ctrl+click toggles blocks into the selection; dragging any selected block drops all selected blocks in document order (`serializeDragElements`).
 2. **Drop target** — `meaning`, `example`, `usageNote` via `LanguageCardSlotDropZone`.
 3. **Insertion** — Tiptap `insertContentAt` with `contentType: 'markdown'` (bullets render as list nodes).
 4. **After drop** — user can click, type, bold, delete in a single-pane WYSIWYG field (no split preview, no toolbar).

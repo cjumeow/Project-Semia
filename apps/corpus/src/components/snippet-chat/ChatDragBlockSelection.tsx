@@ -8,12 +8,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { applyBlockClickSelection } from './chatDragSelection';
 
 type ChatDragBlockSelectionContextValue = {
   draggable: boolean;
   allocateBlockId: () => string;
   isSelected: (blockId: string) => boolean;
-  handleBlockClick: (blockId: string, shiftKey: boolean) => void;
+  handleBlockClick: (blockId: string, multiSelect: boolean) => void;
   registerBlockElement: (blockId: string, element: HTMLElement | null) => void;
   getDragPayloadElements: (initiatorId: string) => HTMLElement[];
 };
@@ -37,7 +38,6 @@ export function ChatDragBlockSelectionProvider({
   children,
 }: ChatDragBlockSelectionProviderProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const anchorIdRef = useRef<string | null>(null);
   const blockOrderRef = useRef<string[]>([]);
   const blockIndexRef = useRef(0);
   const blockElementsRef = useRef<Map<string, HTMLElement>>(new Map());
@@ -46,7 +46,6 @@ export function ChatDragBlockSelectionProvider({
     blockIndexRef.current = 0;
     blockOrderRef.current = [];
     setSelectedIds(new Set());
-    anchorIdRef.current = null;
   }, [messageId]);
 
   const allocateBlockId = useCallback(() => {
@@ -56,25 +55,10 @@ export function ChatDragBlockSelectionProvider({
     return id;
   }, [messageId]);
 
-  const handleBlockClick = useCallback((blockId: string, shiftKey: boolean) => {
-    const order = blockOrderRef.current;
-    if (!shiftKey || anchorIdRef.current === null) {
-      anchorIdRef.current = blockId;
-      setSelectedIds(new Set([blockId]));
-      return;
-    }
-
-    const anchorIndex = order.indexOf(anchorIdRef.current);
-    const targetIndex = order.indexOf(blockId);
-    if (anchorIndex === -1 || targetIndex === -1) {
-      anchorIdRef.current = blockId;
-      setSelectedIds(new Set([blockId]));
-      return;
-    }
-
-    const start = Math.min(anchorIndex, targetIndex);
-    const end = Math.max(anchorIndex, targetIndex);
-    setSelectedIds(new Set(order.slice(start, end + 1)));
+  const handleBlockClick = useCallback((blockId: string, multiSelect: boolean) => {
+    setSelectedIds((current) =>
+      applyBlockClickSelection(current, blockId, multiSelect),
+    );
   }, []);
 
   const registerBlockElement = useCallback(
