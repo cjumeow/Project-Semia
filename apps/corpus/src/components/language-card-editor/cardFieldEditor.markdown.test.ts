@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { appendMarkdownToSlot } from '@semia/shared';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from '@tiptap/markdown';
@@ -45,6 +46,20 @@ describe('tiptap multi-bullet insert', () => {
       (node) => node.type === 'bulletList',
     );
     expect(nestedList).toBeDefined();
+    editor.destroy();
+  });
+
+  it('appends ordered list items without extra blank paragraphs', () => {
+    const editor = createEditor('1. First item\n2. Second item');
+    const merged = appendMarkdownToSlot(
+      editor.getMarkdown(),
+      '3. Third item\n4. Fourth item',
+    );
+    editor.commands.setContent(merged, { contentType: 'markdown' });
+
+    const markdown = editor.getMarkdown();
+    expect(markdown).not.toMatch(/2\. Second item\n\n3\. Third item/);
+    expect(markdown).toMatch(/2\. Second item\n3\. Third item/);
     editor.destroy();
   });
 });

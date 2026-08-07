@@ -1,4 +1,5 @@
 import { Markdown } from '@tiptap/markdown';
+import { appendMarkdownToSlot } from '@semia/shared';
 import Placeholder from '@tiptap/extension-placeholder';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -72,10 +73,8 @@ export const CardFieldEditor = forwardRef<
           return;
         }
 
-        const hasContent = editor.getText().trim().length > 0;
-        const fragment = hasContent ? `\n\n${trimmed}` : trimmed;
-        const end = editor.state.doc.content.size;
-        editor.commands.insertContentAt(end, fragment, { contentType: 'markdown' });
+        const merged = appendMarkdownToSlot(editor.getMarkdown(), trimmed);
+        editor.commands.setContent(merged, { contentType: 'markdown' });
       },
     }),
     [editor],
