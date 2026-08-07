@@ -380,25 +380,19 @@ body {
 .prose-chat .semia-chat-drag-block {
   cursor: grab;
   border-radius: 0.375rem;
-  border: 1px solid transparent;
-  padding: 0.125rem 0.25rem;
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease;
+  border: 2px solid transparent;
+  background: transparent;
+  transition: border-color 150ms ease;
 }
 
 .prose-chat li.semia-chat-drag-block {
   list-style-position: inside;
 }
 
-.prose-chat .semia-chat-drag-block:hover {
-  border-color: #ffeb3b;
-  background: rgb(255 235 59 / 0.12);
-}
-
+.prose-chat .semia-chat-drag-block:hover,
 .prose-chat .semia-chat-drag-block.semia-chat-drag-block-selected {
   border-color: #ffeb3b;
-  background: rgb(255 235 59 / 0.2);
+  background: transparent;
 }
 
 .prose-chat .semia-chat-drag-block:active {
