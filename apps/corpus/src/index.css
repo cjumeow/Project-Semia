@@ -387,6 +387,9 @@ body {
 
 .prose-chat li.semia-chat-drag-block {
   list-style-position: inside;
+  margin-left: -0.25rem;
+  padding-left: 0.625rem;
+  padding-right: 0.125rem;
 }
 
 .prose-chat .semia-chat-drag-block:hover,
