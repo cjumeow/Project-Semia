@@ -7,17 +7,13 @@ export function buildLanguageCardFieldSuggestionPrompt({
   focusText,
   fields,
   nativeLanguage,
-  originalSpeech,
-  naturalTranslation,
-  contextWindow,
+  suggestionExcerpt,
 }: {
   fragment: LanguageFragment;
   focusText: string;
   fields: ReadonlyArray<LanguageCardSuggestableField>;
   nativeLanguage: string;
-  originalSpeech: string;
-  naturalTranslation: string;
-  contextWindow?: string;
+  suggestionExcerpt: string;
 }): { system: string; user: string } {
   const targetLang = targetLanguageLabel(nativeLanguage);
   const captureLang = fragment.languageCode;
@@ -46,15 +42,9 @@ ${fields.includes('example') ? 'EXAMPLE: <example sentence in capture language>'
   const user = [
     `Focus phrase: ${focusText}`,
     `Capture text: ${fragment.selectedText}`,
-    `Original speech: ${originalSpeech}`,
-    `Natural translation: ${naturalTranslation}`,
-    contextWindow?.trim()
-      ? `Context window:\n${contextWindow.trim()}`
-      : null,
+    `Suggestion excerpt: ${suggestionExcerpt.trim()}`,
     `Requested fields: ${requested}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  ].join('\n');
 
   return { system, user };
 }

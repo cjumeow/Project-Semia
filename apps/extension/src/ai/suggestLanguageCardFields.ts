@@ -1,5 +1,6 @@
 import type { LanguageFragment } from '@semia/shared';
 import {
+  buildSuggestionContextExcerpt,
   parseLanguageCardFieldSuggestions,
   type LanguageCardFieldSuggestions,
   type LanguageCardSuggestableField,
@@ -35,14 +36,18 @@ export async function suggestLanguageCardFields(
 
   const settings = await getSemiaSettings();
   const nativeLanguage = settings.nativeLanguage?.trim() || 'zh-TW';
+  const suggestionExcerpt = buildSuggestionContextExcerpt({
+    originalSpeech: note.originalSpeech,
+    focusText,
+    captureText: input.fragment.selectedText,
+  });
+
   const { system, user } = buildLanguageCardFieldSuggestionPrompt({
     fragment: input.fragment,
     focusText,
     fields,
     nativeLanguage,
-    originalSpeech: note.originalSpeech,
-    naturalTranslation: note.naturalTranslation,
-    contextWindow: note.dynamicContextBlock,
+    suggestionExcerpt,
   });
 
   const content = await completeChat(system, user);

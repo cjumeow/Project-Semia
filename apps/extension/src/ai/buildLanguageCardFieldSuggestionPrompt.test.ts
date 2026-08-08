@@ -19,6 +19,9 @@ const fragment: LanguageFragment = {
   },
 };
 
+const longSpeech =
+  'Alpha sentence one. Beta sentence two. naval vessels in the Navy. Gamma sentence four. Delta sentence five.';
+
 describe('buildLanguageCardFieldSuggestionPrompt', () => {
   it('writes meaning in native language and example in capture language', () => {
     const { system } = buildLanguageCardFieldSuggestionPrompt({
@@ -26,8 +29,7 @@ describe('buildLanguageCardFieldSuggestionPrompt', () => {
       focusText: 'naval vessels',
       fields: ['meaning', 'example'],
       nativeLanguage: 'zh-TW',
-      originalSpeech: 'naval vessels',
-      naturalTranslation: '海軍船艦',
+      suggestionExcerpt: 'naval vessels in the Navy',
     });
 
     expect(system).toContain('MEANING must be a short explanation in Traditional Chinese');
@@ -41,11 +43,29 @@ describe('buildLanguageCardFieldSuggestionPrompt', () => {
       focusText: 'vessels',
       fields: ['example'],
       nativeLanguage: 'zh-TW',
-      originalSpeech: 'naval vessels',
-      naturalTranslation: '海軍船艦',
+      suggestionExcerpt: 'naval vessels in the Navy',
     });
 
     expect(system).not.toContain('MEANING must');
     expect(system).toContain('EXAMPLE must be one natural sentence in en');
+  });
+
+  it('uses suggestion excerpt only in the user prompt', () => {
+    const excerpt = 'Beta sentence two. naval vessels in the Navy. Gamma sentence four.';
+    const { user } = buildLanguageCardFieldSuggestionPrompt({
+      fragment,
+      focusText: 'naval vessels',
+      fields: ['meaning'],
+      nativeLanguage: 'zh-TW',
+      suggestionExcerpt: excerpt,
+    });
+
+    expect(user).toContain(`Suggestion excerpt: ${excerpt}`);
+    expect(user).toContain('Focus phrase: naval vessels');
+    expect(user).toContain('Capture text: naval vessels');
+    expect(user).not.toContain(longSpeech);
+    expect(user).not.toContain('Original speech');
+    expect(user).not.toContain('Natural translation');
+    expect(user).not.toContain('Context window');
   });
 });

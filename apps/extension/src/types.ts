@@ -96,6 +96,11 @@ export type BackgroundMessage =
       fields: import('@semia/shared').LanguageCardSuggestableField[];
     }
   | {
+      type: 'SUGGEST_BASE_FORM';
+      fragment: LanguageFragment;
+      focusText: string;
+    }
+  | {
       type: 'SUGGEST_FOCUS_KEYWORDS';
       fragment: LanguageFragment;
     };
