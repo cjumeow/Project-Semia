@@ -1,16 +1,13 @@
-import type { FocusKeywordMode } from '@semia/shared';
 import type { LanguageFragment } from '@semia/shared';
 import { targetLanguageLabel } from './snippetPromptContext';
 
 export function buildFocusKeywordSuggestionPrompt({
   fragment,
   originalSpeech,
-  userLevelMode,
   nativeLanguage,
 }: {
   fragment: LanguageFragment;
   originalSpeech: string;
-  userLevelMode: FocusKeywordMode;
   nativeLanguage: string;
 }): { system: string; user: string } {
   const languageCode = fragment.languageCode;
@@ -41,16 +38,22 @@ The user's native (target) language is: ${targetLang}
    If you suggest a longer phrase/collocation, do NOT suggest any sub-parts of it in the same list.
    - E.g., if you suggest "founder market fit", do NOT suggest "market fit" in the same response.
 
-[User Level Modes]
-Depending on the user's level mode (${userLevelMode}), apply these preferences:
+5. Allow Variable / Placeholder Templates:
+   Do NOT suggest pure, isolated factual data, numbers, statistics, or local brand/entity names.
+   However, if a phrase contains a specific number, percentage, or proper noun, you MAY suggest it ONLY if the entire phrase represents a highly reusable, systematic syntactic frame (a template with "slots").
+   - E.g., In English (en): "in 61% less time" is ALLOWED because it represents the reusable template: "in [X]% less time" (以減少 X% 的時間); "replaced workers with Datavant" is ALLOWED because it represents: "replace [A] with [B]".
+   - E.g., In Japanese (ja): "往復2時間を移動に充てる" is ALLOWED because it represents the template: "往復 [X] 時間を [Y] に充てる" (將往返 X 小時花在 Y 上).
+   - Rule: If you suggest such a template, you MUST explicitly extract and explain the underlying placeholder formula (using tags like [X], [A], [B]) in the candidate's "background_note" field, teaching users how to customize it.
 
-- Mode: daily
-  * Focus on highly reusable native idioms, slang, and common collocations.
-  * Never pad with common words just to reach 3 candidates. If nothing valuable exists, return {"candidates": []}.
+6. Length Constraint (Ideally 2 to 4 Words):
+   Keep suggested phrases/collocations concise (ideally 2 to 4 words). Do NOT extract long clauses or full sentence segments unless it is an unbreakable, globally recognized idiom or a highly valuable variable template as defined above. Proactively "trim the fat" (strip unnecessary words).
+   - Bad (Too long): "making intelligence more abundant and affordable" (6 words - please trim to "abundant and affordable")
+   - Good (Template allowed): "in 61% less time" (5 words - accepted as a crucial system template).
 
-- Mode: advanced
-  * Focus on advanced vocabulary (C1/C2 level in ${languageCode}), formal register, obscure idioms, or domain-specific jargon.
-  * If no clearly advanced term appears after filtering, you MUST still find exactly 1 best candidate. This candidate MUST contain at least one word that is NOT elementary (i.e. not understood by an 8-year-old native speaker).
+[Selection Preferences]
+- Prioritize highly reusable idioms, collocations, slang, and domain jargon worth studying.
+- Include advanced or formal terms when they are clearly valuable in context.
+- Never pad with common words just to reach 3 candidates. If nothing valuable exists, return {"candidates": []}.
 
 [Strict Output Rules]
 1. Use ONLY the provided [Original Speech] text.
@@ -59,7 +62,7 @@ Depending on the user's level mode (${userLevelMode}), apply these preferences:
 4. Return raw JSON only. Do NOT wrap the JSON in markdown code blocks (no \`\`\`json fences). Do NOT output any conversational fluff or commentary.
 
 Output Format:
-{"candidates":[{"text":"[Verbatim Text]","kind":"word|phrase|collocation"}]}`;
+{"candidates":[{"text":"[Verbatim Text]","kind":"word|phrase|collocation","background_note":"[Optional: placeholder formula when rule 5 applies, e.g. in [X]% less time]"}]}`;
 
   const user = `[Original Speech]
 ${originalSpeech.trim()}`;

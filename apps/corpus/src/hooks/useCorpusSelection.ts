@@ -32,6 +32,7 @@ type UseCorpusSelectionResult = {
   selectMyCards: () => void;
   selectReviewQueue: () => void;
   selectCardReviewQueue: () => void;
+  selectSettings: () => void;
   selectReviewQueueSnippet: (snippetId: string) => void;
   selectCardReviewQueueCard: (cardId: string) => void;
   selectSnippet: (snippetId: string) => void;
@@ -80,7 +81,7 @@ export function useCorpusSelection(
     }
 
     setSelection((prev) => {
-      if (prev.pane === 'my-cards') {
+      if (prev.pane === 'settings' || prev.pane === 'my-cards') {
         return prev;
       }
 
@@ -258,6 +259,13 @@ export function useCorpusSelection(
     });
   };
 
+  const selectSettings = (): void => {
+    setSelection({
+      pane: 'settings',
+      ...emptySelection,
+    });
+  };
+
   const selectReviewQueueSnippet = (snippetId: string): void => {
     setSelection({
       pane: 'review-queue',
@@ -316,6 +324,7 @@ export function useCorpusSelection(
     selectMyCards,
     selectReviewQueue,
     selectCardReviewQueue,
+    selectSettings,
     selectReviewQueueSnippet,
     selectCardReviewQueueCard,
     selectSnippet,

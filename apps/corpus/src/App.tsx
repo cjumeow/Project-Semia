@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { LanguageCard } from '@semia/shared';
 import { MAX_LANGUAGE_CARDS_PER_FRAGMENT } from '@semia/shared';
+import {
+  applySemiaThemeForDarkModeEnabled,
+  isDarkModeEnabled,
+} from '@semia/shared';
 import { CreateLanguageCardModal } from './components/CreateLanguageCardModal';
 import { InboxArchiveConfirmDialog } from './components/InboxArchiveConfirmDialog';
 import { InboxWorkspace } from './components/InboxWorkspace';
 import { MyCardsWorkspace } from './components/MyCardsWorkspace';
 import { ReviewQueueWorkspace } from './components/ReviewQueueWorkspace';
-import { SemiaSettingsDialog } from './components/SemiaSettingsDialog';
+import { SemiaSettingsPage } from './components/settings/SemiaSettingsPage';
 import { useCorpusData } from './hooks/useCorpusData';
 import { useCorpusSelection } from './hooks/useCorpusSelection';
 import { useContextWindowGeneration } from './hooks/useContextWindowGeneration';
@@ -40,7 +44,6 @@ import type { InboxProcessTrigger } from './components/inboxTriageTypes';
 const SIDEBAR_COLLAPSED_WIDTH = 52;
 
 export default function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [createCardOpen, setCreateCardOpen] = useState(false);
   const [previewCard, setPreviewCard] = useState<LanguageCard | null>(null);
   const [languageCardListOpen, setLanguageCardListOpen] = useState(false);
@@ -53,18 +56,32 @@ export default function App() {
     useState<InboxProcessTrigger | null>(null);
   const {
     settings,
+    loading: settingsLoading,
     contextWindowEnabled,
     languageCardsProEnabled,
     languageCardAiSuggestionsEnabled,
-    focusKeywordMode,
+    languageCardDefaultOptionalFields,
+    learningLanguage,
+    nativeLanguage,
     darkModeEnabled,
     setContextWindowEnabled,
-    setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
-    setFocusKeywordMode,
+    setLanguageCardDefaultOptionalFields,
+    setLearningLanguage,
+    setNativeLanguage,
     setDarkModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   } = useSemiaSettings();
+
+  useLayoutEffect(() => {
+    if (settingsLoading) {
+      return;
+    }
+    applySemiaThemeForDarkModeEnabled(isDarkModeEnabled(settings), {
+      instant: true,
+    });
+  }, [settings, settingsLoading]);
+
   const { showOnboarding, markOnboardingSeen } = useLanguageCardOnboarding();
   const {
     cards: languageCards,
@@ -89,6 +106,7 @@ export default function App() {
     selectMyCards,
     selectReviewQueue,
     selectCardReviewQueue,
+    selectSettings,
     selectReviewQueueSnippet,
     selectCardReviewQueueCard,
     selectSnippet,
@@ -367,7 +385,7 @@ export default function App() {
           void handleMarkTriage(snippetId, 'mastered');
         }}
         contextWindowEnabled={contextWindowEnabled}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={selectSettings}
         {...languageCardProps}
       />
     ) : selection.pane === 'card-review-queue' ? (
@@ -402,7 +420,9 @@ export default function App() {
       />
     );
 
+  const showSettings = selection.pane === 'settings';
   const showDetailPanel =
+    !showSettings &&
     selection.pane !== 'review-queue' &&
     selection.pane !== 'card-review-queue' &&
     selection.pane !== 'my-cards';
@@ -428,7 +448,7 @@ export default function App() {
           onSelectMyCards={selectMyCards}
           onSelectReviewQueue={selectReviewQueue}
           onSelectCardReviewQueue={selectCardReviewQueue}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSettings={selectSettings}
         />
       </div>
 
@@ -444,6 +464,33 @@ export default function App() {
         <section className="flex flex-1 items-center justify-center bg-canvas">
           <p className="px-6 text-center text-sm text-red-600">{error}</p>
         </section>
+      ) : showSettings ? (
+        <SemiaSettingsPage
+          darkModeEnabled={darkModeEnabled}
+          contextWindowEnabled={contextWindowEnabled}
+          languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+          languageCardDefaultOptionalFields={languageCardDefaultOptionalFields}
+          learningLanguage={learningLanguage}
+          nativeLanguage={nativeLanguage}
+          onDarkModeEnabledChange={(enabled) => {
+            void setDarkModeEnabled(enabled);
+          }}
+          onContextWindowEnabledChange={(enabled) => {
+            void setContextWindowEnabled(enabled);
+          }}
+          onLanguageCardAiSuggestionsEnabledChange={(enabled) => {
+            void setLanguageCardAiSuggestionsEnabled(enabled);
+          }}
+          onLanguageCardDefaultOptionalFieldsChange={(fields) => {
+            void setLanguageCardDefaultOptionalFields(fields);
+          }}
+          onLearningLanguageChange={(code) => {
+            void setLearningLanguage(code);
+          }}
+          onNativeLanguageChange={(code) => {
+            void setNativeLanguage(code);
+          }}
+        />
       ) : showEmpty ? (
         <section className="flex flex-1 items-center justify-center bg-canvas">
           <div className="max-w-sm px-6 text-center">
@@ -508,12 +555,12 @@ export default function App() {
                 generatingContext={generatingContext}
                 contextError={contextError}
                 contextWindowEnabled={contextWindowEnabled}
-                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenSettings={selectSettings}
                 languageCards={snippetLanguageCards}
                 languageCardCount={languageCardCount}
                 createLanguageCardEnabled={createLanguageCardEnabled}
                 languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
-                focusKeywordMode={focusKeywordMode}
+                languageCardDefaultOptionalFields={languageCardDefaultOptionalFields}
                 isLive={isLive}
                 onLanguageCardsChanged={refreshLanguageCards}
               />
@@ -529,7 +576,7 @@ export default function App() {
                 generatingContext={generatingContext}
                 contextError={contextError}
                 contextWindowEnabled={contextWindowEnabled}
-                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenSettings={selectSettings}
                 languageCards={snippetLanguageCards}
                 {...languageCardProps}
                 onMarkMastered={
@@ -555,30 +602,6 @@ export default function App() {
           void handleConfirmInboxArchive();
         }}
       />
-      <SemiaSettingsDialog
-        open={settingsOpen}
-        darkModeEnabled={darkModeEnabled}
-        contextWindowEnabled={contextWindowEnabled}
-        languageCardsProEnabled={languageCardsProEnabled}
-        languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
-        focusKeywordMode={focusKeywordMode}
-        onClose={() => setSettingsOpen(false)}
-        onDarkModeEnabledChange={(enabled) => {
-          void setDarkModeEnabled(enabled);
-        }}
-        onContextWindowEnabledChange={(enabled) => {
-          void setContextWindowEnabled(enabled);
-        }}
-        onLanguageCardsProEnabledChange={(enabled) => {
-          void setLanguageCardsProEnabled(enabled);
-        }}
-        onLanguageCardAiSuggestionsEnabledChange={(enabled) => {
-          void setLanguageCardAiSuggestionsEnabled(enabled);
-        }}
-        onFocusKeywordModeChange={(mode) => {
-          void setFocusKeywordMode(mode);
-        }}
-      />
       <CreateLanguageCardModal
         open={createCardOpen}
         snippet={selectedSnippet}
@@ -587,7 +610,7 @@ export default function App() {
         onClose={() => setCreateCardOpen(false)}
         onOpenSettings={() => {
           setCreateCardOpen(false);
-          setSettingsOpen(true);
+          selectSettings();
         }}
         onMarkOnboardingSeen={markOnboardingSeen}
         onCreate={handleCreateLanguageCard}

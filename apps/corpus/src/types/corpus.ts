@@ -50,7 +50,8 @@ export type CorpusPane =
   | 'library'
   | 'my-cards'
   | 'review-queue'
-  | 'card-review-queue';
+  | 'card-review-queue'
+  | 'settings';
 
 export type CorpusSelection = {
   pane: CorpusPane;

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { LanguageCard, FocusKeywordMode } from '@semia/shared';
 import {
   appendMarkdownToSlot,
   canCreateLanguageCard,
+  type LanguageCard,
   type LanguageCardDraftContent,
   type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
@@ -30,7 +30,7 @@ type LanguageCardsTabProps = {
   languageCards: LanguageCard[];
   createEnabled: boolean;
   aiSuggestionsEnabled: boolean;
-  focusKeywordMode: FocusKeywordMode;
+  defaultOptionalFields: ReadonlyArray<LanguageCardOptionalFieldKey>;
   isLive: boolean;
   onCardsChanged: () => Promise<void>;
 };
@@ -40,7 +40,7 @@ export function LanguageCardsTab({
   languageCards,
   createEnabled,
   aiSuggestionsEnabled,
-  focusKeywordMode,
+  defaultOptionalFields,
   isLive,
   onCardsChanged,
 }: LanguageCardsTabProps) {
@@ -60,7 +60,7 @@ export function LanguageCardsTab({
     updateDraft,
     flushDraft,
     resetDraftToCapture,
-  } = useLanguageCardDraft(snippet?.id);
+  } = useLanguageCardDraft(snippet?.id, defaultOptionalFields);
 
   const {
     content: editContent,
@@ -141,7 +141,6 @@ export function LanguageCardsTab({
     snippet,
     enabled: isDraftMode && aiSuggestionsEnabled,
     isLive,
-    userLevelMode: focusKeywordMode,
   });
 
   const switchToDraft = useCallback(async () => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { LanguageCard } from '@semia/shared';
+import type { LanguageCard, LanguageCardOptionalFieldKey } from '@semia/shared';
 import type { CorpusSnippet } from '../types/corpus';
 import type { DetailTab } from '../utils/languageCardInboxWorkspaceModel';
 import { DetailTabBar } from './DetailTabBar';
@@ -21,7 +21,7 @@ type InboxDetailPanelProps = {
   languageCardCount?: number;
   createLanguageCardEnabled?: boolean;
   languageCardAiSuggestionsEnabled?: boolean;
-  focusKeywordMode?: import('@semia/shared').FocusKeywordMode;
+  languageCardDefaultOptionalFields?: ReadonlyArray<LanguageCardOptionalFieldKey>;
   isLive?: boolean;
   onLanguageCardsChanged?: () => Promise<void>;
 };
@@ -40,7 +40,7 @@ export function InboxDetailPanel({
   languageCardCount = 0,
   createLanguageCardEnabled = false,
   languageCardAiSuggestionsEnabled = true,
-  focusKeywordMode = 'daily',
+  languageCardDefaultOptionalFields = [],
   isLive = false,
   onLanguageCardsChanged,
 }: InboxDetailPanelProps) {
@@ -78,7 +78,7 @@ export function InboxDetailPanel({
             languageCards={languageCards}
             createEnabled={createLanguageCardEnabled}
             aiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
-            focusKeywordMode={focusKeywordMode}
+            defaultOptionalFields={languageCardDefaultOptionalFields}
             isLive={isLive}
             onCardsChanged={onLanguageCardsChanged ?? (async () => {})}
           />

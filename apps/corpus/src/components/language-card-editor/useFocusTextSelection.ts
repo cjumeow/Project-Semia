@@ -56,10 +56,14 @@ export function useFocusTextSelection(
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (containerRef.current?.contains(target)) {
+      if (popoverRef.current?.contains(target)) {
         return;
       }
-      if (popoverRef.current?.contains(target)) {
+      if (containerRef.current?.contains(target)) {
+        if (anchor) {
+          setAnchor(null);
+          window.getSelection()?.removeAllRanges();
+        }
         return;
       }
       setAnchor(null);
@@ -67,7 +71,7 @@ export function useFocusTextSelection(
 
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [containerRef, popoverRef]);
+  }, [anchor, containerRef, popoverRef]);
 
   return {
     anchor,

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   getFocusKeywordMode,
+  getLanguageCardDefaultOptionalFields,
+  getLearningLanguage,
+  getNativeLanguage,
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardsProEnabled,
@@ -76,5 +79,47 @@ describe('getFocusKeywordMode', () => {
     expect(getFocusKeywordMode({ focusKeywordMode: 'advanced' })).toBe(
       'advanced',
     );
+  });
+});
+
+describe('getLanguageCardDefaultOptionalFields', () => {
+  it('defaults to empty when missing or invalid', () => {
+    expect(getLanguageCardDefaultOptionalFields()).toEqual([]);
+    expect(getLanguageCardDefaultOptionalFields({})).toEqual([]);
+    expect(
+      getLanguageCardDefaultOptionalFields({
+        languageCardDefaultOptionalFields: ['not-a-field' as never],
+      }),
+    ).toEqual([]);
+  });
+
+  it('dedupes and sorts known optional fields', () => {
+    expect(
+      getLanguageCardDefaultOptionalFields({
+        languageCardDefaultOptionalFields: ['dialogue', 'example', 'example'],
+      }),
+    ).toEqual(['example', 'dialogue']);
+  });
+});
+
+describe('getLearningLanguage', () => {
+  it('defaults to en', () => {
+    expect(getLearningLanguage()).toBe('en');
+    expect(getLearningLanguage({})).toBe('en');
+  });
+
+  it('respects supported codes', () => {
+    expect(getLearningLanguage({ learningLanguage: 'ja' })).toBe('ja');
+  });
+});
+
+describe('getNativeLanguage', () => {
+  it('defaults to zh-TW', () => {
+    expect(getNativeLanguage()).toBe('zh-TW');
+    expect(getNativeLanguage({})).toBe('zh-TW');
+  });
+
+  it('respects supported codes', () => {
+    expect(getNativeLanguage({ nativeLanguage: 'en' })).toBe('en');
   });
 });

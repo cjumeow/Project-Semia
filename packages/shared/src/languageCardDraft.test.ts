@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clearLanguageCardDraftFromMap,
   createEmptyLanguageCardDraft,
+  createLanguageCardDraftContentWithDefaultFields,
   deleteLanguageCardDraftsFromMap,
   getLanguageCardDraft,
   isLanguageCardDraftContentEmpty,
@@ -89,6 +90,21 @@ describe('normalizeLanguageCardDraft', () => {
     );
 
     expect(normalized).toBeNull();
+  });
+});
+
+describe('createLanguageCardDraftContentWithDefaultFields', () => {
+  it('pre-enables optional fields with empty slot values', () => {
+    const draft = createLanguageCardDraftContentWithDefaultFields([
+      'example',
+      'usageNote',
+      'not-a-field' as never,
+    ]);
+
+    expect(draft.focusText).toBe('');
+    expect(draft.meaning).toBe('');
+    expect(draft.enabledOptionalFields).toEqual(['example', 'usageNote']);
+    expect(draft.optionalSlots).toEqual({ example: '', usageNote: '' });
   });
 });
 

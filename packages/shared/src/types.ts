@@ -194,7 +194,9 @@ export type SemiaSettings = {
   languageCardsProEnabled?: boolean;
   /** When false, skip AI suggestions for language card meaning/example. Default: on. */
   languageCardAiSuggestionsEnabled?: boolean;
-  /** AI focus keyword mode for language card draft picker. Default: daily. */
+  /** Optional fields pre-enabled on every new language card draft. */
+  languageCardDefaultOptionalFields?: import('./languageCardOptionalFields').LanguageCardOptionalFieldKey[];
+  /** @deprecated Unified focus keyword prompt; no longer user-configurable. */
   focusKeywordMode?: 'daily' | 'advanced';
   /** When true, skip the inbox archive confirm when no formal language card exists. */
   skipInboxArchiveWithoutFormalCardConfirm?: boolean;

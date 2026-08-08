@@ -14,7 +14,6 @@ import {
   type LanguageFragment,
   type LanguageCardFieldSuggestions,
   type LanguageCardSuggestableField,
-  type FocusKeywordMode,
   type FocusKeywordSuggestions,
   type SnippetNote,
   type SnippetNotesMap,
@@ -70,7 +69,6 @@ export type SuggestLanguageCardFieldsRequest = {
 
 export type SuggestFocusKeywordsRequest = {
   fragment: LanguageFragment;
-  userLevelMode: FocusKeywordMode;
 };
 
 export interface CorpusRepository {
@@ -449,7 +447,6 @@ class ChromeCorpusRepository implements CorpusRepository {
     const response = (await chrome.runtime.sendMessage({
       type: 'SUGGEST_FOCUS_KEYWORDS',
       fragment: request.fragment,
-      userLevelMode: request.userLevelMode,
     })) as
       | OkResponse<{ focusKeywords: FocusKeywordSuggestions }>
       | ErrResponse
