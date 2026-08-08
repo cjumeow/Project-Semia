@@ -24,7 +24,7 @@ const fieldShellClass =
   'language-card-field-inset language-card-field-input relative overflow-hidden rounded-lg border dark:bg-zinc-800/60 dark:border-zinc-700/80';
 
 const fieldInputClass =
-  'relative w-full resize-none bg-transparent px-0 py-0 text-sm text-text caret-accent outline-none';
+  'relative w-full resize-none bg-transparent px-0 py-0 text-sm text-text caret-accent outline-none overflow-y-auto max-h-32 overscroll-contain';
 
 function InFieldActions({
   loading,
@@ -130,7 +130,10 @@ export function CursorGhostSuggestion({
               placeholder={showPlaceholder ? placeholder : undefined}
               className={[fieldInputClass, 'min-h-[4.5rem]', inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
-              onFocus={onFocus}
+              onFocus={(event) => {
+                event.target.focus({ preventScroll: true });
+                onFocus?.();
+              }}
               onBlur={onBlur}
             />
           ) : (
@@ -141,7 +144,10 @@ export function CursorGhostSuggestion({
               placeholder={showPlaceholder ? placeholder : undefined}
               className={[fieldInputClass, inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
-              onFocus={onFocus}
+              onFocus={(event) => {
+                event.target.focus({ preventScroll: true });
+                onFocus?.();
+              }}
               onBlur={onBlur}
             />
           )}

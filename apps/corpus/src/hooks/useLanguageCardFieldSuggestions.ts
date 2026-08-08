@@ -8,6 +8,11 @@ import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
 import { languageCardSuggestionCacheKey } from './languageCardSuggestionCacheKey';
 import {
+  buildSuggestionFieldView,
+  gateSuggestionView,
+  type LanguageCardFieldSuggestionView,
+} from './languageCardSuggestionViews';
+import {
   emptyLanguageCardSuggestionFields,
   focusAppearsInSpeech,
   focusBaseFormSuggestion,
@@ -29,8 +34,6 @@ type PrefetchState = {
   baseForm: string | null;
   meaning: string;
   example: string;
-  baseFormLoading: boolean;
-  fieldsLoading: boolean;
 };
 
 type DismissState = {
@@ -42,13 +45,7 @@ type DismissState = {
 
 const prefetchCache = new Map<string, PrefetchCacheEntry>();
 
-export type LanguageCardFieldSuggestionView = {
-  suggestion: string | null;
-  loading: boolean;
-  visible: boolean;
-  accept: () => void;
-  dismiss: () => void;
-};
+export type { LanguageCardFieldSuggestionView } from './languageCardSuggestionViews';
 
 export type LanguageCardFieldSuggestionsView = {
   focus: LanguageCardFieldSuggestionView;
@@ -57,41 +54,6 @@ export type LanguageCardFieldSuggestionsView = {
   markFocusTextPicked: () => void;
   setFocusedField: (field: LanguageCardSuggestionField | null) => void;
 };
-
-const EMPTY_VIEW: LanguageCardFieldSuggestionView = {
-  suggestion: null,
-  loading: false,
-  visible: false,
-  accept: () => {},
-  dismiss: () => {},
-};
-
-function buildFieldView({
-  suggestion,
-  loading,
-  dismissed,
-  onAccept,
-  onDismiss,
-  showLoading = true,
-}: {
-  suggestion: string | null;
-  loading: boolean;
-  dismissed: boolean;
-  onAccept: () => void;
-  onDismiss: () => void;
-  showLoading?: boolean;
-}): LanguageCardFieldSuggestionView {
-  const hasSuggestion = Boolean(suggestion?.trim());
-  const visible = !dismissed && (hasSuggestion || (showLoading && loading));
-
-  return {
-    suggestion: dismissed ? null : suggestion,
-    loading: dismissed ? false : showLoading && loading,
-    visible,
-    accept: onAccept,
-    dismiss: onDismiss,
-  };
-}
 
 export function useLanguageCardFieldSuggestions({
   snippet,
@@ -195,20 +157,9 @@ export function useLanguageCardFieldSuggestions({
         baseForm: cached.baseForm,
         meaning: cached.meaning,
         example: cached.example,
-        baseFormLoading: false,
-        fieldsLoading: false,
       });
       return;
     }
-
-    setPrefetch({
-      focusKey,
-      baseForm: null,
-      meaning: '',
-      example: '',
-      baseFormLoading: true,
-      fieldsLoading: shouldRequestFields,
-    });
 
     const requestId = ++requestIdRef.current;
     const delay = immediatePrefetchRef.current ? 0 : SUGGESTION_DEBOUNCE_MS;
@@ -255,8 +206,6 @@ export function useLanguageCardFieldSuggestions({
             baseForm: nextEntry.baseForm,
             meaning: nextEntry.meaning,
             example: nextEntry.example,
-            baseFormLoading: false,
-            fieldsLoading: false,
           });
         })
         .catch(() => {
@@ -304,11 +253,9 @@ export function useLanguageCardFieldSuggestions({
       ? prefetch.example
       : '';
 
-  const focusView = buildFieldView({
+  const focusView = buildSuggestionFieldView({
     suggestion: focusSuggestion,
-    loading: prefetch?.focusKey === focusKey ? prefetch.baseFormLoading : false,
     dismissed: dismissed.focusKey === focusKey && dismissed.focus,
-    showLoading: false,
     onAccept: () => {
       if (!focusSuggestion) {
         return;
@@ -319,9 +266,8 @@ export function useLanguageCardFieldSuggestions({
     onDismiss: () => dismissField('focus'),
   });
 
-  const meaningView = buildFieldView({
+  const meaningView = buildSuggestionFieldView({
     suggestion: meaningSuggestion || null,
-    loading: prefetch?.focusKey === focusKey ? prefetch.fieldsLoading : false,
     dismissed: dismissed.focusKey === focusKey && dismissed.meaning,
     onAccept: () => {
       if (!meaningSuggestion) {
@@ -335,9 +281,8 @@ export function useLanguageCardFieldSuggestions({
     onDismiss: () => dismissField('meaning'),
   });
 
-  const exampleView = buildFieldView({
+  const exampleView = buildSuggestionFieldView({
     suggestion: exampleSuggestion || null,
-    loading: prefetch?.focusKey === focusKey ? prefetch.fieldsLoading : false,
     dismissed: dismissed.focusKey === focusKey && dismissed.example,
     onAccept: () => {
       if (!exampleSuggestion) {
@@ -351,26 +296,10 @@ export function useLanguageCardFieldSuggestions({
     onDismiss: () => dismissField('example'),
   });
 
-  const gate = (
-    field: LanguageCardSuggestionField,
-    view: LanguageCardFieldSuggestionView,
-    fieldEmpty: boolean,
-  ): LanguageCardFieldSuggestionView => {
-    if (!enabled || !view.visible) {
-      return EMPTY_VIEW;
-    }
-
-    if (fieldEmpty || focusedField === field) {
-      return view;
-    }
-
-    return EMPTY_VIEW;
-  };
-
   return {
-    focus: gate('focus', focusView, focusKey.length === 0),
-    meaning: gate('meaning', meaningView, meaningEmpty),
-    example: gate('example', exampleView, exampleEmpty),
+    focus: gateSuggestionView(enabled, focusedField, 'focus', focusView),
+    meaning: gateSuggestionView(enabled, focusedField, 'meaning', meaningView),
+    example: gateSuggestionView(enabled, focusedField, 'example', exampleView),
     markFocusTextPicked,
     setFocusedField,
   };

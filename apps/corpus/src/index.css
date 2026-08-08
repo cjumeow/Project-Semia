@@ -178,6 +178,7 @@ body {
   min-height: 0;
   flex: 1 1 0%;
   overflow-y: auto;
+  overflow-anchor: none;
   background: rgb(228 228 231 / 0.45);
   padding: 1rem;
 }
