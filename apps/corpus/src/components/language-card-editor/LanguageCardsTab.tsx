@@ -11,6 +11,7 @@ import type { CorpusSnippet } from '../../types/corpus';
 import { useLanguageCardDraft } from '../../hooks/useLanguageCardDraft';
 import { useLanguageCardEstablishedEdit } from '../../hooks/useLanguageCardEstablishedEdit';
 import { useFocusKeywordSuggestions } from '../../hooks/useFocusKeywordSuggestions';
+import { useLanguageCardFieldSuggestions } from '../../hooks/useLanguageCardFieldSuggestions';
 import {
   createInitialEditorState,
   startDraftEditor,
@@ -143,6 +144,29 @@ export function LanguageCardsTab({
     isLive,
   });
 
+  const fieldSuggestions = useLanguageCardFieldSuggestions({
+    snippet,
+    content: editorContent,
+    enabled: aiSuggestionsEnabled && editorLoaded,
+    isLive,
+    onAccept: (field, value) => {
+      if (field === 'focus') {
+        handleContentChange({ focusText: value });
+        return;
+      }
+      if (field === 'meaning') {
+        handleContentChange({ meaning: value });
+        return;
+      }
+      handleContentChange({
+        optionalSlots: {
+          ...editorContent.optionalSlots,
+          example: value,
+        },
+      });
+    },
+  });
+
   const switchToDraft = useCallback(async () => {
     if (!isDraftMode) {
       await flushContent();
@@ -243,6 +267,8 @@ export function LanguageCardsTab({
         focusKeywordCandidates={focusKeywords.candidates}
         focusKeywordsLoading={focusKeywords.loading}
         focusKeywordsEnabled={isDraftMode && aiSuggestionsEnabled}
+        showSuggestions={aiSuggestionsEnabled}
+        suggestions={fieldSuggestions}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}
         onAppendSlot={handleAppendSlot}

@@ -3,27 +3,91 @@ import type {
   LanguageCardFieldSuggestions,
   LanguageCardSuggestableField,
 } from '@semia/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
+import { languageCardSuggestionCacheKey } from './languageCardSuggestionCacheKey';
+import {
+  emptyLanguageCardSuggestionFields,
+  focusBaseFormSuggestion,
+  type LanguageCardSuggestionField,
+} from './languageCardSuggestionLogic';
 
 const SUGGESTION_DEBOUNCE_MS = 400;
 
-type SuggestionState = {
+type PrefetchCacheEntry = {
   focusKey: string;
-  text: string;
+  baseForm: string | null;
+  meaning: string;
+  example: string;
+};
+
+type PrefetchState = {
+  focusKey: string;
+  baseForm: string | null;
+  meaning: string;
+  example: string;
+  baseFormLoading: boolean;
+  fieldsLoading: boolean;
+};
+
+type DismissState = {
+  focusKey: string;
+  focus: boolean;
+  meaning: boolean;
+  example: boolean;
+};
+
+const prefetchCache = new Map<string, PrefetchCacheEntry>();
+
+export type LanguageCardFieldSuggestionView = {
+  suggestion: string | null;
   loading: boolean;
-  dismissed: boolean;
+  visible: boolean;
+  accept: () => void;
+  dismiss: () => void;
 };
 
 export type LanguageCardFieldSuggestionsView = {
-  meaning: SuggestionState | null;
-  example: SuggestionState | null;
-  acceptMeaning: () => void;
-  dismissMeaning: () => void;
-  acceptExample: () => void;
-  dismissExample: () => void;
+  focus: LanguageCardFieldSuggestionView;
+  meaning: LanguageCardFieldSuggestionView;
+  example: LanguageCardFieldSuggestionView;
+  markFocusTextPicked: () => void;
+  setFocusedField: (field: LanguageCardSuggestionField | null) => void;
 };
+
+const EMPTY_VIEW: LanguageCardFieldSuggestionView = {
+  suggestion: null,
+  loading: false,
+  visible: false,
+  accept: () => {},
+  dismiss: () => {},
+};
+
+function buildFieldView({
+  suggestion,
+  loading,
+  dismissed,
+  onAccept,
+  onDismiss,
+}: {
+  suggestion: string | null;
+  loading: boolean;
+  dismissed: boolean;
+  onAccept: () => void;
+  onDismiss: () => void;
+}): LanguageCardFieldSuggestionView {
+  const hasSuggestion = Boolean(suggestion?.trim());
+  const visible = !dismissed && (loading || hasSuggestion);
+
+  return {
+    suggestion: dismissed ? null : suggestion,
+    loading: dismissed ? false : loading,
+    visible,
+    accept: onAccept,
+    dismiss: onDismiss,
+  };
+}
 
 export function useLanguageCardFieldSuggestions({
   snippet,
@@ -36,137 +100,259 @@ export function useLanguageCardFieldSuggestions({
   content: LanguageCardDraftContent;
   enabled: boolean;
   isLive: boolean;
-  onAccept: (field: LanguageCardSuggestableField, value: string) => void;
+  onAccept: (field: LanguageCardSuggestionField, value: string) => void;
 }): LanguageCardFieldSuggestionsView {
-  const [meaning, setMeaning] = useState<SuggestionState | null>(null);
-  const [example, setExample] = useState<SuggestionState | null>(null);
+  const [prefetch, setPrefetch] = useState<PrefetchState | null>(null);
+  const [dismissed, setDismissed] = useState<DismissState>({
+    focusKey: '',
+    focus: false,
+    meaning: false,
+    example: false,
+  });
+  const [focusedField, setFocusedField] = useState<LanguageCardSuggestionField | null>(
+    null,
+  );
+
   const requestIdRef = useRef(0);
+  const immediatePrefetchRef = useRef(false);
+  const snippetRef = useRef(snippet);
+  snippetRef.current = snippet;
 
   const focusKey = content.focusText.trim();
   const meaningEmpty = content.meaning.trim().length === 0;
-  const exampleEmpty =
-    (content.optionalSlots.example ?? '').trim().length === 0;
+  const exampleEnabled = content.enabledOptionalFields.includes('example');
+  const exampleEmpty = (content.optionalSlots.example ?? '').trim().length === 0;
+  const emptyFields = useMemo(
+    () =>
+      emptyLanguageCardSuggestionFields({
+        meaningEmpty,
+        exampleEnabled,
+        exampleEmpty,
+      }),
+    [exampleEmpty, exampleEnabled, meaningEmpty],
+  );
+  const noteGeneratedAt = snippet?.note.generatedAt;
+  const cacheKey = languageCardSuggestionCacheKey(
+    snippet?.id,
+    noteGeneratedAt,
+    focusKey,
+    emptyFields,
+  );
+
+  const markFocusTextPicked = useCallback(() => {
+    immediatePrefetchRef.current = true;
+  }, []);
 
   useEffect(() => {
-    setMeaning(null);
-    setExample(null);
+    setPrefetch(null);
+    setDismissed({
+      focusKey,
+      focus: false,
+      meaning: false,
+      example: false,
+    });
   }, [snippet?.id]);
 
   useEffect(() => {
-    if (!enabled || !isLive || !snippet || !focusKey) {
-      setMeaning(null);
-      setExample(null);
+    if (dismissed.focusKey !== focusKey) {
+      setDismissed({
+        focusKey,
+        focus: false,
+        meaning: false,
+        example: false,
+      });
+    }
+  }, [dismissed.focusKey, focusKey]);
+
+  useEffect(() => {
+    if (!enabled || !isLive || !snippetRef.current || !focusKey || !noteGeneratedAt) {
+      setPrefetch(null);
       return;
     }
 
-    const fields: LanguageCardSuggestableField[] = [];
-    if (meaningEmpty) {
-      fields.push('meaning');
-    }
-    if (exampleEmpty) {
-      fields.push('example');
-    }
-
-    if (fields.length === 0) {
-      setMeaning(null);
-      setExample(null);
+    const hasFieldTargets = emptyFields.length > 0;
+    if (!hasFieldTargets && !focusKey) {
+      setPrefetch(null);
       return;
     }
 
-    if (meaningEmpty) {
-      setMeaning({ focusKey, text: '', loading: true, dismissed: false });
-    } else {
-      setMeaning(null);
+    if (cacheKey && prefetchCache.has(cacheKey)) {
+      const cached = prefetchCache.get(cacheKey)!;
+      setPrefetch({
+        focusKey: cached.focusKey,
+        baseForm: cached.baseForm,
+        meaning: cached.meaning,
+        example: cached.example,
+        baseFormLoading: false,
+        fieldsLoading: false,
+      });
+      return;
     }
 
-    if (exampleEmpty) {
-      setExample({ focusKey, text: '', loading: true, dismissed: false });
-    } else {
-      setExample(null);
-    }
+    setPrefetch({
+      focusKey,
+      baseForm: null,
+      meaning: '',
+      example: '',
+      baseFormLoading: true,
+      fieldsLoading: hasFieldTargets,
+    });
 
     const requestId = ++requestIdRef.current;
+    const delay = immediatePrefetchRef.current ? 0 : SUGGESTION_DEBOUNCE_MS;
+    immediatePrefetchRef.current = false;
+
     const timer = window.setTimeout(() => {
-      void corpusRepository
-        .suggestLanguageCardFields({
-          fragment: snippet,
-          focusText: focusKey,
-          fields,
-        })
-        .then((suggestions: LanguageCardFieldSuggestions) => {
+      const currentSnippet = snippetRef.current;
+      if (!currentSnippet) {
+        return;
+      }
+
+      const baseFormPromise = corpusRepository.suggestBaseForm({
+        fragment: currentSnippet,
+        focusText: focusKey,
+      });
+
+      const fieldsPromise: Promise<LanguageCardFieldSuggestions> = hasFieldTargets
+        ? corpusRepository.suggestLanguageCardFields({
+            fragment: currentSnippet,
+            focusText: focusKey,
+            fields: emptyFields as LanguageCardSuggestableField[],
+          })
+        : Promise.resolve({});
+
+      void Promise.all([baseFormPromise, fieldsPromise])
+        .then(([baseFormSuggestion, fieldSuggestions]) => {
           if (requestId !== requestIdRef.current) {
             return;
           }
 
-          if (meaningEmpty) {
-            const text = suggestions.meaning?.trim() ?? '';
-            setMeaning({
-              focusKey,
-              text,
-              loading: false,
-              dismissed: false,
-            });
+          const nextEntry: PrefetchCacheEntry = {
+            focusKey,
+            baseForm: baseFormSuggestion.baseForm,
+            meaning: fieldSuggestions.meaning?.trim() ?? '',
+            example: fieldSuggestions.example?.trim() ?? '',
+          };
+
+          if (cacheKey) {
+            prefetchCache.set(cacheKey, nextEntry);
           }
 
-          if (exampleEmpty) {
-            const text = suggestions.example?.trim() ?? '';
-            setExample({
-              focusKey,
-              text,
-              loading: false,
-              dismissed: false,
-            });
-          }
+          setPrefetch({
+            focusKey,
+            baseForm: nextEntry.baseForm,
+            meaning: nextEntry.meaning,
+            example: nextEntry.example,
+            baseFormLoading: false,
+            fieldsLoading: false,
+          });
         })
         .catch(() => {
           if (requestId !== requestIdRef.current) {
             return;
           }
-          setMeaning(null);
-          setExample(null);
+          setPrefetch(null);
         });
-    }, SUGGESTION_DEBOUNCE_MS);
+    }, delay);
 
     return () => {
       window.clearTimeout(timer);
+      requestIdRef.current += 1;
     };
   }, [
+    cacheKey,
+    emptyFields,
     enabled,
-    exampleEmpty,
     focusKey,
     isLive,
-    meaningEmpty,
-    snippet,
+    noteGeneratedAt,
   ]);
 
+  const dismissField = useCallback((field: LanguageCardSuggestionField) => {
+    setDismissed((current) =>
+      current.focusKey === focusKey
+        ? { ...current, [field]: true }
+        : {
+            focusKey,
+            focus: field === 'focus',
+            meaning: field === 'meaning',
+            example: field === 'example',
+          },
+    );
+  }, [focusKey]);
+
+  const focusSuggestion = focusBaseFormSuggestion(
+    prefetch?.focusKey === focusKey ? prefetch.baseForm : null,
+    focusKey,
+  );
+  const meaningSuggestion =
+    prefetch?.focusKey === focusKey && meaningEmpty ? prefetch.meaning : '';
+  const exampleSuggestion =
+    prefetch?.focusKey === focusKey && exampleEnabled && exampleEmpty
+      ? prefetch.example
+      : '';
+
+  const focusView = buildFieldView({
+    suggestion: focusSuggestion,
+    loading: prefetch?.focusKey === focusKey ? prefetch.baseFormLoading : false,
+    dismissed: dismissed.focusKey === focusKey && dismissed.focus,
+    onAccept: () => {
+      if (!focusSuggestion) {
+        return;
+      }
+      onAccept('focus', focusSuggestion);
+      setPrefetch(null);
+    },
+    onDismiss: () => dismissField('focus'),
+  });
+
+  const meaningView = buildFieldView({
+    suggestion: meaningSuggestion || null,
+    loading: prefetch?.focusKey === focusKey ? prefetch.fieldsLoading : false,
+    dismissed: dismissed.focusKey === focusKey && dismissed.meaning,
+    onAccept: () => {
+      if (!meaningSuggestion) {
+        return;
+      }
+      onAccept('meaning', meaningSuggestion);
+      setPrefetch((current) =>
+        current ? { ...current, meaning: '' } : current,
+      );
+    },
+    onDismiss: () => dismissField('meaning'),
+  });
+
+  const exampleView = buildFieldView({
+    suggestion: exampleSuggestion || null,
+    loading: prefetch?.focusKey === focusKey ? prefetch.fieldsLoading : false,
+    dismissed: dismissed.focusKey === focusKey && dismissed.example,
+    onAccept: () => {
+      if (!exampleSuggestion) {
+        return;
+      }
+      onAccept('example', exampleSuggestion);
+      setPrefetch((current) =>
+        current ? { ...current, example: '' } : current,
+      );
+    },
+    onDismiss: () => dismissField('example'),
+  });
+
+  const gate = (
+    field: LanguageCardSuggestionField,
+    view: LanguageCardFieldSuggestionView,
+  ): LanguageCardFieldSuggestionView => {
+    if (!enabled || focusedField !== field || !view.visible) {
+      return EMPTY_VIEW;
+    }
+    return view;
+  };
+
   return {
-    meaning:
-      meaning && !meaning.dismissed && (meaning.loading || meaning.text)
-        ? meaning
-        : null,
-    example:
-      example && !example.dismissed && (example.loading || example.text)
-        ? example
-        : null,
-    acceptMeaning: () => {
-      if (!meaning?.text) return;
-      onAccept('meaning', meaning.text);
-      setMeaning(null);
-    },
-    dismissMeaning: () => {
-      setMeaning((current) =>
-        current ? { ...current, dismissed: true } : null,
-      );
-    },
-    acceptExample: () => {
-      if (!example?.text) return;
-      onAccept('example', example.text);
-      setExample(null);
-    },
-    dismissExample: () => {
-      setExample((current) =>
-        current ? { ...current, dismissed: true } : null,
-      );
-    },
+    focus: gate('focus', focusView),
+    meaning: gate('meaning', meaningView),
+    example: gate('example', exampleView),
+    markFocusTextPicked,
+    setFocusedField,
   };
 }

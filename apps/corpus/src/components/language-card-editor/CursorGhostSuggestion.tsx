@@ -14,6 +14,8 @@ export type CursorGhostSuggestionProps = {
   className?: string;
   inputClassName?: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   onAccept: () => void;
   onDismiss: () => void;
 };
@@ -67,6 +69,8 @@ export function CursorGhostSuggestion({
   className = '',
   inputClassName = '',
   onChange,
+  onFocus,
+  onBlur,
   onAccept,
   onDismiss,
 }: CursorGhostSuggestionProps) {
@@ -125,6 +129,8 @@ export function CursorGhostSuggestion({
               placeholder={placeholder}
               className={[fieldInputClass, 'min-h-[4.5rem]', inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
+              onFocus={onFocus}
+              onBlur={onBlur}
             />
           ) : (
             <input
@@ -134,6 +140,8 @@ export function CursorGhostSuggestion({
               placeholder={placeholder}
               className={[fieldInputClass, inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
+              onFocus={onFocus}
+              onBlur={onBlur}
             />
           )}
         </div>
