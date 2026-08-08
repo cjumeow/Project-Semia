@@ -21,6 +21,7 @@ export * from './removeFragments';
 export * from './reviewSchedule';
 export * from './storageKeys';
 export * from './subtitleLanguages';
+export * from './suggestionContextExcerpt';
 export * from './textFragmentUrl';
 export * from './serializeChatDragMarkdown';
 export * from './snippetChat';
