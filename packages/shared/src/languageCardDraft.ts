@@ -26,11 +26,27 @@ export type LanguageCardDraftsMap = Record<string, LanguageCardDraft>;
 export const LANGUAGE_CARD_DRAFT_DEBOUNCE_MS = 300;
 
 export function createEmptyLanguageCardDraftContent(): LanguageCardDraftContent {
+  return createLanguageCardDraftContentWithDefaultFields([]);
+}
+
+export function createLanguageCardDraftContentWithDefaultFields(
+  defaultOptionalFields: ReadonlyArray<LanguageCardOptionalFieldKey>,
+): LanguageCardDraftContent {
+  const enabledOptionalFields = [
+    ...new Set(
+      defaultOptionalFields.filter((field) => isLanguageCardOptionalFieldKey(field)),
+    ),
+  ];
+  const optionalSlots: LanguageCardDraftContent['optionalSlots'] = {};
+  for (const field of enabledOptionalFields) {
+    optionalSlots[field] = '';
+  }
+
   return {
     focusText: '',
     meaning: '',
-    enabledOptionalFields: [],
-    optionalSlots: {},
+    enabledOptionalFields,
+    optionalSlots,
   };
 }
 

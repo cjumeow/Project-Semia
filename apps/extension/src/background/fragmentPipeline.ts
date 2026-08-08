@@ -233,7 +233,6 @@ export async function handleFragmentMessage(
     case 'SUGGEST_FOCUS_KEYWORDS': {
       const focusKeywords = await suggestFocusKeywords({
         fragment: message.fragment,
-        userLevelMode: message.userLevelMode,
       });
       return { ok: true, focusKeywords };
     }

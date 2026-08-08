@@ -24,7 +24,6 @@ describe('buildFocusKeywordSuggestionPrompt', () => {
     const { system, user } = buildFocusKeywordSuggestionPrompt({
       fragment: FRAGMENT,
       originalSpeech: 'Be careful with formal emails.',
-      userLevelMode: 'daily',
       nativeLanguage: 'zh-TW',
     });
 
@@ -35,22 +34,13 @@ describe('buildFocusKeywordSuggestionPrompt', () => {
     );
     expect(system).toContain('8-Year-Old Native Speaker Rule');
     expect(system).toContain('No Overlapping/Redundant Subsets');
-    expect(system).toContain('swing most between');
+    expect(system).toContain('Allow Variable / Placeholder Templates');
+    expect(system).toContain('Length Constraint (Ideally 2 to 4 Words)');
+    expect(system).toContain('[Selection Preferences]');
+    expect(system).not.toContain('User Level Modes');
     expect(system).not.toContain('context window');
     expect(user).toBe(
       '[Original Speech]\nBe careful with formal emails.',
     );
-  });
-
-  it('includes advanced mode fallback in system prompt', () => {
-    const { system } = buildFocusKeywordSuggestionPrompt({
-      fragment: FRAGMENT,
-      originalSpeech: 'Be careful with formal emails.',
-      userLevelMode: 'advanced',
-      nativeLanguage: 'zh-TW',
-    });
-
-    expect(system).toContain("user's level mode (advanced)");
-    expect(system).toContain('you MUST still find exactly 1 best candidate');
   });
 });

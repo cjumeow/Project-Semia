@@ -6,6 +6,7 @@ import { ContextTabsPrototypeApp } from './prototype/context-tabs/ContextTabsPro
 import { DarkModePrototypeApp } from './prototype/dark-mode/DarkModePrototypeApp';
 import { DragModeSwitchPrototypeApp } from './prototype/drag-mode-switch/DragModeSwitchPrototypeApp';
 import { FocusPickPrototypeApp } from './prototype/focus-pick/FocusPickPrototypeApp';
+import { SettingsPagePrototypeApp } from './prototype/settings-page/SettingsPagePrototypeApp';
 import './index.css';
 import { bootstrapSemiaThemeFromLocalStorage } from './semiaThemeBootstrap';
 
@@ -17,6 +18,7 @@ const isContextTabsPrototype = prototype === 'context-tabs';
 const isDarkModePrototype = prototype === 'dark-mode';
 const isDragModeSwitchPrototype = prototype === 'drag-mode-switch';
 const isFocusPickPrototype = prototype === 'focus-pick';
+const isSettingsPagePrototype = prototype === 'settings-page';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,6 +30,8 @@ createRoot(document.getElementById('root')!).render(
       <DragModeSwitchPrototypeApp />
     ) : isFocusPickPrototype ? (
       <FocusPickPrototypeApp />
+    ) : isSettingsPagePrototype ? (
+      <SettingsPagePrototypeApp />
     ) : isDarkModePrototype ? (
       <DarkModePrototypeApp />
     ) : (

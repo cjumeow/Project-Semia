@@ -98,5 +98,4 @@ export type BackgroundMessage =
   | {
       type: 'SUGGEST_FOCUS_KEYWORDS';
       fragment: LanguageFragment;
-      userLevelMode?: import('@semia/shared').FocusKeywordMode;
     };

@@ -26,9 +26,73 @@ export function semiaThemeModeForDarkModeEnabled(
   return darkModeEnabled ? 'dark' : 'light';
 }
 
-export function applySemiaThemeToDocument(mode: SemiaThemeMode): void {
+/** Class toggled during instant theme swaps to suppress CSS transitions. */
+export const SEMIA_THEME_INSTANT_CLASS = 'semia-theme-instant';
+
+export type ApplySemiaThemeOptions = {
+  /** Skip CSS transitions for one paint cycle (used on user toggle). */
+  instant?: boolean;
+};
+
+export function readSemiaThemeModeFromDocument(): SemiaThemeMode | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const mode = document.documentElement.getAttribute(SEMIA_THEME_ATTRIBUTE);
+  if (mode === 'dark' || mode === 'light') {
+    return mode;
+  }
+
+  return null;
+}
+
+function clearSemiaThemeInstantSwap(): void {
   if (typeof document === 'undefined') {
     return;
   }
-  document.documentElement.setAttribute(SEMIA_THEME_ATTRIBUTE, mode);
+  document.documentElement.classList.remove(SEMIA_THEME_INSTANT_CLASS);
+}
+
+export function applySemiaThemeToDocument(
+  mode: SemiaThemeMode,
+  options?: ApplySemiaThemeOptions,
+): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const instant = options?.instant === true;
+
+  if (instant) {
+    root.classList.add(SEMIA_THEME_INSTANT_CLASS);
+  }
+
+  root.setAttribute(SEMIA_THEME_ATTRIBUTE, mode);
+
+  if (!instant) {
+    return;
+  }
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        clearSemiaThemeInstantSwap();
+      });
+    });
+    return;
+  }
+
+  clearSemiaThemeInstantSwap();
+}
+
+export function applySemiaThemeForDarkModeEnabled(
+  darkModeEnabled: boolean,
+  options?: ApplySemiaThemeOptions,
+): void {
+  applySemiaThemeToDocument(
+    semiaThemeModeForDarkModeEnabled(darkModeEnabled),
+    options,
+  );
 }

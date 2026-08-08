@@ -8,7 +8,6 @@ import {
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
-import { useSemiaSettings } from '../../hooks/useSemiaSettings';
 import { CardFieldEditor, type CardFieldEditorHandle } from './CardFieldEditor';
 import { FieldSuggestionChip } from './FieldSuggestionChip';
 import { FocusKeywordChips } from './FocusKeywordChips';
@@ -59,9 +58,7 @@ export function LanguageCardEditorFields({
   onAppendSlot,
 }: LanguageCardEditorFieldsProps) {
   const [speechPanelOpen, setSpeechPanelOpen] = useState(false);
-  const { darkModeEnabled } = useSemiaSettings();
-  const chipTheme = darkModeEnabled ? 'dark' : 'light';
-  const cursorClasses = focusKeywordCursorClasses(chipTheme);
+  const cursorClasses = focusKeywordCursorClasses();
   const dropEnabled = Boolean(onAppendSlot) && !disabled;
 
   const meaningRef = useRef<CardFieldEditorHandle>(null);

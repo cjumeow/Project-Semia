@@ -1,37 +1,48 @@
 import {
-  applySemiaThemeToDocument,
-  getFocusKeywordMode,
+  applySemiaThemeForDarkModeEnabled,
+  getLanguageCardDefaultOptionalFields,
+  getLearningLanguage,
+  getNativeLanguage,
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardAiSuggestionsEnabled,
   isLanguageCardsProEnabled,
   isSnippetChatDragModeEnabled,
+  readSemiaThemeModeFromDocument,
   SEMIA_SETTINGS_STORAGE_KEY,
-  semiaThemeModeForDarkModeEnabled,
-  type FocusKeywordMode,
+  type LanguageCardOptionalFieldKey,
+  type LearningLanguageCode,
+  type NativeLanguageCode,
   type SemiaSettings,
 } from '@semia/shared';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const DEFAULT_SETTINGS: SemiaSettings = {
   nativeLanguage: 'zh-TW',
+  learningLanguage: 'en',
   contextWindowEnabled: true,
   languageCardsProEnabled: false,
   languageCardAiSuggestionsEnabled: true,
-  focusKeywordMode: 'daily',
+  languageCardDefaultOptionalFields: [],
 };
 
 function readStoredSettings(): SemiaSettings {
+  const docTheme = readSemiaThemeModeFromDocument();
+  const fromDocument =
+    docTheme !== null
+      ? { ...DEFAULT_SETTINGS, darkModeEnabled: docTheme === 'dark' }
+      : DEFAULT_SETTINGS;
+
   if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    return DEFAULT_SETTINGS;
+    return fromDocument;
   }
 
   try {
     const raw = localStorage.getItem(SEMIA_SETTINGS_STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as SemiaSettings) };
+    if (!raw) return fromDocument;
+    return { ...fromDocument, ...(JSON.parse(raw) as SemiaSettings) };
   } catch {
-    return DEFAULT_SETTINGS;
+    return fromDocument;
   }
 }
 
@@ -62,13 +73,19 @@ export function useSemiaSettings(): {
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
-  focusKeywordMode: FocusKeywordMode;
+  languageCardDefaultOptionalFields: LanguageCardOptionalFieldKey[];
+  learningLanguage: LearningLanguageCode;
+  nativeLanguage: NativeLanguageCode;
   darkModeEnabled: boolean;
   snippetChatDragModeEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardAiSuggestionsEnabled: (enabled: boolean) => Promise<void>;
-  setFocusKeywordMode: (mode: FocusKeywordMode) => Promise<void>;
+  setLanguageCardDefaultOptionalFields: (
+    fields: LanguageCardOptionalFieldKey[],
+  ) => Promise<void>;
+  setLearningLanguage: (code: LearningLanguageCode) => Promise<void>;
+  setNativeLanguage: (code: NativeLanguageCode) => Promise<void>;
   setDarkModeEnabled: (enabled: boolean) => Promise<void>;
   setSnippetChatDragModeEnabled: (enabled: boolean) => Promise<void>;
   setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
@@ -103,7 +120,11 @@ export function useSemiaSettings(): {
       const next = changes[SEMIA_SETTINGS_STORAGE_KEY].newValue as
         | SemiaSettings
         | undefined;
-      setSettings({ ...DEFAULT_SETTINGS, ...(next ?? {}) });
+      const merged = { ...DEFAULT_SETTINGS, ...(next ?? {}) };
+      applySemiaThemeForDarkModeEnabled(isDarkModeEnabled(merged), {
+        instant: true,
+      });
+      setSettings(merged);
     };
 
     chrome.storage.onChanged.addListener(onChanged);
@@ -112,12 +133,6 @@ export function useSemiaSettings(): {
       chrome.storage.onChanged.removeListener(onChanged);
     };
   }, []);
-
-  useLayoutEffect(() => {
-    applySemiaThemeToDocument(
-      semiaThemeModeForDarkModeEnabled(isDarkModeEnabled(settings)),
-    );
-  }, [settings]);
 
   const updateSettings = useCallback(
     async (patch: Partial<SemiaSettings>): Promise<void> => {
@@ -149,18 +164,40 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
-  const setFocusKeywordMode = useCallback(
-    async (mode: FocusKeywordMode): Promise<void> => {
-      await updateSettings({ focusKeywordMode: mode });
+  const setLanguageCardDefaultOptionalFields = useCallback(
+    async (fields: LanguageCardOptionalFieldKey[]): Promise<void> => {
+      await updateSettings({
+        languageCardDefaultOptionalFields:
+          getLanguageCardDefaultOptionalFields({
+            languageCardDefaultOptionalFields: fields,
+          }),
+      });
+    },
+    [updateSettings],
+  );
+
+  const setLearningLanguage = useCallback(
+    async (learningLanguage: LearningLanguageCode): Promise<void> => {
+      await updateSettings({ learningLanguage });
+    },
+    [updateSettings],
+  );
+
+  const setNativeLanguage = useCallback(
+    async (nativeLanguage: NativeLanguageCode): Promise<void> => {
+      await updateSettings({ nativeLanguage });
     },
     [updateSettings],
   );
 
   const setDarkModeEnabled = useCallback(
     async (enabled: boolean): Promise<void> => {
-      await updateSettings({ darkModeEnabled: enabled });
+      applySemiaThemeForDarkModeEnabled(enabled, { instant: true });
+      const next = { ...settings, darkModeEnabled: enabled };
+      setSettings(next);
+      await persistSettings(next);
     },
-    [updateSettings],
+    [settings],
   );
 
   const setSnippetChatDragModeEnabled = useCallback(
@@ -184,13 +221,18 @@ export function useSemiaSettings(): {
     languageCardsProEnabled: isLanguageCardsProEnabled(settings),
     languageCardAiSuggestionsEnabled:
       isLanguageCardAiSuggestionsEnabled(settings),
-    focusKeywordMode: getFocusKeywordMode(settings),
+    languageCardDefaultOptionalFields:
+      getLanguageCardDefaultOptionalFields(settings),
+    learningLanguage: getLearningLanguage(settings),
+    nativeLanguage: getNativeLanguage(settings),
     darkModeEnabled: isDarkModeEnabled(settings),
     snippetChatDragModeEnabled: isSnippetChatDragModeEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
-    setFocusKeywordMode,
+    setLanguageCardDefaultOptionalFields,
+    setLearningLanguage,
+    setNativeLanguage,
     setDarkModeEnabled,
     setSnippetChatDragModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,

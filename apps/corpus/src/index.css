@@ -671,6 +671,11 @@ body {
 }
 
 /* Cursor deep (prototype variant C) — toggled via Settings → Dark mode */
+html.semia-theme-instant,
+html.semia-theme-instant * {
+  transition: none !important;
+}
+
 [data-semia-theme='dark'] {
   color-scheme: dark;
 

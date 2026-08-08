@@ -1,8 +1,5 @@
-import type {
-  FocusKeywordCandidate,
-  FocusKeywordMode,
-} from '@semia/shared';
 import { useEffect, useRef, useState } from 'react';
+import type { FocusKeywordCandidate } from '@semia/shared';
 import { corpusRepository } from '../data/corpusRepository';
 import type { CorpusSnippet } from '../types/corpus';
 import { focusKeywordSuggestionCacheKey } from './focusKeywordSuggestionCacheKey';
@@ -15,12 +12,10 @@ export function useFocusKeywordSuggestions({
   snippet,
   enabled,
   isLive,
-  userLevelMode,
 }: {
   snippet: CorpusSnippet | undefined;
   enabled: boolean;
   isLive: boolean;
-  userLevelMode: FocusKeywordMode;
 }): {
   candidates: FocusKeywordCandidate[];
   loading: boolean;
@@ -34,11 +29,7 @@ export function useFocusKeywordSuggestions({
   const snippetId = snippet?.id;
   const originalSpeech = snippet?.note.originalSpeech.trim() ?? '';
   const noteGeneratedAt = snippet?.note.generatedAt;
-  const cacheKey = focusKeywordSuggestionCacheKey(
-    snippetId,
-    userLevelMode,
-    noteGeneratedAt,
-  );
+  const cacheKey = focusKeywordSuggestionCacheKey(snippetId, noteGeneratedAt);
 
   useEffect(() => {
     setCandidates([]);
@@ -75,7 +66,6 @@ export function useFocusKeywordSuggestions({
       void corpusRepository
         .suggestFocusKeywords({
           fragment: currentSnippet,
-          userLevelMode,
         })
         .then((result) => {
           if (requestId !== requestIdRef.current) {
@@ -99,15 +89,7 @@ export function useFocusKeywordSuggestions({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [
-    cacheKey,
-    enabled,
-    isLive,
-    noteGeneratedAt,
-    originalSpeech,
-    snippetId,
-    userLevelMode,
-  ]);
+  }, [cacheKey, enabled, isLive, noteGeneratedAt, originalSpeech, snippetId]);
 
   return { candidates, loading };
 }

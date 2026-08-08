@@ -303,7 +303,12 @@ export function SemiaSidebar({
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            className="rounded-md px-2 py-1 text-[11px] font-medium text-text-secondary hover:bg-canvas hover:text-text"
+            className={[
+            'rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
+            pane === 'settings'
+              ? 'semia-selection-icon-active'
+              : 'text-text-secondary hover:bg-canvas hover:text-text',
+          ].join(' ')}
             onClick={onOpenSettings}
           >
             Settings
@@ -382,7 +387,7 @@ function CollapsedSidebarRail({
       <footer className="flex shrink-0 justify-center border-t border-border/60 py-2.5">
         <CollapsedNavButton
           label="Settings"
-          isActive={false}
+          isActive={pane === 'settings'}
           onClick={onOpenSettings}
           icon={<SettingsIcon size={16} />}
         />

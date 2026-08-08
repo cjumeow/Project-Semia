@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   LANGUAGE_CARD_DRAFT_DEBOUNCE_MS,
-  createEmptyLanguageCardDraftContent,
+  createLanguageCardDraftContentWithDefaultFields,
   isLanguageCardDraftContentEmpty,
   type LanguageCardDraft,
   type LanguageCardDraftContent,
+  type LanguageCardOptionalFieldKey,
   createDebouncedDraftSaver,
 } from '@semia/shared';
 import { corpusRepository } from '../data/corpusRepository';
@@ -31,10 +32,15 @@ function toDraftContent(draft: LanguageCardDraft): LanguageCardDraftContent {
 
 export function useLanguageCardDraft(
   sourceFragmentId: string | undefined,
+  defaultOptionalFields: ReadonlyArray<LanguageCardOptionalFieldKey> = [],
 ): UseLanguageCardDraftResult {
-  const [draft, setDraft] = useState<LanguageCardDraftContent>(
-    createEmptyLanguageCardDraftContent(),
-  );
+  const defaultFieldsRef = useRef(defaultOptionalFields);
+  defaultFieldsRef.current = defaultOptionalFields;
+
+  const freshDraft = () =>
+    createLanguageCardDraftContentWithDefaultFields(defaultFieldsRef.current);
+
+  const [draft, setDraft] = useState<LanguageCardDraftContent>(freshDraft);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<LanguageCardDraftSaveState>('idle');
 
@@ -77,7 +83,7 @@ export function useLanguageCardDraft(
 
     const loadDraft = async (): Promise<void> => {
       if (!sourceFragmentId) {
-        setDraft(createEmptyLanguageCardDraftContent());
+        setDraft(freshDraft());
         setLoaded(true);
         setSaveState('idle');
         return;
@@ -89,11 +95,11 @@ export function useLanguageCardDraft(
       try {
         const stored = await corpusRepository.getLanguageCardDraft(sourceFragmentId);
         if (cancelled) return;
-        setDraft(stored ? toDraftContent(stored) : createEmptyLanguageCardDraftContent());
+        setDraft(stored ? toDraftContent(stored) : freshDraft());
         setLoaded(true);
       } catch {
         if (cancelled) return;
-        setDraft(createEmptyLanguageCardDraftContent());
+        setDraft(freshDraft());
         setLoaded(true);
         setSaveState('error');
       }
@@ -130,7 +136,7 @@ export function useLanguageCardDraft(
   }, []);
 
   const resetDraftToCapture = useCallback(() => {
-    const next = createEmptyLanguageCardDraftContent();
+    const next = freshDraft();
     setDraft(next);
     draftRef.current = next;
     saverRef.current.schedule(next);
