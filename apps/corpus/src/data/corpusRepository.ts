@@ -15,6 +15,8 @@ import {
   type LanguageFragment,
   type LanguageCardFieldSuggestions,
   type LanguageCardSuggestableField,
+  type FocusKeywordMode,
+  type FocusKeywordSuggestions,
   type SnippetNote,
   type SnippetNotesMap,
   type SnippetChatPortMessage,
@@ -67,6 +69,11 @@ export type SuggestLanguageCardFieldsRequest = {
   fields: LanguageCardSuggestableField[];
 };
 
+export type SuggestFocusKeywordsRequest = {
+  fragment: LanguageFragment;
+  userLevelMode: FocusKeywordMode;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -96,6 +103,9 @@ export interface CorpusRepository {
   suggestLanguageCardFields(
     request: SuggestLanguageCardFieldsRequest,
   ): Promise<LanguageCardFieldSuggestions>;
+  suggestFocusKeywords(
+    request: SuggestFocusKeywordsRequest,
+  ): Promise<FocusKeywordSuggestions>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -434,6 +444,27 @@ class ChromeCorpusRepository implements CorpusRepository {
     );
   }
 
+  async suggestFocusKeywords(
+    request: SuggestFocusKeywordsRequest,
+  ): Promise<FocusKeywordSuggestions> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SUGGEST_FOCUS_KEYWORDS',
+      fragment: request.fragment,
+      userLevelMode: request.userLevelMode,
+    })) as
+      | OkResponse<{ focusKeywords: FocusKeywordSuggestions }>
+      | ErrResponse
+      | undefined;
+
+    if (response?.ok) {
+      return response.focusKeywords;
+    }
+
+    throw new Error(
+      response?.error ?? 'Failed to suggest focus keywords.',
+    );
+  }
+
   async openWebCapture(fragment: LanguageFragment): Promise<void> {
     const response = (await chrome.runtime.sendMessage({
       type: 'OPEN_WEB_CAPTURE',
@@ -684,6 +715,10 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
+    throw new Error('AI suggestions require the Chrome extension.');
+  }
+
+  async suggestFocusKeywords(): Promise<FocusKeywordSuggestions> {
     throw new Error('AI suggestions require the Chrome extension.');
   }
 

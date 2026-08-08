@@ -1,5 +1,6 @@
 import { sendSnippetChat } from '../ai/sendSnippetChat';
 import { suggestLanguageCardFields } from '../ai/suggestLanguageCardFields';
+import { suggestFocusKeywords } from '../ai/suggestFocusKeywords';
 import { finalizeSnippetNote } from '../ai/finalizeSnippetNote';
 import { generateContextWindow } from '../ai/generateContextWindow';
 import { generateSnippetNote } from '../ai/generateSnippetNote';
@@ -58,7 +59,8 @@ type FragmentMessage =
   | Extract<BackgroundMessage, { type: 'MARK_CARD_MASTERED' }>
   | Extract<BackgroundMessage, { type: 'SET_CARD_MASTERED' }>
   | Extract<BackgroundMessage, { type: 'SNIPPET_CHAT' }>
-  | Extract<BackgroundMessage, { type: 'SUGGEST_LANGUAGE_CARD_FIELDS' }>;
+  | Extract<BackgroundMessage, { type: 'SUGGEST_LANGUAGE_CARD_FIELDS' }>
+  | Extract<BackgroundMessage, { type: 'SUGGEST_FOCUS_KEYWORDS' }>;
 
 export function isFragmentMessage(
   message: BackgroundMessage,
@@ -86,7 +88,8 @@ export function isFragmentMessage(
     message.type === 'MARK_CARD_MASTERED' ||
     message.type === 'SET_CARD_MASTERED' ||
     message.type === 'SNIPPET_CHAT' ||
-    message.type === 'SUGGEST_LANGUAGE_CARD_FIELDS'
+    message.type === 'SUGGEST_LANGUAGE_CARD_FIELDS' ||
+    message.type === 'SUGGEST_FOCUS_KEYWORDS'
   );
 }
 
@@ -225,6 +228,14 @@ export async function handleFragmentMessage(
         fields: message.fields,
       });
       return { ok: true, suggestions };
+    }
+
+    case 'SUGGEST_FOCUS_KEYWORDS': {
+      const focusKeywords = await suggestFocusKeywords({
+        fragment: message.fragment,
+        userLevelMode: message.userLevelMode,
+      });
+      return { ok: true, focusKeywords };
     }
   }
 }

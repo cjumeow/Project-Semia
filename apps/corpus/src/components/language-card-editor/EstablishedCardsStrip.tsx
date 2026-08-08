@@ -1,5 +1,8 @@
 import type { LanguageCard } from '@semia/shared';
 
+/** Match editing bar focus preview width. */
+const CARD_CHIP_MAX_CLASS = 'max-w-48';
+
 function NewDraftChip({
   active,
   onClick,
@@ -44,13 +47,14 @@ function EstablishedCardChip({
       onClick={onClick}
       className={[
         'shrink-0 rounded-lg border px-3 py-2 text-left transition-colors',
+        CARD_CHIP_MAX_CLASS,
         active
           ? 'semia-selection-chip-active border border-accent'
           : 'border border-border bg-surface hover:border-accent/40',
       ].join(' ')}
     >
-      <p className="text-xs font-medium text-text">{card.focusText}</p>
-      <p className="mt-0.5 max-w-[8rem] truncate text-[10px] text-text-muted">
+      <p className="truncate text-xs font-medium text-text">{card.focusText}</p>
+      <p className="mt-0.5 truncate text-[10px] text-text-muted">
         {card.meaning}
       </p>
     </button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LanguageCard } from '@semia/shared';
+import type { LanguageCard, FocusKeywordMode } from '@semia/shared';
 import {
   appendMarkdownToSlot,
   canCreateLanguageCard,
@@ -13,6 +13,7 @@ import type { CorpusSnippet } from '../../types/corpus';
 import { useLanguageCardDraft } from '../../hooks/useLanguageCardDraft';
 import { useLanguageCardEstablishedEdit } from '../../hooks/useLanguageCardEstablishedEdit';
 import { useLanguageCardFieldSuggestions } from '../../hooks/useLanguageCardFieldSuggestions';
+import { useFocusKeywordSuggestions } from '../../hooks/useFocusKeywordSuggestions';
 import {
   createInitialEditorState,
   startDraftEditor,
@@ -25,37 +26,24 @@ import {
   applyOptionalFieldToggle,
   LanguageCardEditorFields,
 } from './LanguageCardEditorFields';
-import { LanguageCardEditorModeBanner } from './LanguageCardEditorModeBanner';
+import { LanguageCardEditorHeader } from './LanguageCardEditorHeader';
 
 type LanguageCardsTabProps = {
   snippet: CorpusSnippet | undefined;
   languageCards: LanguageCard[];
   createEnabled: boolean;
   aiSuggestionsEnabled: boolean;
+  focusKeywordMode: FocusKeywordMode;
   isLive: boolean;
   onCardsChanged: () => Promise<void>;
 };
-
-function saveStateLabel(
-  saveState: 'idle' | 'saving' | 'saved' | 'error',
-): string {
-  switch (saveState) {
-    case 'saving':
-      return 'Saving…';
-    case 'saved':
-      return 'Saved';
-    case 'error':
-      return 'Could not save';
-    default:
-      return 'Auto-saves';
-  }
-}
 
 export function LanguageCardsTab({
   snippet,
   languageCards,
   createEnabled,
   aiSuggestionsEnabled,
+  focusKeywordMode,
   isLive,
   onCardsChanged,
 }: LanguageCardsTabProps) {
@@ -73,7 +61,6 @@ export function LanguageCardsTab({
   const {
     draft,
     loaded: draftLoaded,
-    saveState: draftSaveState,
     updateDraft,
     flushDraft,
     resetDraftToCapture,
@@ -82,7 +69,6 @@ export function LanguageCardsTab({
   const {
     content: editContent,
     loaded: editLoaded,
-    saveState: editSaveState,
     updateContent,
     flushContent,
   } = useLanguageCardEstablishedEdit(editingCard, !isDraftMode);
@@ -142,7 +128,6 @@ export function LanguageCardsTab({
     ? draft
     : editContent;
   const editorLoaded = isDraftMode ? draftLoaded : editLoaded;
-  const saveState = isDraftMode ? draftSaveState : editSaveState;
 
   const handleContentChange = useCallback(
     (patch: Partial<LanguageCardDraftContent>) => {
@@ -233,6 +218,13 @@ export function LanguageCardsTab({
     onAccept: handleAcceptSuggestion,
   });
 
+  const focusKeywords = useFocusKeywordSuggestions({
+    snippet,
+    enabled: isDraftMode && aiSuggestionsEnabled,
+    isLive,
+    userLevelMode: focusKeywordMode,
+  });
+
   const switchToDraft = useCallback(async () => {
     if (!isDraftMode) {
       await flushContent();
@@ -304,38 +296,20 @@ export function LanguageCardsTab({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <LanguageCardEditorModeBanner
+      <LanguageCardEditorHeader
         isDraft={isDraftMode}
         editingFocusText={editingCard?.focusText}
+        loaded={editorLoaded}
+        createEnabled={createEnabled}
+        creating={creating}
+        canCreate={canCreateLanguageCard(draft)}
         onBackToDraft={() => {
           void switchToDraft();
         }}
+        onCreate={() => {
+          void handleCreate();
+        }}
       />
-
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <p className="text-[10px] text-text-muted">
-          {editorLoaded ? saveStateLabel(saveState) : 'Loading…'}
-        </p>
-        {isDraftMode ? (
-          <button
-            type="button"
-            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={
-              !createEnabled ||
-              creating ||
-              !draftLoaded ||
-              !canCreateLanguageCard(draft)
-            }
-            onClick={() => {
-              void handleCreate();
-            }}
-          >
-            {creating ? 'Creating…' : 'Create'}
-          </button>
-        ) : (
-          <p className="text-[10px] text-text-muted">Established card — auto-saved on edit</p>
-        )}
-      </div>
 
       {createError ? (
         <p className="border-b border-border bg-canvas px-4 py-2 text-xs text-red-600">
@@ -347,7 +321,10 @@ export function LanguageCardsTab({
         snippet={snippet}
         content={editorContent}
         disabled={!editorLoaded}
-        showFocusPicker={isDraftMode}
+        showFocusAssist={isDraftMode}
+        focusKeywordCandidates={focusKeywords.candidates}
+        focusKeywordsLoading={focusKeywords.loading}
+        focusKeywordsEnabled={isDraftMode && aiSuggestionsEnabled}
         showSuggestions={false}
         suggestions={suggestions}
         onChange={handleContentChange}

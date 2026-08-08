@@ -39,11 +39,8 @@ describe('didSnippetChatContextChange', () => {
 
 describe('formatSnippetChatContextSwitchNotice', () => {
   it('names the new capture in plain English', () => {
-    expect(formatSnippetChatContextSwitchNotice(fragment)).toContain(
-      'naval vessels',
-    );
-    expect(formatSnippetChatContextSwitchNotice(fragment)).toContain(
-      'Navy documentary',
+    expect(formatSnippetChatContextSwitchNotice(fragment)).toBe(
+      'Context switched to "naval vessels". I will answer using only this capture from now on.',
     );
   });
 });

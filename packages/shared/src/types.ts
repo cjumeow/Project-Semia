@@ -158,6 +158,9 @@ export type LanguageCard = {
   focus: string;
   meaning: string;
   scenario?: string;
+  dialogue?: string;
+  pitfalls?: string;
+  personalNote?: string;
   examples: LanguageCardExample[];
   createdAt: string;
   generatedAt: string;
@@ -191,6 +194,8 @@ export type SemiaSettings = {
   languageCardsProEnabled?: boolean;
   /** When false, skip AI suggestions for language card meaning/example. Default: on. */
   languageCardAiSuggestionsEnabled?: boolean;
+  /** AI focus keyword mode for language card draft picker. Default: daily. */
+  focusKeywordMode?: 'daily' | 'advanced';
   /** When true, skip the inbox archive confirm when no formal language card exists. */
   skipInboxArchiveWithoutFormalCardConfirm?: boolean;
   /** Cursor deep dark theme for corpus UI. Default: off (light). */

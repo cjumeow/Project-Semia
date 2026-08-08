@@ -47,7 +47,7 @@ export function SnippetDetail({
 }: SnippetDetailProps) {
   const isInboxSnip = variant === 'inbox-snip';
   const shellClass = embedded
-    ? 'flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface'
+    ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-surface'
     : 'flex h-full shrink-0 flex-col overflow-y-auto bg-surface';
   const shellStyle = embedded ? undefined : { width };
 
@@ -101,9 +101,20 @@ export function SnippetDetail({
           ) : null}
         </div>
       </header>
-      <div className="flex flex-col gap-5 p-5">
+      <div
+        className={
+          isInboxSnip
+            ? 'language-card-editor-shelf min-h-0 flex-1'
+            : 'flex flex-col gap-5 p-5'
+        }
+      >
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            className={[
+              'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700',
+              isInboxSnip ? 'mb-4' : '',
+            ].join(' ')}
+          >
             {error}
           </p>
         ) : null}

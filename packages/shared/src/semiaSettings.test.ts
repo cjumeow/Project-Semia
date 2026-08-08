@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getFocusKeywordMode,
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardsProEnabled,
@@ -62,5 +63,18 @@ describe('isSnippetChatDragModeEnabled', () => {
     expect(
       isSnippetChatDragModeEnabled({ snippetChatDragModeEnabled: false }),
     ).toBe(false);
+  });
+});
+
+describe('getFocusKeywordMode', () => {
+  it('defaults to daily', () => {
+    expect(getFocusKeywordMode()).toBe('daily');
+    expect(getFocusKeywordMode({})).toBe('daily');
+  });
+
+  it('respects advanced', () => {
+    expect(getFocusKeywordMode({ focusKeywordMode: 'advanced' })).toBe(
+      'advanced',
+    );
   });
 });

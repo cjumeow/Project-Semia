@@ -26,3 +26,10 @@ export function isDarkModeEnabled(settings?: SemiaSettings): boolean {
 export function isSnippetChatDragModeEnabled(settings?: SemiaSettings): boolean {
   return settings?.snippetChatDragModeEnabled === true;
 }
+
+/** Focus keyword picking mode for language card drafts. Default: daily. */
+export function getFocusKeywordMode(
+  settings?: SemiaSettings,
+): 'daily' | 'advanced' {
+  return settings?.focusKeywordMode === 'advanced' ? 'advanced' : 'daily';
+}

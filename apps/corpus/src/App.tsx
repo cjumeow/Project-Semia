@@ -56,10 +56,12 @@ export default function App() {
     contextWindowEnabled,
     languageCardsProEnabled,
     languageCardAiSuggestionsEnabled,
+    focusKeywordMode,
     darkModeEnabled,
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
+    setFocusKeywordMode,
     setDarkModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
   } = useSemiaSettings();
@@ -511,6 +513,7 @@ export default function App() {
                 languageCardCount={languageCardCount}
                 createLanguageCardEnabled={createLanguageCardEnabled}
                 languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+                focusKeywordMode={focusKeywordMode}
                 isLive={isLive}
                 onLanguageCardsChanged={refreshLanguageCards}
               />
@@ -558,6 +561,7 @@ export default function App() {
         contextWindowEnabled={contextWindowEnabled}
         languageCardsProEnabled={languageCardsProEnabled}
         languageCardAiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+        focusKeywordMode={focusKeywordMode}
         onClose={() => setSettingsOpen(false)}
         onDarkModeEnabledChange={(enabled) => {
           void setDarkModeEnabled(enabled);
@@ -570,6 +574,9 @@ export default function App() {
         }}
         onLanguageCardAiSuggestionsEnabledChange={(enabled) => {
           void setLanguageCardAiSuggestionsEnabled(enabled);
+        }}
+        onFocusKeywordModeChange={(mode) => {
+          void setFocusKeywordMode(mode);
         }}
       />
       <CreateLanguageCardModal

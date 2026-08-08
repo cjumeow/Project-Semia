@@ -94,4 +94,9 @@ export type BackgroundMessage =
       fragment: LanguageFragment;
       focusText: string;
       fields: import('@semia/shared').LanguageCardSuggestableField[];
+    }
+  | {
+      type: 'SUGGEST_FOCUS_KEYWORDS';
+      fragment: LanguageFragment;
+      userLevelMode?: import('@semia/shared').FocusKeywordMode;
     };

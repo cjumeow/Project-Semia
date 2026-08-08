@@ -1,5 +1,6 @@
 import {
   applySemiaThemeToDocument,
+  getFocusKeywordMode,
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardAiSuggestionsEnabled,
@@ -7,6 +8,7 @@ import {
   isSnippetChatDragModeEnabled,
   SEMIA_SETTINGS_STORAGE_KEY,
   semiaThemeModeForDarkModeEnabled,
+  type FocusKeywordMode,
   type SemiaSettings,
 } from '@semia/shared';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
@@ -16,6 +18,7 @@ const DEFAULT_SETTINGS: SemiaSettings = {
   contextWindowEnabled: true,
   languageCardsProEnabled: false,
   languageCardAiSuggestionsEnabled: true,
+  focusKeywordMode: 'daily',
 };
 
 function readStoredSettings(): SemiaSettings {
@@ -59,11 +62,13 @@ export function useSemiaSettings(): {
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
+  focusKeywordMode: FocusKeywordMode;
   darkModeEnabled: boolean;
   snippetChatDragModeEnabled: boolean;
   setContextWindowEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardsProEnabled: (enabled: boolean) => Promise<void>;
   setLanguageCardAiSuggestionsEnabled: (enabled: boolean) => Promise<void>;
+  setFocusKeywordMode: (mode: FocusKeywordMode) => Promise<void>;
   setDarkModeEnabled: (enabled: boolean) => Promise<void>;
   setSnippetChatDragModeEnabled: (enabled: boolean) => Promise<void>;
   setSkipInboxArchiveWithoutFormalCardConfirm: (skip: boolean) => Promise<void>;
@@ -144,6 +149,13 @@ export function useSemiaSettings(): {
     [updateSettings],
   );
 
+  const setFocusKeywordMode = useCallback(
+    async (mode: FocusKeywordMode): Promise<void> => {
+      await updateSettings({ focusKeywordMode: mode });
+    },
+    [updateSettings],
+  );
+
   const setDarkModeEnabled = useCallback(
     async (enabled: boolean): Promise<void> => {
       await updateSettings({ darkModeEnabled: enabled });
@@ -172,11 +184,13 @@ export function useSemiaSettings(): {
     languageCardsProEnabled: isLanguageCardsProEnabled(settings),
     languageCardAiSuggestionsEnabled:
       isLanguageCardAiSuggestionsEnabled(settings),
+    focusKeywordMode: getFocusKeywordMode(settings),
     darkModeEnabled: isDarkModeEnabled(settings),
     snippetChatDragModeEnabled: isSnippetChatDragModeEnabled(settings),
     setContextWindowEnabled,
     setLanguageCardsProEnabled,
     setLanguageCardAiSuggestionsEnabled,
+    setFocusKeywordMode,
     setDarkModeEnabled,
     setSnippetChatDragModeEnabled,
     setSkipInboxArchiveWithoutFormalCardConfirm,
