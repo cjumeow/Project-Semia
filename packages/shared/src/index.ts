@@ -5,7 +5,6 @@ export * from './languageCardDraft';
 export * from './languageCardEditorContent';
 export * from './cardReviewSchedule';
 export * from './languageCardSlotDrop';
-export * from './languageCardFieldSuggestion';
 export * from './focusKeywordSuggestion';
 export * from './languageCardFocus';
 export * from './normalizeLanguageCard';

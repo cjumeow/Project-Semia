@@ -6,9 +6,7 @@ import {
 } from '@semia/shared';
 import type { LanguageCardEditorSlotKey } from '@semia/shared';
 import { CardFieldEditor, type CardFieldEditorHandle } from './CardFieldEditor';
-import { CursorGhostSuggestion } from './CursorGhostSuggestion';
 import { LanguageCardSlotDropZone } from './LanguageCardSlotDropZone';
-import type { LanguageCardFieldSuggestionView } from '../../hooks/useLanguageCardFieldSuggestions';
 
 const CHIP_GHOST_CLASS =
   'rounded-full border border-dashed border-zinc-300 px-2.5 py-1 text-xs text-text-muted transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/60';
@@ -22,10 +20,6 @@ type OptionalFieldChipAddersProps = {
     LanguageCardOptionalFieldKey,
     RefObject<CardFieldEditorHandle | null>
   >;
-  showExampleGhost?: boolean;
-  exampleSuggestion?: LanguageCardFieldSuggestionView;
-  onExampleFocus?: () => void;
-  onExampleBlur?: () => void;
   onEnable: (field: LanguageCardOptionalFieldKey) => void;
   onDisable: (field: LanguageCardOptionalFieldKey) => void;
   onChange: (field: LanguageCardOptionalFieldKey, value: string) => void;
@@ -80,10 +74,6 @@ export function OptionalFieldChipAdders({
   dropEnabled,
   values,
   editorRefs,
-  showExampleGhost = false,
-  exampleSuggestion,
-  onExampleFocus,
-  onExampleBlur,
   onEnable,
   onDisable,
   onChange,
@@ -137,24 +127,7 @@ export function OptionalFieldChipAdders({
                 <X className="h-3 w-3" aria-hidden />
               </button>
             </div>
-            {field.key === 'example' &&
-            showExampleGhost &&
-            !(values.example ?? '').trim() ? (
-              <CursorGhostSuggestion
-                value={values.example ?? ''}
-                suggestion={exampleSuggestion?.suggestion ?? null}
-                mode="completion"
-                multiline
-                disabled={disabled}
-                loading={exampleSuggestion?.loading ?? false}
-                placeholder={field.placeholder}
-                onChange={(nextValue) => onChange(field.key, nextValue)}
-                onFocus={onExampleFocus}
-                onBlur={onExampleBlur}
-                onAccept={() => exampleSuggestion?.accept()}
-                onDismiss={() => exampleSuggestion?.dismiss()}
-              />
-            ) : dropEnabled ? (
+            {dropEnabled ? (
               <LanguageCardSlotDropZone
                 slot={field.key}
                 disabled={disabled}

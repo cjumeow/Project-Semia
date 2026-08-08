@@ -90,12 +90,6 @@ export type BackgroundMessage =
       globalThread?: boolean;
     }
   | {
-      type: 'SUGGEST_LANGUAGE_CARD_FIELDS';
-      fragment: LanguageFragment;
-      focusText: string;
-      fields: import('@semia/shared').LanguageCardSuggestableField[];
-    }
-  | {
       type: 'SUGGEST_BASE_FORM';
       fragment: LanguageFragment;
       focusText: string;

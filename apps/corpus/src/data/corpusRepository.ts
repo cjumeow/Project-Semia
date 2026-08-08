@@ -12,8 +12,6 @@ import {
   type LanguageCardDraft,
   type LanguageCardDraftContent,
   type LanguageFragment,
-  type LanguageCardFieldSuggestions,
-  type LanguageCardSuggestableField,
   type BaseFormSuggestion,
   type FocusKeywordSuggestions,
   type SnippetNote,
@@ -62,12 +60,6 @@ export type SnippetChatStreamOptions = {
   signal?: AbortSignal;
 };
 
-export type SuggestLanguageCardFieldsRequest = {
-  fragment: LanguageFragment;
-  focusText: string;
-  fields: LanguageCardSuggestableField[];
-};
-
 export type SuggestBaseFormRequest = {
   fragment: LanguageFragment;
   focusText: string;
@@ -103,9 +95,6 @@ export interface CorpusRepository {
     handlers: SnippetChatStreamHandlers,
     options?: SnippetChatStreamOptions,
   ): Promise<void>;
-  suggestLanguageCardFields(
-    request: SuggestLanguageCardFieldsRequest,
-  ): Promise<LanguageCardFieldSuggestions>;
   suggestBaseForm(request: SuggestBaseFormRequest): Promise<BaseFormSuggestion>;
   suggestFocusKeywords(
     request: SuggestFocusKeywordsRequest,
@@ -426,28 +415,6 @@ class ChromeCorpusRepository implements CorpusRepository {
     });
   }
 
-  async suggestLanguageCardFields(
-    request: SuggestLanguageCardFieldsRequest,
-  ): Promise<LanguageCardFieldSuggestions> {
-    const response = (await chrome.runtime.sendMessage({
-      type: 'SUGGEST_LANGUAGE_CARD_FIELDS',
-      fragment: request.fragment,
-      focusText: request.focusText,
-      fields: request.fields,
-    })) as
-      | OkResponse<{ suggestions: LanguageCardFieldSuggestions }>
-      | ErrResponse
-      | undefined;
-
-    if (response?.ok) {
-      return response.suggestions;
-    }
-
-    throw new Error(
-      response?.error ?? 'Failed to suggest language card fields.',
-    );
-  }
-
   async suggestBaseForm(
     request: SuggestBaseFormRequest,
   ): Promise<BaseFormSuggestion> {
@@ -736,10 +703,6 @@ class MockCorpusRepository implements CorpusRepository {
 
   async streamSnippetChat(): Promise<void> {
     throw new Error('AI chat requires the Chrome extension.');
-  }
-
-  async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
-    throw new Error('AI suggestions require the Chrome extension.');
   }
 
   async suggestBaseForm(): Promise<BaseFormSuggestion> {
