@@ -23,7 +23,7 @@ export function resolveCursorGhostSuggestionView({
       showGhost: false,
       showBaseFormArrow: false,
       ghostSuffix: null,
-      showActions: true,
+      showActions: false,
     };
   }
 
@@ -37,7 +37,8 @@ export function resolveCursorGhostSuggestionView({
   }
 
   if (mode === 'baseForm') {
-    const showBaseForm = suggestion !== value;
+    const showBaseForm =
+      suggestion.trim().toLowerCase() !== value.trim().toLowerCase();
     return {
       showGhost: showBaseForm,
       showBaseFormArrow: showBaseForm,

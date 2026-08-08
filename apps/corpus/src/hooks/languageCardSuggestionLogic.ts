@@ -1,5 +1,27 @@
 export type LanguageCardSuggestionField = 'focus' | 'meaning' | 'example';
 
+export function focusAppearsInSpeech(
+  focusText: string,
+  originalSpeech: string,
+): boolean {
+  const focus = focusText.trim();
+  if (!focus) {
+    return false;
+  }
+
+  return originalSpeech.toLowerCase().includes(focus.toLowerCase());
+}
+
+export function shouldRequestLanguageCardFieldSuggestions({
+  focusInSpeech,
+  emptyFields,
+}: {
+  focusInSpeech: boolean;
+  emptyFields: ReadonlyArray<'meaning' | 'example'>;
+}): boolean {
+  return focusInSpeech && emptyFields.length > 0;
+}
+
 export function focusBaseFormSuggestion(
   baseForm: string | null,
   focusText: string,

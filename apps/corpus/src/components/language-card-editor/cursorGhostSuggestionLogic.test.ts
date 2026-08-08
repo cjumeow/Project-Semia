@@ -42,7 +42,7 @@ describe('resolveCursorGhostSuggestionView', () => {
     });
   });
 
-  it('shows actions without ghost while loading', () => {
+  it('hides actions while loading', () => {
     expect(
       resolveCursorGhostSuggestionView({
         value: 'ran',
@@ -54,7 +54,17 @@ describe('resolveCursorGhostSuggestionView', () => {
       showGhost: false,
       showBaseFormArrow: false,
       ghostSuffix: null,
-      showActions: true,
+      showActions: false,
     });
+  });
+
+  it('hides baseForm ghost when suggestion matches value case-insensitively', () => {
+    expect(
+      resolveCursorGhostSuggestionView({
+        value: 'coursework',
+        suggestion: 'Coursework',
+        mode: 'baseForm',
+      }).showGhost,
+    ).toBe(false);
   });
 });

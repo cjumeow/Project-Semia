@@ -82,6 +82,7 @@ export function CursorGhostSuggestion({
   });
   const rows = multiline ? Math.max(2, value.split('\n').length) : undefined;
   const inputPaddingRight = view.showActions ? 'pr-24' : '';
+  const showPlaceholder = !value && !view.showGhost && !loading;
 
   return (
     <div className={className}>
@@ -126,7 +127,7 @@ export function CursorGhostSuggestion({
               value={value}
               disabled={disabled}
               rows={rows}
-              placeholder={placeholder}
+              placeholder={showPlaceholder ? placeholder : undefined}
               className={[fieldInputClass, 'min-h-[4.5rem]', inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
               onFocus={onFocus}
@@ -137,7 +138,7 @@ export function CursorGhostSuggestion({
               type="text"
               value={value}
               disabled={disabled}
-              placeholder={placeholder}
+              placeholder={showPlaceholder ? placeholder : undefined}
               className={[fieldInputClass, inputClassName].join(' ')}
               onChange={(event) => onChange(event.target.value)}
               onFocus={onFocus}

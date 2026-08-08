@@ -9,7 +9,9 @@ import type { CorpusSnippet } from '../types/corpus';
 import { languageCardSuggestionCacheKey } from './languageCardSuggestionCacheKey';
 import {
   emptyLanguageCardSuggestionFields,
+  focusAppearsInSpeech,
   focusBaseFormSuggestion,
+  shouldRequestLanguageCardFieldSuggestions,
   type LanguageCardSuggestionField,
 } from './languageCardSuggestionLogic';
 
@@ -144,6 +146,11 @@ export function useLanguageCardFieldSuggestions({
   }, []);
 
   useEffect(() => {
+    requestIdRef.current += 1;
+    setPrefetch(null);
+  }, [focusKey]);
+
+  useEffect(() => {
     setPrefetch(null);
     setDismissed({
       focusKey,
@@ -170,11 +177,14 @@ export function useLanguageCardFieldSuggestions({
       return;
     }
 
-    const hasFieldTargets = emptyFields.length > 0;
-    if (!hasFieldTargets && !focusKey) {
-      setPrefetch(null);
-      return;
-    }
+    const focusInSpeech = focusAppearsInSpeech(
+      focusKey,
+      snippetRef.current.note.originalSpeech,
+    );
+    const shouldRequestFields = shouldRequestLanguageCardFieldSuggestions({
+      focusInSpeech,
+      emptyFields,
+    });
 
     if (cacheKey && prefetchCache.has(cacheKey)) {
       const cached = prefetchCache.get(cacheKey)!;
@@ -195,7 +205,7 @@ export function useLanguageCardFieldSuggestions({
       meaning: '',
       example: '',
       baseFormLoading: true,
-      fieldsLoading: hasFieldTargets,
+      fieldsLoading: shouldRequestFields,
     });
 
     const requestId = ++requestIdRef.current;
@@ -213,7 +223,7 @@ export function useLanguageCardFieldSuggestions({
         focusText: focusKey,
       });
 
-      const fieldsPromise: Promise<LanguageCardFieldSuggestions> = hasFieldTargets
+      const fieldsPromise: Promise<LanguageCardFieldSuggestions> = shouldRequestFields
         ? corpusRepository.suggestLanguageCardFields({
             fragment: currentSnippet,
             focusText: focusKey,
