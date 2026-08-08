@@ -133,8 +133,12 @@ export default function App() {
     setSidebarCollapsed((current) => !current);
   }, []);
 
-  const { width: sidebarWidth, onResizeStart: onSidebarResizeStart } =
-    useResizableWidth({
+  const {
+    width: sidebarWidth,
+    onResizeStart: onSidebarResizeStart,
+    setContainerRef: setSidebarContainerRef,
+    isResizing: isSidebarResizing,
+  } = useResizableWidth({
       min: 160,
       max: 480,
       defaultWidth: 280,
@@ -142,8 +146,12 @@ export default function App() {
       edge: 'end',
     });
 
-  const { width: detailWidth, onResizeStart: onDetailResizeStart } =
-    useResizableWidth({
+  const {
+    width: detailWidth,
+    onResizeStart: onDetailResizeStart,
+    setContainerRef: setDetailContainerRef,
+    isResizing: isDetailResizing,
+  } = useResizableWidth({
       min: 280,
       max: 640,
       defaultWidth: 600,
@@ -430,7 +438,13 @@ export default function App() {
   return (
     <main className="flex h-screen overflow-hidden bg-canvas text-text">
       <div
-        className="flex h-full shrink-0 flex-col overflow-x-hidden border-r border-border bg-shelf transition-[width] duration-200 ease-out"
+        ref={sidebarCollapsed ? undefined : setSidebarContainerRef}
+        className={[
+          'flex h-full shrink-0 flex-col overflow-x-hidden border-r border-border bg-shelf',
+          sidebarCollapsed || isSidebarResizing
+            ? ''
+            : 'transition-[width] duration-200 ease-out',
+        ].join(' ')}
         style={{ width: effectiveSidebarWidth }}
       >
         <SemiaSidebar
@@ -542,11 +556,17 @@ export default function App() {
         <>
           <ResizeHandle onResizeStart={onDetailResizeStart} />
 
-          <div className="flex h-full shrink-0 border-l border-border bg-surface">
+          <div
+            ref={setDetailContainerRef}
+            className={[
+              'flex h-full shrink-0 border-l border-border bg-surface',
+              isDetailResizing ? '' : 'transition-[width] duration-200 ease-out',
+            ].join(' ')}
+            style={{ width: detailWidth }}
+          >
             {selection.pane === 'inbox' ? (
               <InboxDetailPanel
                 snippet={selectedSnippet}
-                width={detailWidth}
                 generating={generating}
                 error={noteError}
                 onRegenerate={() => {
@@ -567,7 +587,6 @@ export default function App() {
             ) : (
               <SnippetDetail
                 snippet={selectedSnippet}
-                width={detailWidth}
                 generating={generating}
                 error={noteError}
                 onRegenerate={() => {

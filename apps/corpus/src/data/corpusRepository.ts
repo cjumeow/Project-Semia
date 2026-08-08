@@ -12,8 +12,7 @@ import {
   type LanguageCardDraft,
   type LanguageCardDraftContent,
   type LanguageFragment,
-  type LanguageCardFieldSuggestions,
-  type LanguageCardSuggestableField,
+  type BaseFormSuggestion,
   type FocusKeywordSuggestions,
   type SnippetNote,
   type SnippetNotesMap,
@@ -61,10 +60,9 @@ export type SnippetChatStreamOptions = {
   signal?: AbortSignal;
 };
 
-export type SuggestLanguageCardFieldsRequest = {
+export type SuggestBaseFormRequest = {
   fragment: LanguageFragment;
   focusText: string;
-  fields: LanguageCardSuggestableField[];
 };
 
 export type SuggestFocusKeywordsRequest = {
@@ -97,9 +95,7 @@ export interface CorpusRepository {
     handlers: SnippetChatStreamHandlers,
     options?: SnippetChatStreamOptions,
   ): Promise<void>;
-  suggestLanguageCardFields(
-    request: SuggestLanguageCardFieldsRequest,
-  ): Promise<LanguageCardFieldSuggestions>;
+  suggestBaseForm(request: SuggestBaseFormRequest): Promise<BaseFormSuggestion>;
   suggestFocusKeywords(
     request: SuggestFocusKeywordsRequest,
   ): Promise<FocusKeywordSuggestions>;
@@ -419,26 +415,23 @@ class ChromeCorpusRepository implements CorpusRepository {
     });
   }
 
-  async suggestLanguageCardFields(
-    request: SuggestLanguageCardFieldsRequest,
-  ): Promise<LanguageCardFieldSuggestions> {
+  async suggestBaseForm(
+    request: SuggestBaseFormRequest,
+  ): Promise<BaseFormSuggestion> {
     const response = (await chrome.runtime.sendMessage({
-      type: 'SUGGEST_LANGUAGE_CARD_FIELDS',
+      type: 'SUGGEST_BASE_FORM',
       fragment: request.fragment,
       focusText: request.focusText,
-      fields: request.fields,
     })) as
-      | OkResponse<{ suggestions: LanguageCardFieldSuggestions }>
+      | OkResponse<{ baseFormSuggestion: BaseFormSuggestion }>
       | ErrResponse
       | undefined;
 
     if (response?.ok) {
-      return response.suggestions;
+      return response.baseFormSuggestion;
     }
 
-    throw new Error(
-      response?.error ?? 'Failed to suggest language card fields.',
-    );
+    throw new Error(response?.error ?? 'Failed to suggest base form.');
   }
 
   async suggestFocusKeywords(
@@ -712,7 +705,7 @@ class MockCorpusRepository implements CorpusRepository {
     throw new Error('AI chat requires the Chrome extension.');
   }
 
-  async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
+  async suggestBaseForm(): Promise<BaseFormSuggestion> {
     throw new Error('AI suggestions require the Chrome extension.');
   }
 

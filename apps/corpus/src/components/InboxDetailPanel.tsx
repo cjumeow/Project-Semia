@@ -9,7 +9,6 @@ import { SnippetDetail } from './SnippetDetail';
 
 type InboxDetailPanelProps = {
   snippet: CorpusSnippet | undefined;
-  width: number;
   generating?: boolean;
   error?: string | null;
   onRegenerate?: () => void;
@@ -28,7 +27,6 @@ type InboxDetailPanelProps = {
 
 export function InboxDetailPanel({
   snippet,
-  width,
   generating,
   error,
   onRegenerate,
@@ -51,8 +49,7 @@ export function InboxDetailPanel({
   return (
     <>
       <section
-        className="flex h-full shrink-0 flex-col overflow-hidden bg-surface"
-        style={{ width }}
+        className="flex h-full w-full shrink-0 flex-col overflow-hidden bg-surface"
       >
         <DetailTabBar activeTab={detailTab} onTabChange={setDetailTab} />
         {detailTab === 'snip' ? (

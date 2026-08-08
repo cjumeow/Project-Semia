@@ -28,7 +28,7 @@ type SnippetDetailProps = {
 
 export function SnippetDetail({
   snippet,
-  width,
+  width: _width,
   embedded = false,
   variant = 'default',
   generating,
@@ -48,8 +48,8 @@ export function SnippetDetail({
   const isInboxSnip = variant === 'inbox-snip';
   const shellClass = embedded
     ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-surface'
-    : 'flex h-full shrink-0 flex-col overflow-y-auto bg-surface';
-  const shellStyle = embedded ? undefined : { width };
+    : 'flex h-full w-full shrink-0 flex-col overflow-y-auto bg-surface';
+  const shellStyle = embedded ? undefined : undefined;
 
   if (!snippet) {
     return (

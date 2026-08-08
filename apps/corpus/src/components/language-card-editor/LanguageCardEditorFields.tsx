@@ -7,7 +7,7 @@ import {
   type LanguageCardOptionalFieldKey,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
-import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
+import type { BaseFormSuggestionView } from '../../hooks/useBaseFormSuggestion';
 import { CardFieldEditor, type CardFieldEditorHandle } from './CardFieldEditor';
 import { FieldSuggestionChip } from './FieldSuggestionChip';
 import { FocusKeywordChips } from './FocusKeywordChips';
@@ -33,8 +33,7 @@ type LanguageCardEditorFieldsProps = {
   focusKeywordCandidates?: FocusKeywordCandidate[];
   focusKeywordsLoading?: boolean;
   focusKeywordsEnabled?: boolean;
-  showSuggestions?: boolean;
-  suggestions?: LanguageCardFieldSuggestionsView;
+  baseFormSuggestion?: BaseFormSuggestionView;
   onChange: (patch: Partial<LanguageCardDraftContent>) => void;
   onToggleOptionalField: (
     field: LanguageCardOptionalFieldKey,
@@ -51,8 +50,7 @@ export function LanguageCardEditorFields({
   focusKeywordCandidates = [],
   focusKeywordsLoading = false,
   focusKeywordsEnabled = false,
-  showSuggestions = false,
-  suggestions,
+  baseFormSuggestion,
   onChange,
   onToggleOptionalField,
   onAppendSlot,
@@ -151,6 +149,11 @@ export function LanguageCardEditorFields({
     setSpeechPanelOpen(false);
   }, [snippet?.id]);
 
+  const pickFocusText = (text: string) => {
+    baseFormSuggestion?.markFocusTextPicked();
+    onChange({ focusText: text });
+  };
+
   const wrapDrop = (
     slot: LanguageCardEditorSlotKey,
     node: ReactNode,
@@ -182,7 +185,7 @@ export function LanguageCardEditorFields({
             candidates={focusKeywordCandidates}
             cursorClasses={cursorClasses}
             onPanelOpenChange={setSpeechPanelOpen}
-            onPickFocus={(text) => onChange({ focusText: text })}
+            onPickFocus={pickFocusText}
           />
         ) : null}
 
@@ -199,13 +202,22 @@ export function LanguageCardEditorFields({
               className="language-card-field-inset language-card-field-input mt-1 w-full rounded-lg border px-3 py-2 text-sm text-text placeholder:text-text-muted dark:bg-zinc-800/60 dark:hover:bg-zinc-800/80 dark:focus:bg-zinc-800 dark:border-zinc-700/80 dark:focus:border-accent/60 dark:placeholder:text-zinc-500"
             />,
           )}
+          {baseFormSuggestion?.visible && baseFormSuggestion.suggestion ? (
+            <FieldSuggestionChip
+              label="base form"
+              suggestion={baseFormSuggestion.suggestion}
+              loading={baseFormSuggestion.loading}
+              onAccept={baseFormSuggestion.accept}
+              onDismiss={baseFormSuggestion.dismiss}
+            />
+          ) : null}
           <FocusKeywordChips
             candidates={focusKeywordCandidates}
             loading={focusKeywordsLoading}
             enabled={focusKeywordsEnabled}
             focusText={content.focusText}
             cursorClasses={cursorClasses}
-            onPick={(text) => onChange({ focusText: text })}
+            onPick={pickFocusText}
           />
         </div>
 
@@ -222,15 +234,6 @@ export function LanguageCardEditorFields({
               onChange={(meaning) => onChange({ meaning })}
             />,
           )}
-          {showSuggestions && suggestions?.meaning ? (
-            <FieldSuggestionChip
-              label="meaning"
-              suggestion={suggestions.meaning.text}
-              loading={suggestions.meaning.loading}
-              onAccept={suggestions.acceptMeaning}
-              onDismiss={suggestions.dismissMeaning}
-            />
-          ) : null}
         </div>
 
         <OptionalFieldChipAdders
@@ -251,16 +254,6 @@ export function LanguageCardEditorFields({
           }
           onAppend={handleAppend}
         />
-
-        {showSuggestions && suggestions?.example ? (
-          <FieldSuggestionChip
-            label="example"
-            suggestion={suggestions.example.text}
-            loading={suggestions.example.loading}
-            onAccept={suggestions.acceptExample}
-            onDismiss={suggestions.dismissExample}
-          />
-        ) : null}
       </article>
     </div>
   );
