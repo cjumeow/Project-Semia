@@ -72,19 +72,21 @@ function buildFieldView({
   dismissed,
   onAccept,
   onDismiss,
+  showLoading = true,
 }: {
   suggestion: string | null;
   loading: boolean;
   dismissed: boolean;
   onAccept: () => void;
   onDismiss: () => void;
+  showLoading?: boolean;
 }): LanguageCardFieldSuggestionView {
   const hasSuggestion = Boolean(suggestion?.trim());
-  const visible = !dismissed && (loading || hasSuggestion);
+  const visible = !dismissed && (hasSuggestion || (showLoading && loading));
 
   return {
     suggestion: dismissed ? null : suggestion,
-    loading: dismissed ? false : loading,
+    loading: dismissed ? false : showLoading && loading,
     visible,
     accept: onAccept,
     dismiss: onDismiss,
@@ -306,6 +308,7 @@ export function useLanguageCardFieldSuggestions({
     suggestion: focusSuggestion,
     loading: prefetch?.focusKey === focusKey ? prefetch.baseFormLoading : false,
     dismissed: dismissed.focusKey === focusKey && dismissed.focus,
+    showLoading: false,
     onAccept: () => {
       if (!focusSuggestion) {
         return;
@@ -351,17 +354,23 @@ export function useLanguageCardFieldSuggestions({
   const gate = (
     field: LanguageCardSuggestionField,
     view: LanguageCardFieldSuggestionView,
+    fieldEmpty: boolean,
   ): LanguageCardFieldSuggestionView => {
-    if (!enabled || focusedField !== field || !view.visible) {
+    if (!enabled || !view.visible) {
       return EMPTY_VIEW;
     }
-    return view;
+
+    if (fieldEmpty || focusedField === field) {
+      return view;
+    }
+
+    return EMPTY_VIEW;
   };
 
   return {
-    focus: gate('focus', focusView),
-    meaning: gate('meaning', meaningView),
-    example: gate('example', exampleView),
+    focus: gate('focus', focusView, focusKey.length === 0),
+    meaning: gate('meaning', meaningView, meaningEmpty),
+    example: gate('example', exampleView, exampleEmpty),
     markFocusTextPicked,
     setFocusedField,
   };

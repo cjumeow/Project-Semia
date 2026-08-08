@@ -56,6 +56,7 @@ export const CardFieldEditor = forwardRef<
       handleDrop: (_view, event) =>
         event.dataTransfer !== null &&
         hasSnippetChatBulletDrag(event.dataTransfer),
+      handleScrollToSelection: () => true,
     },
     onUpdate: ({ editor: nextEditor }) => {
       const markdown = nextEditor.getMarkdown();

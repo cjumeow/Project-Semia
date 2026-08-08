@@ -80,7 +80,7 @@ export function CursorGhostSuggestion({
     mode,
     loading,
   });
-  const rows = multiline ? Math.max(2, value.split('\n').length) : undefined;
+  const rows = multiline ? 3 : undefined;
   const inputPaddingRight = view.showActions ? 'pr-24' : '';
   const showPlaceholder = !value && !view.showGhost && !loading;
 

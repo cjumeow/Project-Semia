@@ -16,6 +16,7 @@
 .semia-card-field-editor .tiptap {
   outline: none;
   min-height: 4.5rem;
+  overflow-anchor: none;
 }
 
 .semia-card-field-editor .tiptap p {

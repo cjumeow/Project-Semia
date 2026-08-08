@@ -23,7 +23,7 @@ const longSpeech =
   'Alpha sentence one. Beta sentence two. naval vessels in the Navy. Gamma sentence four. Delta sentence five.';
 
 describe('buildLanguageCardFieldSuggestionPrompt', () => {
-  it('writes meaning in native language and example in capture language', () => {
+  it('writes meaning in native language and bilingual markdown example', () => {
     const { system } = buildLanguageCardFieldSuggestionPrompt({
       fragment,
       focusText: 'naval vessels',
@@ -33,7 +33,8 @@ describe('buildLanguageCardFieldSuggestionPrompt', () => {
     });
 
     expect(system).toContain('MEANING must be a short explanation in Traditional Chinese');
-    expect(system).toContain('EXAMPLE must be one natural sentence in en');
+    expect(system).toContain('EXAMPLE must be markdown with one bullet in en');
+    expect(system).toContain('Traditional Chinese translation on this indented line');
     expect(system).not.toMatch(/Write in Traditional Chinese\./);
   });
 
@@ -47,7 +48,7 @@ describe('buildLanguageCardFieldSuggestionPrompt', () => {
     });
 
     expect(system).not.toContain('MEANING must');
-    expect(system).toContain('EXAMPLE must be one natural sentence in en');
+    expect(system).toContain('EXAMPLE must be markdown with one bullet in en');
   });
 
   it('uses suggestion excerpt only in the user prompt', () => {

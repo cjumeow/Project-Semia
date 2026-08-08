@@ -207,7 +207,7 @@ export function LanguageCardEditorFields({
                 suggestion={focusSuggestion?.suggestion ?? null}
                 mode="baseForm"
                 disabled={disabled}
-                loading={focusSuggestion?.loading ?? false}
+                loading={false}
                 placeholder="Word or phrase from original speech"
                 className="mt-1"
                 onChange={(focusText) => onChange({ focusText })}

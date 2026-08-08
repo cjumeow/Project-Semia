@@ -26,7 +26,7 @@ export function buildLanguageCardFieldSuggestionPrompt({
       ? `MEANING must be a short explanation in ${targetLang}.`
       : null,
     fields.includes('example')
-      ? `EXAMPLE must be one natural sentence in ${captureLang} that uses the focus phrase.`
+      ? `EXAMPLE must be markdown with one bullet in ${captureLang} and its ${targetLang} translation on the next indented line.`
       : null,
   ]
     .filter(Boolean)
@@ -34,10 +34,16 @@ export function buildLanguageCardFieldSuggestionPrompt({
 
   const system = `You help a language learner fill in language-card fields.
 ${languageRules}
-Return ONLY labeled lines for the requested fields. No markdown fences, no extra commentary.
+Return ONLY labeled blocks for the requested fields. No markdown fences, no extra commentary.
 Format exactly:
 ${fields.includes('meaning') ? 'MEANING: <short explanation>' : ''}
-${fields.includes('example') ? 'EXAMPLE: <example sentence in capture language>' : ''}`.trim();
+${
+  fields.includes('example')
+    ? `EXAMPLE:
+- <one natural sentence in ${captureLang} using the focus phrase>
+  <${targetLang} translation on this indented line>`
+    : ''
+}`.trim();
 
   const user = [
     `Focus phrase: ${focusText}`,

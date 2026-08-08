@@ -10,7 +10,7 @@ describe('languageCardSuggestionCacheKey', () => {
         'Ran',
         ['meaning', 'example'],
       ),
-    ).toBe('v1:frag-1:2026-01-01T00:00:00.000Z:ran:example,meaning');
+    ).toBe('v2:frag-1:2026-01-01T00:00:00.000Z:ran:example,meaning');
   });
 
   it('returns null without snippet or note timestamp', () => {
