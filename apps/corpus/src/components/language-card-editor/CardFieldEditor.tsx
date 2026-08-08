@@ -100,7 +100,7 @@ export const CardFieldEditor = forwardRef<
 
   return (
     <div
-      className={`semia-card-field-editor ${className}`.trim()}
+      className={`semia-card-field-editor language-card-field-inset language-card-field-input ${className}`.trim()}
       style={{ minHeight }}
     >
       <EditorContent editor={editor} />

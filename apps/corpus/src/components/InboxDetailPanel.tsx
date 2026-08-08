@@ -21,6 +21,7 @@ type InboxDetailPanelProps = {
   languageCardCount?: number;
   createLanguageCardEnabled?: boolean;
   languageCardAiSuggestionsEnabled?: boolean;
+  focusKeywordMode?: import('@semia/shared').FocusKeywordMode;
   isLive?: boolean;
   onLanguageCardsChanged?: () => Promise<void>;
 };
@@ -39,6 +40,7 @@ export function InboxDetailPanel({
   languageCardCount = 0,
   createLanguageCardEnabled = false,
   languageCardAiSuggestionsEnabled = true,
+  focusKeywordMode = 'daily',
   isLive = false,
   onLanguageCardsChanged,
 }: InboxDetailPanelProps) {
@@ -76,6 +78,7 @@ export function InboxDetailPanel({
             languageCards={languageCards}
             createEnabled={createLanguageCardEnabled}
             aiSuggestionsEnabled={languageCardAiSuggestionsEnabled}
+            focusKeywordMode={focusKeywordMode}
             isLive={isLive}
             onCardsChanged={onLanguageCardsChanged ?? (async () => {})}
           />

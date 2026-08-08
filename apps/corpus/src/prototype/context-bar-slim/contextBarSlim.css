@@ -1,0 +1,29 @@
+/* PROTOTYPE context-bar-slim — slim badge + switch line dark tweaks */
+
+[data-semia-theme='dark'] .proto-slim-badge-a {
+  background: var(--color-canvas);
+  color: var(--color-text-muted);
+}
+
+[data-semia-theme='dark'] .proto-slim-badge-a:hover {
+  background: color-mix(in srgb, var(--color-canvas) 80%, var(--color-border));
+}
+
+[data-semia-theme='dark'] .proto-slim-badge-b {
+  background: color-mix(in srgb, var(--color-canvas) 90%, transparent);
+  border-color: var(--color-border);
+}
+
+[data-semia-theme='dark'] .proto-slim-badge-c {
+  background: color-mix(in srgb, var(--color-canvas) 70%, transparent);
+}
+
+[data-semia-theme='dark'] .proto-slim-badge-c:hover {
+  background: var(--color-canvas);
+}
+
+[data-semia-theme='dark'] .proto-slim-picker {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.45);
+}

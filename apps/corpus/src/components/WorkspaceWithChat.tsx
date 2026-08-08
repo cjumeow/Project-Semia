@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { SnippetChatFab, SnippetChatPanel } from './SnippetChatPanel';
-import type { SnippetChatContextOption } from './SnippetChatContextSwitcher';
+import type { SnippetChatContextOption } from './snippet-chat/SnippetChatContextBanner';
 import type { UseSnippetChatResult } from '../hooks/useSnippetChat';
 
 type WorkspaceWithChatProps = {

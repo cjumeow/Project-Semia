@@ -18,6 +18,7 @@ import {
   ChatDragBlockSelectionProvider,
   useChatDragBlockSelection,
 } from './ChatDragBlockSelection';
+import { useSnippetChatDragMode } from './SnippetChatDragModeContext';
 
 const DragBlockChromeContext = createContext({
   styled: false,
@@ -151,9 +152,11 @@ type DraggableAssistantMarkdownProps = {
 export function DraggableAssistantMarkdown({
   message,
 }: DraggableAssistantMarkdownProps) {
+  const dragModeEnabled = useSnippetChatDragMode();
+  const hasContent = Boolean(message.content);
   const dragChrome = {
-    styled: Boolean(message.content),
-    interactive: Boolean(message.content) && !message.streaming,
+    styled: hasContent,
+    interactive: hasContent && !message.streaming && dragModeEnabled,
   };
 
   if (!message.content && message.streaming) {
@@ -169,7 +172,10 @@ export function DraggableAssistantMarkdown({
       messageId={message.id}
       draggable={dragChrome.interactive}
     >
-      <div className="prose-chat text-sm leading-snug text-text">
+      <div
+        className="prose-chat text-sm leading-snug text-text"
+        data-drag-mode={dragModeEnabled ? 'on' : 'off'}
+      >
         <DragBlockChromeContext.Provider value={dragChrome}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {message.content}

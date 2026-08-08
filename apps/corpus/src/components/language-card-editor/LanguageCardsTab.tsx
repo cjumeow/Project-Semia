@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LanguageCard } from '@semia/shared';
+import { useCallback, useEffect, useState } from 'react';
+import type { LanguageCard, FocusKeywordMode } from '@semia/shared';
 import {
   appendMarkdownToSlot,
   canCreateLanguageCard,
-  isWholeCaptureFocus,
   type LanguageCardDraftContent,
   type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
-  type LanguageCardSuggestableField,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import { useLanguageCardDraft } from '../../hooks/useLanguageCardDraft';
 import { useLanguageCardEstablishedEdit } from '../../hooks/useLanguageCardEstablishedEdit';
-import { useLanguageCardFieldSuggestions } from '../../hooks/useLanguageCardFieldSuggestions';
+import { useFocusKeywordSuggestions } from '../../hooks/useFocusKeywordSuggestions';
 import {
   createInitialEditorState,
   startDraftEditor,
@@ -25,37 +23,24 @@ import {
   applyOptionalFieldToggle,
   LanguageCardEditorFields,
 } from './LanguageCardEditorFields';
-import { LanguageCardEditorModeBanner } from './LanguageCardEditorModeBanner';
+import { LanguageCardEditorHeader } from './LanguageCardEditorHeader';
 
 type LanguageCardsTabProps = {
   snippet: CorpusSnippet | undefined;
   languageCards: LanguageCard[];
   createEnabled: boolean;
   aiSuggestionsEnabled: boolean;
+  focusKeywordMode: FocusKeywordMode;
   isLive: boolean;
   onCardsChanged: () => Promise<void>;
 };
-
-function saveStateLabel(
-  saveState: 'idle' | 'saving' | 'saved' | 'error',
-): string {
-  switch (saveState) {
-    case 'saving':
-      return 'Saving…';
-    case 'saved':
-      return 'Saved';
-    case 'error':
-      return 'Could not save';
-    default:
-      return 'Auto-saves';
-  }
-}
 
 export function LanguageCardsTab({
   snippet,
   languageCards,
   createEnabled,
   aiSuggestionsEnabled,
+  focusKeywordMode,
   isLive,
   onCardsChanged,
 }: LanguageCardsTabProps) {
@@ -63,7 +48,6 @@ export function LanguageCardsTab({
     useState<EditorWorkspaceState>(createInitialEditorState);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const wholeCapturePrefillFocusRef = useRef<string | null>(null);
 
   const isDraftMode = editorState.mode === 'draft';
   const editingCard = languageCards.find(
@@ -73,7 +57,6 @@ export function LanguageCardsTab({
   const {
     draft,
     loaded: draftLoaded,
-    saveState: draftSaveState,
     updateDraft,
     flushDraft,
     resetDraftToCapture,
@@ -82,7 +65,6 @@ export function LanguageCardsTab({
   const {
     content: editContent,
     loaded: editLoaded,
-    saveState: editSaveState,
     updateContent,
     flushContent,
   } = useLanguageCardEstablishedEdit(editingCard, !isDraftMode);
@@ -91,58 +73,10 @@ export function LanguageCardsTab({
     setEditorState(createInitialEditorState());
   }, [snippet?.id]);
 
-  useEffect(() => {
-    if (!snippet || !draftLoaded || !isDraftMode) {
-      return;
-    }
-
-    if (
-      draft.focusText.trim().length === 0 &&
-      snippet.selectedText.trim().length > 0
-    ) {
-      updateDraft({ focusText: snippet.selectedText });
-    }
-  }, [draft, draftLoaded, isDraftMode, snippet, updateDraft]);
-
-  useEffect(() => {
-    if (!snippet || !draftLoaded || !isDraftMode) {
-      return;
-    }
-
-    const focus = draft.focusText.trim();
-    const isWhole = isWholeCaptureFocus(focus, {
-      selectedText: snippet.selectedText,
-      originalSpeech: snippet.note.originalSpeech,
-    });
-
-    if (!isWhole) {
-      wholeCapturePrefillFocusRef.current = null;
-      return;
-    }
-
-    if (wholeCapturePrefillFocusRef.current === focus) {
-      return;
-    }
-
-    wholeCapturePrefillFocusRef.current = focus;
-    const translation = snippet.note.naturalTranslation.trim();
-    if (translation && draft.meaning.trim().length === 0) {
-      updateDraft({ meaning: translation });
-    }
-  }, [
-    draft.focusText,
-    draft.meaning,
-    draftLoaded,
-    isDraftMode,
-    snippet,
-    updateDraft,
-  ]);
-
   const editorContent: LanguageCardDraftContent = isDraftMode
     ? draft
     : editContent;
   const editorLoaded = isDraftMode ? draftLoaded : editLoaded;
-  const saveState = isDraftMode ? draftSaveState : editSaveState;
 
   const handleContentChange = useCallback(
     (patch: Partial<LanguageCardDraftContent>) => {
@@ -161,28 +95,6 @@ export function LanguageCardsTab({
       handleContentChange({
         enabledOptionalFields: next.enabledOptionalFields,
         optionalSlots: next.optionalSlots,
-      });
-    },
-    [editorContent, handleContentChange],
-  );
-
-  const handleAcceptSuggestion = useCallback(
-    (field: LanguageCardSuggestableField, value: string) => {
-      if (field === 'meaning') {
-        handleContentChange({ meaning: value });
-        return;
-      }
-
-      handleContentChange({
-        enabledOptionalFields: editorContent.enabledOptionalFields.includes(
-          'example',
-        )
-          ? editorContent.enabledOptionalFields
-          : [...editorContent.enabledOptionalFields, 'example'],
-        optionalSlots: {
-          ...editorContent.optionalSlots,
-          example: value,
-        },
       });
     },
     [editorContent, handleContentChange],
@@ -225,12 +137,11 @@ export function LanguageCardsTab({
     [editorContent, handleContentChange],
   );
 
-  const suggestions = useLanguageCardFieldSuggestions({
+  const focusKeywords = useFocusKeywordSuggestions({
     snippet,
-    content: isDraftMode ? draft : editorContent,
     enabled: isDraftMode && aiSuggestionsEnabled,
     isLive,
-    onAccept: handleAcceptSuggestion,
+    userLevelMode: focusKeywordMode,
   });
 
   const switchToDraft = useCallback(async () => {
@@ -260,7 +171,7 @@ export function LanguageCardsTab({
       await flushContent();
     }
     setEditorState(startDraftEditor());
-    resetDraftToCapture(snippet.selectedText);
+    resetDraftToCapture();
   }, [flushContent, flushDraft, isDraftMode, resetDraftToCapture, snippet]);
 
   const handleCreate = useCallback(async () => {
@@ -274,7 +185,7 @@ export function LanguageCardsTab({
       await flushDraft();
       await corpusRepository.createLanguageCardFromDraft(snippet, draft);
       await onCardsChanged();
-      resetDraftToCapture(snippet.selectedText);
+      resetDraftToCapture();
       setEditorState(startDraftEditor());
     } catch (error) {
       setCreateError(
@@ -304,38 +215,20 @@ export function LanguageCardsTab({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <LanguageCardEditorModeBanner
+      <LanguageCardEditorHeader
         isDraft={isDraftMode}
         editingFocusText={editingCard?.focusText}
+        loaded={editorLoaded}
+        createEnabled={createEnabled}
+        creating={creating}
+        canCreate={canCreateLanguageCard(draft)}
         onBackToDraft={() => {
           void switchToDraft();
         }}
+        onCreate={() => {
+          void handleCreate();
+        }}
       />
-
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <p className="text-[10px] text-text-muted">
-          {editorLoaded ? saveStateLabel(saveState) : 'Loading…'}
-        </p>
-        {isDraftMode ? (
-          <button
-            type="button"
-            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={
-              !createEnabled ||
-              creating ||
-              !draftLoaded ||
-              !canCreateLanguageCard(draft)
-            }
-            onClick={() => {
-              void handleCreate();
-            }}
-          >
-            {creating ? 'Creating…' : 'Create'}
-          </button>
-        ) : (
-          <p className="text-[10px] text-text-muted">Established card — auto-saved on edit</p>
-        )}
-      </div>
 
       {createError ? (
         <p className="border-b border-border bg-canvas px-4 py-2 text-xs text-red-600">
@@ -347,9 +240,10 @@ export function LanguageCardsTab({
         snippet={snippet}
         content={editorContent}
         disabled={!editorLoaded}
-        showFocusPicker={isDraftMode}
-        showSuggestions={false}
-        suggestions={suggestions}
+        showFocusAssist={isDraftMode}
+        focusKeywordCandidates={focusKeywords.candidates}
+        focusKeywordsLoading={focusKeywords.loading}
+        focusKeywordsEnabled={isDraftMode && aiSuggestionsEnabled}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}
         onAppendSlot={handleAppendSlot}

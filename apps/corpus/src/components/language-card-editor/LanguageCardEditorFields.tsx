@@ -1,45 +1,39 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import type { FocusKeywordCandidate } from '@semia/shared';
 import {
-  toggleOptionalField,
+  isLanguageCardOptionalFieldKey,
   type LanguageCardDraftContent,
   type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import type { LanguageCardFieldSuggestionsView } from '../../hooks/useLanguageCardFieldSuggestions';
+import { useSemiaSettings } from '../../hooks/useSemiaSettings';
 import { CardFieldEditor, type CardFieldEditorHandle } from './CardFieldEditor';
 import { FieldSuggestionChip } from './FieldSuggestionChip';
-import { FocusSourcePicker } from './FocusSourcePicker';
+import { FocusKeywordChips } from './FocusKeywordChips';
+import { FocusSpeechPanel } from './FocusSpeechPanel';
+import { focusKeywordCursorClasses } from './focusKeywordCursorStyle';
 import { LanguageCardSlotDropZone } from './LanguageCardSlotDropZone';
-
-const OPTIONAL_FIELDS: Array<{
-  key: LanguageCardOptionalFieldKey;
-  label: string;
-  placeholder: string;
-}> = [
-  {
-    key: 'example',
-    label: 'Example',
-    placeholder: 'Example sentence using the focus word or phrase',
-  },
-  {
-    key: 'usageNote',
-    label: 'Usage note',
-    placeholder: 'When or how to use this expression',
-  },
-];
+import { OptionalFieldChipAdders } from './OptionalFieldChipAdders';
 
 const RICH_TEXT_SLOTS = new Set<LanguageCardEditorSlotKey>([
   'meaning',
   'example',
   'usageNote',
+  'dialogue',
+  'pitfalls',
+  'personalNote',
 ]);
 
 type LanguageCardEditorFieldsProps = {
   snippet?: CorpusSnippet;
   content: LanguageCardDraftContent;
   disabled?: boolean;
-  showFocusPicker?: boolean;
+  showFocusAssist?: boolean;
+  focusKeywordCandidates?: FocusKeywordCandidate[];
+  focusKeywordsLoading?: boolean;
+  focusKeywordsEnabled?: boolean;
   showSuggestions?: boolean;
   suggestions?: LanguageCardFieldSuggestionsView;
   onChange: (patch: Partial<LanguageCardDraftContent>) => void;
@@ -54,27 +48,47 @@ export function LanguageCardEditorFields({
   snippet,
   content,
   disabled = false,
-  showFocusPicker = false,
+  showFocusAssist = false,
+  focusKeywordCandidates = [],
+  focusKeywordsLoading = false,
+  focusKeywordsEnabled = false,
   showSuggestions = false,
   suggestions,
   onChange,
   onToggleOptionalField,
   onAppendSlot,
 }: LanguageCardEditorFieldsProps) {
-  const [focusPickerOpen, setFocusPickerOpen] = useState(false);
+  const [speechPanelOpen, setSpeechPanelOpen] = useState(false);
+  const { darkModeEnabled } = useSemiaSettings();
+  const chipTheme = darkModeEnabled ? 'dark' : 'light';
+  const cursorClasses = focusKeywordCursorClasses(chipTheme);
   const dropEnabled = Boolean(onAppendSlot) && !disabled;
 
   const meaningRef = useRef<CardFieldEditorHandle>(null);
   const exampleRef = useRef<CardFieldEditorHandle>(null);
   const usageNoteRef = useRef<CardFieldEditorHandle>(null);
+  const dialogueRef = useRef<CardFieldEditorHandle>(null);
+  const pitfallsRef = useRef<CardFieldEditorHandle>(null);
+  const personalNoteRef = useRef<CardFieldEditorHandle>(null);
   const pendingAppendRef = useRef<{
     slot: LanguageCardEditorSlotKey;
     text: string;
   } | null>(null);
 
+  const editorRefs: Record<
+    LanguageCardOptionalFieldKey,
+    RefObject<CardFieldEditorHandle | null>
+  > = {
+    example: exampleRef,
+    usageNote: usageNoteRef,
+    dialogue: dialogueRef,
+    pitfalls: pitfallsRef,
+    personalNote: personalNoteRef,
+  };
+
   const editorRefForSlot = (
     slot: LanguageCardEditorSlotKey,
-  ): React.RefObject<CardFieldEditorHandle | null> | null => {
+  ): RefObject<CardFieldEditorHandle | null> | null => {
     switch (slot) {
       case 'meaning':
         return meaningRef;
@@ -82,6 +96,12 @@ export function LanguageCardEditorFields({
         return exampleRef;
       case 'usageNote':
         return usageNoteRef;
+      case 'dialogue':
+        return dialogueRef;
+      case 'pitfalls':
+        return pitfallsRef;
+      case 'personalNote':
+        return personalNoteRef;
       default:
         return null;
     }
@@ -106,7 +126,7 @@ export function LanguageCardEditorFields({
     }
 
     if (
-      (slot === 'example' || slot === 'usageNote') &&
+      isLanguageCardOptionalFieldKey(slot) &&
       !content.enabledOptionalFields.includes(slot)
     ) {
       onToggleOptionalField(slot, true);
@@ -130,6 +150,10 @@ export function LanguageCardEditorFields({
     }
   }, [content.enabledOptionalFields, content.optionalSlots]);
 
+  useEffect(() => {
+    setSpeechPanelOpen(false);
+  }, [snippet?.id]);
+
   const wrapDrop = (
     slot: LanguageCardEditorSlotKey,
     node: ReactNode,
@@ -148,23 +172,25 @@ export function LanguageCardEditorFields({
       node
     );
 
+  const originalSpeech = snippet?.note.originalSpeech.trim() ?? '';
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-4">
-      <article className="rounded-xl border border-border bg-canvas p-4">
-        <div className="relative mb-4">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <label className="text-xs font-medium text-text-secondary">Focus</label>
-            {showFocusPicker && snippet ? (
-              <button
-                type="button"
-                className="rounded-md border border-border px-2 py-0.5 text-[10px] font-medium text-text-muted hover:bg-surface hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={disabled}
-                onClick={() => setFocusPickerOpen((open) => !open)}
-              >
-                Pick from capture
-              </button>
-            ) : null}
-          </div>
+    <div className="language-card-editor-shelf">
+      <article className="language-card-container space-y-4">
+        {showFocusAssist && originalSpeech ? (
+          <FocusSpeechPanel
+            originalSpeech={originalSpeech}
+            panelOpen={speechPanelOpen}
+            disabled={disabled}
+            candidates={focusKeywordCandidates}
+            cursorClasses={cursorClasses}
+            onPanelOpenChange={setSpeechPanelOpen}
+            onPickFocus={(text) => onChange({ focusText: text })}
+          />
+        ) : null}
+
+        <div>
+          <label className="text-xs font-medium text-text-secondary">Focus</label>
           {wrapDrop(
             'focus',
             <input
@@ -172,22 +198,21 @@ export function LanguageCardEditorFields({
               value={content.focusText}
               disabled={disabled}
               onChange={(event) => onChange({ focusText: event.target.value })}
-              placeholder="Word or phrase from the capture"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+              placeholder="Word or phrase from original speech"
+              className="language-card-field-inset language-card-field-input mt-1 w-full rounded-lg border px-3 py-2 text-sm text-text placeholder:text-text-muted dark:bg-zinc-800/60 dark:hover:bg-zinc-800/80 dark:focus:bg-zinc-800 dark:border-zinc-700/80 dark:focus:border-accent/60 dark:placeholder:text-zinc-500"
             />,
           )}
-          {showFocusPicker && snippet ? (
-            <FocusSourcePicker
-              open={focusPickerOpen}
-              contextWindow={snippet.note.dynamicContextBlock}
-              originalSpeech={snippet.note.originalSpeech}
-              onClose={() => setFocusPickerOpen(false)}
-              onPick={(text) => onChange({ focusText: text })}
-            />
-          ) : null}
+          <FocusKeywordChips
+            candidates={focusKeywordCandidates}
+            loading={focusKeywordsLoading}
+            enabled={focusKeywordsEnabled}
+            focusText={content.focusText}
+            cursorClasses={cursorClasses}
+            onPick={(text) => onChange({ focusText: text })}
+          />
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="text-xs font-medium text-text-secondary">Meaning</label>
           {wrapDrop(
             'meaning',
@@ -211,79 +236,37 @@ export function LanguageCardEditorFields({
           ) : null}
         </div>
 
-        <div className="space-y-3 border-t border-border pt-4">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
-            Optional fields
-          </p>
-          {OPTIONAL_FIELDS.map((field) => {
-            const enabled = content.enabledOptionalFields.includes(field.key);
-            return (
-              <div key={field.key} className="rounded-lg border border-border bg-surface/60 p-3">
-                <label className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={enabled}
-                    disabled={disabled}
-                    onChange={(event) => {
-                      onToggleOptionalField(field.key, event.target.checked);
-                    }}
-                  />
-                  {field.label}
-                </label>
-                {enabled ? (
-                  wrapDrop(
-                    field.key,
-                    <CardFieldEditor
-                      ref={field.key === 'example' ? exampleRef : usageNoteRef}
-                      value={content.optionalSlots[field.key] ?? ''}
-                      disabled={disabled}
-                      placeholder={field.placeholder}
-                      className="mt-2 semia-card-field-editor--dashed"
-                      onChange={(nextValue) => {
-                        onChange({
-                          optionalSlots: {
-                            ...content.optionalSlots,
-                            [field.key]: nextValue,
-                          },
-                        });
-                      }}
-                    />,
-                    'mt-2',
-                  )
-                ) : onAppendSlot ? (
-                  <LanguageCardSlotDropZone
-                    slot={field.key}
-                    disabled={!dropEnabled}
-                    onAppend={handleAppend}
-                    className="mt-2"
-                  >
-                    <p className="rounded-lg border border-dashed border-border bg-canvas/40 px-3 py-2 text-[11px] text-text-muted">
-                      Enable {field.label.toLowerCase()} or drop a chat bullet here
-                    </p>
-                  </LanguageCardSlotDropZone>
-                ) : null}
-              </div>
-            );
-          })}
-          {showSuggestions && suggestions?.example ? (
-            <FieldSuggestionChip
-              label="example"
-              suggestion={suggestions.example.text}
-              loading={suggestions.example.loading}
-              onAccept={suggestions.acceptExample}
-              onDismiss={suggestions.dismissExample}
-            />
-          ) : null}
-        </div>
+        <OptionalFieldChipAdders
+          enabledFields={content.enabledOptionalFields}
+          disabled={disabled}
+          dropEnabled={dropEnabled}
+          values={content.optionalSlots}
+          editorRefs={editorRefs}
+          onEnable={(field) => onToggleOptionalField(field, true)}
+          onDisable={(field) => onToggleOptionalField(field, false)}
+          onChange={(field, value) =>
+            onChange({
+              optionalSlots: {
+                ...content.optionalSlots,
+                [field]: value,
+              },
+            })
+          }
+          onAppend={handleAppend}
+        />
+
+        {showSuggestions && suggestions?.example ? (
+          <FieldSuggestionChip
+            label="example"
+            suggestion={suggestions.example.text}
+            loading={suggestions.example.loading}
+            onAccept={suggestions.acceptExample}
+            onDismiss={suggestions.dismissExample}
+          />
+        ) : null}
       </article>
     </div>
   );
 }
 
-export function applyOptionalFieldToggle(
-  content: LanguageCardDraftContent,
-  field: LanguageCardOptionalFieldKey,
-  enabled: boolean,
-): LanguageCardDraftContent {
-  return toggleOptionalField(content, field, enabled);
-}
+export { toggleOptionalField as applyOptionalFieldToggle } from '@semia/shared';

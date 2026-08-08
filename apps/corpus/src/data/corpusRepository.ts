@@ -1,7 +1,6 @@
 import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
-  LANGUAGE_CARD_DRAFTS_STORAGE_KEY,
   LANGUAGE_CARDS_STORAGE_KEY,
   SNIPPET_CHAT_PORT_NAME,
   SNIPPET_NOTES_STORAGE_KEY,
@@ -15,6 +14,8 @@ import {
   type LanguageFragment,
   type LanguageCardFieldSuggestions,
   type LanguageCardSuggestableField,
+  type FocusKeywordMode,
+  type FocusKeywordSuggestions,
   type SnippetNote,
   type SnippetNotesMap,
   type SnippetChatPortMessage,
@@ -67,6 +68,11 @@ export type SuggestLanguageCardFieldsRequest = {
   fields: LanguageCardSuggestableField[];
 };
 
+export type SuggestFocusKeywordsRequest = {
+  fragment: LanguageFragment;
+  userLevelMode: FocusKeywordMode;
+};
+
 export interface CorpusRepository {
   listFragments(): Promise<LanguageFragment[]>;
   listTranscripts(): Promise<StoredTranscript[]>;
@@ -96,6 +102,9 @@ export interface CorpusRepository {
   suggestLanguageCardFields(
     request: SuggestLanguageCardFieldsRequest,
   ): Promise<LanguageCardFieldSuggestions>;
+  suggestFocusKeywords(
+    request: SuggestFocusKeywordsRequest,
+  ): Promise<FocusKeywordSuggestions>;
   openWebCapture(fragment: LanguageFragment): Promise<void>;
   deleteFragment(fragmentId: string): Promise<void>;
   deleteSource(sourceUrl: string): Promise<void>;
@@ -434,6 +443,27 @@ class ChromeCorpusRepository implements CorpusRepository {
     );
   }
 
+  async suggestFocusKeywords(
+    request: SuggestFocusKeywordsRequest,
+  ): Promise<FocusKeywordSuggestions> {
+    const response = (await chrome.runtime.sendMessage({
+      type: 'SUGGEST_FOCUS_KEYWORDS',
+      fragment: request.fragment,
+      userLevelMode: request.userLevelMode,
+    })) as
+      | OkResponse<{ focusKeywords: FocusKeywordSuggestions }>
+      | ErrResponse
+      | undefined;
+
+    if (response?.ok) {
+      return response.focusKeywords;
+    }
+
+    throw new Error(
+      response?.error ?? 'Failed to suggest focus keywords.',
+    );
+  }
+
   async openWebCapture(fragment: LanguageFragment): Promise<void> {
     const response = (await chrome.runtime.sendMessage({
       type: 'OPEN_WEB_CAPTURE',
@@ -558,17 +588,19 @@ class ChromeCorpusRepository implements CorpusRepository {
       areaName: string,
     ): void => {
       if (areaName !== 'local') return;
-      if (
-        changes[FRAGMENTS_STORAGE_KEY] ||
-        changes[SNIPPET_NOTES_STORAGE_KEY] ||
-        changes[LANGUAGE_CARDS_STORAGE_KEY] ||
-        changes[LANGUAGE_CARD_DRAFTS_STORAGE_KEY] ||
-        changes[CORPUS_NOTES_STORAGE_KEY] ||
-        changes[TRANSCRIPTS_STORAGE_KEY] ||
-        changes[WEB_RESTORE_STATUS_STORAGE_KEY]
-      ) {
-        listener();
+      const changedKeys = Object.keys(changes).filter(
+        (key) =>
+          key === FRAGMENTS_STORAGE_KEY ||
+          key === SNIPPET_NOTES_STORAGE_KEY ||
+          key === LANGUAGE_CARDS_STORAGE_KEY ||
+          key === CORPUS_NOTES_STORAGE_KEY ||
+          key === TRANSCRIPTS_STORAGE_KEY ||
+          key === WEB_RESTORE_STATUS_STORAGE_KEY,
+      );
+      if (changedKeys.length === 0) {
+        return;
       }
+      listener();
     };
 
     chrome.storage.onChanged.addListener(onStorageChanged);
@@ -684,6 +716,10 @@ class MockCorpusRepository implements CorpusRepository {
   }
 
   async suggestLanguageCardFields(): Promise<LanguageCardFieldSuggestions> {
+    throw new Error('AI suggestions require the Chrome extension.');
+  }
+
+  async suggestFocusKeywords(): Promise<FocusKeywordSuggestions> {
     throw new Error('AI suggestions require the Chrome extension.');
   }
 

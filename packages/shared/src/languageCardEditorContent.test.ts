@@ -25,6 +25,9 @@ describe('languageCardEditorContent', () => {
       meaning: '船只',
       intents: ['speaking'],
       scenario: 'Often used in naval contexts.',
+      dialogue: undefined,
+      pitfalls: undefined,
+      personalNote: undefined,
       examples: [
         {
           kind: 'speaking',
@@ -33,6 +36,31 @@ describe('languageCardEditorContent', () => {
         },
       ],
     });
+  });
+
+  it('round-trips optional dialogue, pitfalls, and personal note fields', () => {
+    const card: LanguageCard = {
+      id: 'card-2',
+      sourceFragmentId: 'frag-2',
+      focusText: 'vessels',
+      focus: 'vessels',
+      meaning: '船只',
+      intents: ['speaking'],
+      dialogue: 'A: Where are the vessels?\nB: In the harbor.',
+      pitfalls: 'Do not confuse with "vassals".',
+      personalNote: 'Saw this in a documentary.',
+      examples: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const content = editorContentFromLanguageCard(card);
+    expect(content.enabledOptionalFields).toEqual([
+      'dialogue',
+      'pitfalls',
+      'personalNote',
+    ]);
+    expect(applyEditorContentToLanguageCard(card, content)).toEqual(card);
   });
 
   it('round-trips established card content through the editor shape', () => {

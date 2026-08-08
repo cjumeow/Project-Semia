@@ -1,17 +1,37 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ContextBarSlimPrototypeApp } from './prototype/context-bar-slim/ContextBarSlimPrototypeApp';
+import { ContextTabsPrototypeApp } from './prototype/context-tabs/ContextTabsPrototypeApp';
 import { DarkModePrototypeApp } from './prototype/dark-mode/DarkModePrototypeApp';
+import { DragModeSwitchPrototypeApp } from './prototype/drag-mode-switch/DragModeSwitchPrototypeApp';
+import { FocusPickPrototypeApp } from './prototype/focus-pick/FocusPickPrototypeApp';
 import './index.css';
 import { bootstrapSemiaThemeFromLocalStorage } from './semiaThemeBootstrap';
 
 bootstrapSemiaThemeFromLocalStorage();
 
-const isDarkModePrototype =
-  new URLSearchParams(window.location.search).get('prototype') === 'dark-mode';
+const prototype = new URLSearchParams(window.location.search).get('prototype');
+const isContextBarSlimPrototype = prototype === 'context-bar-slim';
+const isContextTabsPrototype = prototype === 'context-tabs';
+const isDarkModePrototype = prototype === 'dark-mode';
+const isDragModeSwitchPrototype = prototype === 'drag-mode-switch';
+const isFocusPickPrototype = prototype === 'focus-pick';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isDarkModePrototype ? <DarkModePrototypeApp /> : <App />}
+    {isContextBarSlimPrototype ? (
+      <ContextBarSlimPrototypeApp />
+    ) : isContextTabsPrototype ? (
+      <ContextTabsPrototypeApp />
+    ) : isDragModeSwitchPrototype ? (
+      <DragModeSwitchPrototypeApp />
+    ) : isFocusPickPrototype ? (
+      <FocusPickPrototypeApp />
+    ) : isDarkModePrototype ? (
+      <DarkModePrototypeApp />
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 );

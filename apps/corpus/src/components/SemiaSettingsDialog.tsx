@@ -4,11 +4,15 @@ type SemiaSettingsDialogProps = {
   contextWindowEnabled: boolean;
   languageCardsProEnabled: boolean;
   languageCardAiSuggestionsEnabled: boolean;
+  focusKeywordMode: import('@semia/shared').FocusKeywordMode;
   onClose: () => void;
   onDarkModeEnabledChange: (enabled: boolean) => void;
   onContextWindowEnabledChange: (enabled: boolean) => void;
   onLanguageCardsProEnabledChange: (enabled: boolean) => void;
   onLanguageCardAiSuggestionsEnabledChange: (enabled: boolean) => void;
+  onFocusKeywordModeChange: (
+    mode: import('@semia/shared').FocusKeywordMode,
+  ) => void;
 };
 
 export function SemiaSettingsDialog({
@@ -17,11 +21,13 @@ export function SemiaSettingsDialog({
   contextWindowEnabled,
   languageCardsProEnabled,
   languageCardAiSuggestionsEnabled,
+  focusKeywordMode,
   onClose,
   onDarkModeEnabledChange,
   onContextWindowEnabledChange,
   onLanguageCardsProEnabledChange,
   onLanguageCardAiSuggestionsEnabledChange,
+  onFocusKeywordModeChange,
 }: SemiaSettingsDialogProps) {
   if (!open) {
     return null;
@@ -134,11 +140,39 @@ export function SemiaSettingsDialog({
                 Language card AI suggestions
               </span>
               <span className="mt-1.5 block text-sm leading-relaxed text-text-muted">
-                Suggest meaning and example text while drafting language cards
-                in the inbox.
+                Suggest Quick Focus keywords from original speech while drafting
+                language cards in the inbox.
               </span>
             </span>
           </label>
+          <div className="rounded-xl border border-border bg-canvas/40 px-4 py-4">
+            <p className="text-base font-medium text-text">Focus keyword mode</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
+              Daily favors practical everyday words; Advanced favors formal,
+              professional, and low-frequency terms.
+            </p>
+            <div
+              className="mt-3 flex rounded-lg border border-border bg-surface p-0.5"
+              role="group"
+              aria-label="Focus keyword mode"
+            >
+              {(['daily', 'advanced'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={[
+                    'flex-1 rounded-md px-3 py-1.5 text-[11px] font-medium capitalize transition-colors',
+                    focusKeywordMode === mode
+                      ? 'bg-canvas text-text shadow-sm'
+                      : 'text-text-muted',
+                  ].join(' ')}
+                  onClick={() => onFocusKeywordModeChange(mode)}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

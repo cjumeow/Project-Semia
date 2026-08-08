@@ -1,8 +1,8 @@
 .semia-card-field-editor {
   width: 100%;
   border-radius: 0.5rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border-width: 1px;
+  border-style: solid;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -11,7 +11,6 @@
 
 .semia-card-field-editor--dashed {
   border-style: dashed;
-  background: var(--color-canvas);
 }
 
 .semia-card-field-editor .tiptap {

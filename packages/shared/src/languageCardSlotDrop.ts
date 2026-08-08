@@ -5,7 +5,10 @@ export type LanguageCardEditorSlotKey =
   | 'focus'
   | 'meaning'
   | 'example'
-  | 'usageNote';
+  | 'usageNote'
+  | 'dialogue'
+  | 'pitfalls'
+  | 'personalNote';
 
 /** Append dropped markdown to a slot; newline-join when slot already has content. */
 export function appendMarkdownToSlot(

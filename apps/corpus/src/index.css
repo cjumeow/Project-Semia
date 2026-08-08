@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where([data-semia-theme=dark], [data-semia-theme=dark] *));
+
 @theme {
   --font-display:
     'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -127,10 +129,19 @@ body {
 }
 
 .semia-note-card {
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border-radius: 1rem;
+  border: 1px solid rgb(212 212 216);
+  background: #ffffff;
   padding: 1.25rem;
+  box-shadow:
+    0 10px 15px -3px rgb(161 161 170 / 0.25),
+    0 4px 6px -4px rgb(161 161 170 / 0.2);
+}
+
+[data-semia-theme='dark'] .semia-note-card {
+  border-color: rgb(63 63 70 / 0.8);
+  background: rgb(24 24 27 / 0.9);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.6);
 }
 
 .semia-language-card-btn {
@@ -162,6 +173,98 @@ body {
   background: var(--color-context-collapsed);
 }
 
+/* Elevated card shelf + container (variant C — production) */
+.language-card-editor-shelf {
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  background: rgb(228 228 231 / 0.45);
+  padding: 1rem;
+}
+
+.language-card-container {
+  border-radius: 1rem;
+  border: 1px solid rgb(212 212 216);
+  background: #ffffff;
+  padding: 1.25rem;
+  box-shadow:
+    0 10px 15px -3px rgb(161 161 170 / 0.25),
+    0 4px 6px -4px rgb(161 161 170 / 0.2);
+}
+
+.language-card-container > * + * {
+  margin-top: 1rem;
+}
+
+.language-card-field-inset {
+  border-color: rgb(212 212 216 / 0.8);
+}
+
+.language-card-field-input {
+  background: var(--color-surface);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.language-card-field-input:focus,
+.language-card-field-input:focus-within {
+  outline: none;
+}
+
+.language-card-optional-panel {
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+}
+
+[data-semia-theme='dark'] .language-card-editor-shelf {
+  background: #27272a;
+}
+
+[data-semia-theme='dark'] .language-card-container {
+  border-color: rgb(63 63 70 / 0.8);
+  background: rgb(24 24 27 / 0.9);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+}
+
+[data-semia-theme='dark'] .language-card-field-inset {
+  border-color: rgb(63 63 70 / 0.8);
+}
+
+[data-semia-theme='dark'] .language-card-field-input {
+  background: rgb(39 39 42 / 0.6);
+  border-color: rgb(63 63 70 / 0.8);
+}
+
+[data-semia-theme='dark'] .language-card-field-input:hover:not(:disabled) {
+  background: rgb(39 39 42 / 0.8);
+}
+
+[data-semia-theme='dark'] .language-card-field-input:focus,
+[data-semia-theme='dark'] .language-card-field-input:focus-within {
+  background: #27272a;
+  border-color: rgb(68 147 212 / 0.6);
+}
+
+[data-semia-theme='dark'] .language-card-field-input::placeholder {
+  color: #71717a;
+}
+
+[data-semia-theme='dark']
+  .language-card-field-input.semia-card-field-editor--dashed {
+  background: rgb(39 39 42 / 0.45);
+}
+
+[data-semia-theme='dark'] .language-card-optional-panel {
+  background: rgb(39 39 42 / 0.35);
+}
+
+[data-semia-theme='dark']
+  .language-card-field-input.semia-card-field-editor
+  .tiptap
+  p.is-editor-empty:first-child::before {
+  color: #71717a;
+}
+
 .semia-selection-row-exit {
   transition:
     grid-template-rows 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -176,6 +279,19 @@ body {
 }
 
 .semia-context-body {
+  background: var(--color-surface);
+}
+
+/* AI chat — slim sticky context bar (pill styles; layout via Tailwind on component) */
+.semia-chat-context-bar-pill {
+  background: var(--color-canvas);
+}
+
+.semia-chat-context-bar-pill:hover {
+  background: color-mix(in srgb, var(--color-canvas) 85%, var(--color-border));
+}
+
+.semia-chat-context-picker {
   background: var(--color-surface);
 }
 
@@ -384,12 +500,15 @@ body {
 
 /* Chat drag blocks — unified inset for paragraphs and list markers */
 .prose-chat .semia-chat-drag-block {
-  cursor: grab;
   position: relative;
   border-radius: 0.375rem;
   border: 2px solid transparent;
   background: transparent;
   transition: border-color 150ms ease;
+}
+
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block {
+  cursor: grab;
 }
 
 .prose-chat p.semia-chat-drag-block,
@@ -425,27 +544,28 @@ body {
   );
 }
 
-.prose-chat .semia-chat-drag-block:hover::before {
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block:hover::before {
   border-color: rgb(251 191 36 / 0.4);
   background-color: rgb(251 191 36 / 0.05);
   box-shadow: none;
 }
 
-.prose-chat .semia-chat-drag-block.semia-chat-drag-block-selected::before {
+.prose-chat[data-drag-mode='on']
+  .semia-chat-drag-block.semia-chat-drag-block-selected::before {
   border-color: rgb(251 191 36 / 0.8);
   background-color: rgb(251 191 36 / 0.15);
   box-shadow: 0 1px 2px 0 rgb(245 158 11 / 0.1);
 }
 
-.prose-chat p.semia-chat-drag-block:hover,
-.prose-chat p.semia-chat-drag-block.semia-chat-drag-block-selected,
-.prose-chat li.semia-chat-drag-block:hover,
-.prose-chat li.semia-chat-drag-block.semia-chat-drag-block-selected {
+.prose-chat[data-drag-mode='on'] p.semia-chat-drag-block:hover,
+.prose-chat[data-drag-mode='on'] p.semia-chat-drag-block.semia-chat-drag-block-selected,
+.prose-chat[data-drag-mode='on'] li.semia-chat-drag-block:hover,
+.prose-chat[data-drag-mode='on'] li.semia-chat-drag-block.semia-chat-drag-block-selected {
   border-color: transparent;
   background: transparent;
 }
 
-.prose-chat .semia-chat-drag-block:active {
+.prose-chat[data-drag-mode='on'] .semia-chat-drag-block:active {
   cursor: grabbing;
 }
 
@@ -629,4 +749,17 @@ body {
 
 [data-semia-theme='dark'] .bg-accent-soft.text-accent {
   color: var(--color-text);
+}
+
+[data-semia-theme='dark'] .semia-chat-context-bar-pill {
+  background: color-mix(in srgb, var(--color-canvas) 90%, transparent);
+  border-color: var(--color-border);
+}
+
+[data-semia-theme='dark'] .semia-chat-context-bar-pill:hover {
+  background: var(--color-canvas);
+}
+
+[data-semia-theme='dark'] .semia-chat-context-picker {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.45);
 }

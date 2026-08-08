@@ -11,10 +11,9 @@ export function didSnippetChatContextChange(
 }
 
 export function formatSnippetChatContextSwitchNotice(
-  fragment: Pick<LanguageFragment, 'selectedText' | 'sourceTitle'>,
+  fragment: Pick<LanguageFragment, 'selectedText'>,
 ): string {
-  const title = fragment.sourceTitle.trim() || 'Untitled source';
-  return `Context switched to "${fragment.selectedText.trim()}" (${title}). I will answer using only this capture from now on.`;
+  return `Context switched to "${fragment.selectedText.trim()}". I will answer using only this capture from now on.`;
 }
 
 export function buildActiveCapturePromptBlock(

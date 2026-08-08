@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getFocusKeywordMode,
   isContextWindowEnabled,
   isDarkModeEnabled,
   isLanguageCardsProEnabled,
+  isSnippetChatDragModeEnabled,
 } from './semiaSettings';
 
 describe('isContextWindowEnabled', () => {
@@ -45,5 +47,34 @@ describe('isDarkModeEnabled', () => {
   it('is enabled only when explicitly true', () => {
     expect(isDarkModeEnabled({ darkModeEnabled: true })).toBe(true);
     expect(isDarkModeEnabled({ darkModeEnabled: false })).toBe(false);
+  });
+});
+
+describe('isSnippetChatDragModeEnabled', () => {
+  it('defaults to disabled when setting is missing', () => {
+    expect(isSnippetChatDragModeEnabled()).toBe(false);
+    expect(isSnippetChatDragModeEnabled({})).toBe(false);
+  });
+
+  it('is enabled only when explicitly true', () => {
+    expect(
+      isSnippetChatDragModeEnabled({ snippetChatDragModeEnabled: true }),
+    ).toBe(true);
+    expect(
+      isSnippetChatDragModeEnabled({ snippetChatDragModeEnabled: false }),
+    ).toBe(false);
+  });
+});
+
+describe('getFocusKeywordMode', () => {
+  it('defaults to daily', () => {
+    expect(getFocusKeywordMode()).toBe('daily');
+    expect(getFocusKeywordMode({})).toBe('daily');
+  });
+
+  it('respects advanced', () => {
+    expect(getFocusKeywordMode({ focusKeywordMode: 'advanced' })).toBe(
+      'advanced',
+    );
   });
 });

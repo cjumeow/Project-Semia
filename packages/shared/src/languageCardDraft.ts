@@ -1,4 +1,10 @@
-export type LanguageCardOptionalFieldKey = 'example' | 'usageNote';
+import {
+  isLanguageCardOptionalFieldKey,
+  LANGUAGE_CARD_OPTIONAL_FIELD_KEYS,
+  type LanguageCardOptionalFieldKey,
+} from './languageCardOptionalFields';
+
+export type { LanguageCardOptionalFieldKey };
 
 export type LanguageCardDraftContent = {
   focusText: string;
@@ -53,15 +59,12 @@ export function normalizeLanguageCardDraft(
   }
 
   const enabledOptionalFields = Array.isArray(record.enabledOptionalFields)
-    ? record.enabledOptionalFields.filter(
-        (field): field is LanguageCardOptionalFieldKey =>
-          field === 'example' || field === 'usageNote',
-      )
+    ? record.enabledOptionalFields.filter(isLanguageCardOptionalFieldKey)
     : [];
 
   const optionalSlots: LanguageCardDraftContent['optionalSlots'] = {};
   if (record.optionalSlots && typeof record.optionalSlots === 'object') {
-    for (const key of ['example', 'usageNote'] as const) {
+    for (const key of LANGUAGE_CARD_OPTIONAL_FIELD_KEYS) {
       const slotValue = (record.optionalSlots as Record<string, unknown>)[key];
       if (typeof slotValue === 'string') {
         optionalSlots[key] = slotValue;

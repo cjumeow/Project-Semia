@@ -3,6 +3,7 @@ import type {
   LanguageCardDraftContent,
   LanguageCardOptionalFieldKey,
 } from './languageCardDraft';
+import { isLanguageCardOptionalFieldKey } from './languageCardOptionalFields';
 
 export function toggleOptionalField(
   content: LanguageCardDraftContent,
@@ -40,15 +41,22 @@ export function examplesFromDraftExampleSlot(
   return [{ kind: 'speaking', text, translation: '' }];
 }
 
-export function scenarioFromDraftUsageNote(
+function optionalSlotText(
   content: LanguageCardDraftContent,
+  field: LanguageCardOptionalFieldKey,
 ): string | undefined {
-  if (!content.enabledOptionalFields.includes('usageNote')) {
+  if (!content.enabledOptionalFields.includes(field)) {
     return undefined;
   }
 
-  const scenario = content.optionalSlots.usageNote?.trim() ?? '';
-  return scenario || undefined;
+  const value = content.optionalSlots[field]?.trim() ?? '';
+  return value || undefined;
+}
+
+export function scenarioFromDraftUsageNote(
+  content: LanguageCardDraftContent,
+): string | undefined {
+  return optionalSlotText(content, 'usageNote');
 }
 
 export function buildLanguageCardFieldsFromDraftContent(
@@ -56,7 +64,15 @@ export function buildLanguageCardFieldsFromDraftContent(
   intents: CardIntent[] = ['speaking'],
 ): Pick<
   LanguageCard,
-  'focusText' | 'focus' | 'meaning' | 'intents' | 'scenario' | 'examples'
+  | 'focusText'
+  | 'focus'
+  | 'meaning'
+  | 'intents'
+  | 'scenario'
+  | 'dialogue'
+  | 'pitfalls'
+  | 'personalNote'
+  | 'examples'
 > {
   const focusText = content.focusText.trim();
 
@@ -66,27 +82,51 @@ export function buildLanguageCardFieldsFromDraftContent(
     meaning: content.meaning.trim(),
     intents,
     scenario: scenarioFromDraftUsageNote(content),
+    dialogue: optionalSlotText(content, 'dialogue'),
+    pitfalls: optionalSlotText(content, 'pitfalls'),
+    personalNote: optionalSlotText(content, 'personalNote'),
     examples: examplesFromDraftExampleSlot(content),
   };
+}
+
+function loadOptionalSlot(
+  card: LanguageCard,
+  field: LanguageCardOptionalFieldKey,
+): string | undefined {
+  switch (field) {
+    case 'example':
+      return card.examples.find((example) => example.kind === 'speaking')?.text;
+    case 'usageNote':
+      return card.scenario;
+    case 'dialogue':
+      return card.dialogue;
+    case 'pitfalls':
+      return card.pitfalls;
+    case 'personalNote':
+      return card.personalNote;
+    default:
+      return undefined;
+  }
 }
 
 export function editorContentFromLanguageCard(
   card: LanguageCard,
 ): LanguageCardDraftContent {
-  const speakingExample = card.examples.find(
-    (example) => example.kind === 'speaking',
-  );
   const enabledOptionalFields: LanguageCardOptionalFieldKey[] = [];
   const optionalSlots: LanguageCardDraftContent['optionalSlots'] = {};
 
-  if (speakingExample?.text.trim()) {
-    enabledOptionalFields.push('example');
-    optionalSlots.example = speakingExample.text;
-  }
-
-  if (card.scenario?.trim()) {
-    enabledOptionalFields.push('usageNote');
-    optionalSlots.usageNote = card.scenario;
+  for (const field of [
+    'example',
+    'usageNote',
+    'dialogue',
+    'pitfalls',
+    'personalNote',
+  ] as const) {
+    const value = loadOptionalSlot(card, field)?.trim() ?? '';
+    if (value) {
+      enabledOptionalFields.push(field);
+      optionalSlots[field] = value;
+    }
   }
 
   return {
@@ -107,4 +147,10 @@ export function applyEditorContentToLanguageCard(
     ...card,
     ...fields,
   };
+}
+
+export function isOptionalEditorSlot(
+  slot: string,
+): slot is LanguageCardOptionalFieldKey {
+  return isLanguageCardOptionalFieldKey(slot);
 }
