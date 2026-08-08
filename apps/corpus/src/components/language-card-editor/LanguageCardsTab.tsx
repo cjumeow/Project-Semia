@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { LanguageCard, FocusKeywordMode } from '@semia/shared';
 import {
   appendMarkdownToSlot,
   canCreateLanguageCard,
-  isWholeCaptureFocus,
   type LanguageCardDraftContent,
   type LanguageCardEditorSlotKey,
   type LanguageCardOptionalFieldKey,
-  type LanguageCardSuggestableField,
 } from '@semia/shared';
 import type { CorpusSnippet } from '../../types/corpus';
 import { useLanguageCardDraft } from '../../hooks/useLanguageCardDraft';
 import { useLanguageCardEstablishedEdit } from '../../hooks/useLanguageCardEstablishedEdit';
-import { useLanguageCardFieldSuggestions } from '../../hooks/useLanguageCardFieldSuggestions';
 import { useFocusKeywordSuggestions } from '../../hooks/useFocusKeywordSuggestions';
 import {
   createInitialEditorState,
@@ -51,7 +48,6 @@ export function LanguageCardsTab({
     useState<EditorWorkspaceState>(createInitialEditorState);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const wholeCapturePrefillFocusRef = useRef<string | null>(null);
 
   const isDraftMode = editorState.mode === 'draft';
   const editingCard = languageCards.find(
@@ -77,53 +73,6 @@ export function LanguageCardsTab({
     setEditorState(createInitialEditorState());
   }, [snippet?.id]);
 
-  useEffect(() => {
-    if (!snippet || !draftLoaded || !isDraftMode) {
-      return;
-    }
-
-    if (
-      draft.focusText.trim().length === 0 &&
-      snippet.selectedText.trim().length > 0
-    ) {
-      updateDraft({ focusText: snippet.selectedText });
-    }
-  }, [draft, draftLoaded, isDraftMode, snippet, updateDraft]);
-
-  useEffect(() => {
-    if (!snippet || !draftLoaded || !isDraftMode) {
-      return;
-    }
-
-    const focus = draft.focusText.trim();
-    const isWhole = isWholeCaptureFocus(focus, {
-      selectedText: snippet.selectedText,
-      originalSpeech: snippet.note.originalSpeech,
-    });
-
-    if (!isWhole) {
-      wholeCapturePrefillFocusRef.current = null;
-      return;
-    }
-
-    if (wholeCapturePrefillFocusRef.current === focus) {
-      return;
-    }
-
-    wholeCapturePrefillFocusRef.current = focus;
-    const translation = snippet.note.naturalTranslation.trim();
-    if (translation && draft.meaning.trim().length === 0) {
-      updateDraft({ meaning: translation });
-    }
-  }, [
-    draft.focusText,
-    draft.meaning,
-    draftLoaded,
-    isDraftMode,
-    snippet,
-    updateDraft,
-  ]);
-
   const editorContent: LanguageCardDraftContent = isDraftMode
     ? draft
     : editContent;
@@ -146,28 +95,6 @@ export function LanguageCardsTab({
       handleContentChange({
         enabledOptionalFields: next.enabledOptionalFields,
         optionalSlots: next.optionalSlots,
-      });
-    },
-    [editorContent, handleContentChange],
-  );
-
-  const handleAcceptSuggestion = useCallback(
-    (field: LanguageCardSuggestableField, value: string) => {
-      if (field === 'meaning') {
-        handleContentChange({ meaning: value });
-        return;
-      }
-
-      handleContentChange({
-        enabledOptionalFields: editorContent.enabledOptionalFields.includes(
-          'example',
-        )
-          ? editorContent.enabledOptionalFields
-          : [...editorContent.enabledOptionalFields, 'example'],
-        optionalSlots: {
-          ...editorContent.optionalSlots,
-          example: value,
-        },
       });
     },
     [editorContent, handleContentChange],
@@ -210,14 +137,6 @@ export function LanguageCardsTab({
     [editorContent, handleContentChange],
   );
 
-  const suggestions = useLanguageCardFieldSuggestions({
-    snippet,
-    content: isDraftMode ? draft : editorContent,
-    enabled: isDraftMode && aiSuggestionsEnabled,
-    isLive,
-    onAccept: handleAcceptSuggestion,
-  });
-
   const focusKeywords = useFocusKeywordSuggestions({
     snippet,
     enabled: isDraftMode && aiSuggestionsEnabled,
@@ -252,7 +171,7 @@ export function LanguageCardsTab({
       await flushContent();
     }
     setEditorState(startDraftEditor());
-    resetDraftToCapture(snippet.selectedText);
+    resetDraftToCapture();
   }, [flushContent, flushDraft, isDraftMode, resetDraftToCapture, snippet]);
 
   const handleCreate = useCallback(async () => {
@@ -266,7 +185,7 @@ export function LanguageCardsTab({
       await flushDraft();
       await corpusRepository.createLanguageCardFromDraft(snippet, draft);
       await onCardsChanged();
-      resetDraftToCapture(snippet.selectedText);
+      resetDraftToCapture();
       setEditorState(startDraftEditor());
     } catch (error) {
       setCreateError(
@@ -325,8 +244,6 @@ export function LanguageCardsTab({
         focusKeywordCandidates={focusKeywords.candidates}
         focusKeywordsLoading={focusKeywords.loading}
         focusKeywordsEnabled={isDraftMode && aiSuggestionsEnabled}
-        showSuggestions={false}
-        suggestions={suggestions}
         onChange={handleContentChange}
         onToggleOptionalField={handleToggleOptionalField}
         onAppendSlot={handleAppendSlot}

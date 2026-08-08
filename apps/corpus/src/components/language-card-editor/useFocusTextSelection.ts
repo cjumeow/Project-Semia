@@ -24,13 +24,14 @@ function selectionAnchorFromRange(): FocusSelectionAnchor | null {
 
   return {
     text,
-    top: rect.top + window.scrollY,
-    left: rect.left + rect.width / 2 + window.scrollX,
+    top: rect.top,
+    left: rect.left + rect.width / 2,
   };
 }
 
 export function useFocusTextSelection(
   containerRef: RefObject<HTMLElement | null>,
+  popoverRef: RefObject<HTMLElement | null>,
 ) {
   const [anchor, setAnchor] = useState<FocusSelectionAnchor | null>(null);
 
@@ -58,12 +59,15 @@ export function useFocusTextSelection(
       if (containerRef.current?.contains(target)) {
         return;
       }
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
       setAnchor(null);
     };
 
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [containerRef]);
+  }, [containerRef, popoverRef]);
 
   return {
     anchor,

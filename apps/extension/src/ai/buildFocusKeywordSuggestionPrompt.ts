@@ -1,44 +1,67 @@
 import type { FocusKeywordMode } from '@semia/shared';
 import type { LanguageFragment } from '@semia/shared';
-
-const MODE_RULES: Record<FocusKeywordMode, string> = {
-  daily: `If mode is "Daily":
-- Exclude extremely basic beginner words in {target_language}.
-- Prefer everyday communication, useful words, idiomatic phrases, and natural spoken expressions.`,
-  advanced: `If mode is "Advanced":
-- Prefer low-frequency advanced words, formal/register-specific usage, jargon, and advanced collocations.
-- If no clearly advanced term appears, still return 1 candidate that is most worth learning in this passage.`,
-};
+import { targetLanguageLabel } from './snippetPromptContext';
 
 export function buildFocusKeywordSuggestionPrompt({
   fragment,
   originalSpeech,
   userLevelMode,
+  nativeLanguage,
 }: {
   fragment: LanguageFragment;
   originalSpeech: string;
   userLevelMode: FocusKeywordMode;
+  nativeLanguage: string;
 }): { system: string; user: string } {
-  const targetLanguage = fragment.languageCode;
-  const modeLabel = userLevelMode === 'advanced' ? 'Advanced' : 'Daily';
+  const languageCode = fragment.languageCode;
+  const targetLang = targetLanguageLabel(nativeLanguage);
 
-  const system = `You help a language learner pick focus words/phrases for study cards.
+  const system = `You are an expert language acquisition assistant. Your task is to analyze the provided [Original Speech] and suggest 0 to 3 high-value words, phrases, or collocations for language learners to study.
 
-Target language: ${targetLanguage}
-User level mode: ${modeLabel}
+The source language of [Original Speech] is: ${languageCode}
+The user's native (target) language is: ${targetLang}
 
-${MODE_RULES[userLevelMode]}
+[CRITICAL: Global Semantic Filter (All Languages)]
+1. The 8-Year-Old Native Speaker Rule:
+   Do NOT suggest any basic vocabulary, common calendar/time terms, everyday objects, or elementary concepts that are easily understood by an 8-year-old native speaker of ${languageCode}.
+   - E.g., In English (en): do NOT suggest "weekdays", "weekends", "other", "have", "really", "that".
+   - E.g., In Japanese (ja): do NOT suggest "週末", "これ", "の", "です", "時間", "友達".
+   - E.g., In Spanish (es): do NOT suggest "fin de semana", "y", "con", "tiempo", "amigo".
 
-Rules:
-- Use ONLY the provided Original speech text. Ignore any other context.
-- Return 1 to 3 candidates. Each "text" MUST appear verbatim in Original speech (same inflected form; do not lemmatize).
-- Prefer multi-word phrases and collocations over isolated common words when possible.
-- Return JSON only, no markdown fences, no commentary.
+2. Grammatical Function Words Exclusion:
+   Strictly avoid suggesting grammatical function words of ${languageCode}, including:
+   - Prepositions, pronouns, articles, basic conjunctions, auxiliary verbs, or grammatical particles (e.g., Japanese particles like "は", "が", "の", "に").
 
-Format:
-{"candidates":[{"text":"...","kind":"word|phrase|collocation"}]}`;
+3. Reject Transparent/Grammar-only Chunks:
+   Do NOT group adjacent common words together just because they appear sequentially, unless they form a true, established idiom, slang, domain-specific jargon, or a highly fixed, non-transparent collocation.
+   - If the meaning of the combined chunk is merely the literal sum of its parts, REJECT it (e.g., "swing most between", "have to get", "a lot of").
+   - ONLY accept structured collocations, idioms, or terminology (e.g., "Claude Code tasks" as technical jargon, "break a leg" as an idiom).
 
-  const user = `Original speech:
+4. No Overlapping/Redundant Subsets:
+   If you suggest a longer phrase/collocation, do NOT suggest any sub-parts of it in the same list.
+   - E.g., if you suggest "founder market fit", do NOT suggest "market fit" in the same response.
+
+[User Level Modes]
+Depending on the user's level mode (${userLevelMode}), apply these preferences:
+
+- Mode: daily
+  * Focus on highly reusable native idioms, slang, and common collocations.
+  * Never pad with common words just to reach 3 candidates. If nothing valuable exists, return {"candidates": []}.
+
+- Mode: advanced
+  * Focus on advanced vocabulary (C1/C2 level in ${languageCode}), formal register, obscure idioms, or domain-specific jargon.
+  * If no clearly advanced term appears after filtering, you MUST still find exactly 1 best candidate. This candidate MUST contain at least one word that is NOT elementary (i.e. not understood by an 8-year-old native speaker).
+
+[Strict Output Rules]
+1. Use ONLY the provided [Original Speech] text.
+2. Return 0 to 3 candidates — quality and semantic density over quantity.
+3. Each suggested "text" MUST appear verbatim in [Original Speech] (same inflected form; do not lemmatize).
+4. Return raw JSON only. Do NOT wrap the JSON in markdown code blocks (no \`\`\`json fences). Do NOT output any conversational fluff or commentary.
+
+Output Format:
+{"candidates":[{"text":"[Verbatim Text]","kind":"word|phrase|collocation"}]}`;
+
+  const user = `[Original Speech]
 ${originalSpeech.trim()}`;
 
   return { system, user };

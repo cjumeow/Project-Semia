@@ -11,6 +11,9 @@ export type FocusKeywordSuggestions = {
 
 export type FocusKeywordMode = 'daily' | 'advanced';
 
+/** Bump when prompt rules change (invalidates client cache). */
+export const FOCUS_KEYWORD_SUGGESTION_VERSION = 3;
+
 const VALID_KINDS = new Set<FocusKeywordKind>(['word', 'phrase', 'collocation']);
 
 function extractJsonObject(content: string): string | null {

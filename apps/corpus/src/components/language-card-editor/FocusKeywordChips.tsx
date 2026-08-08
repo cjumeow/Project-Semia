@@ -19,7 +19,11 @@ export function FocusKeywordChips({
   onPick,
 }: FocusKeywordChipsProps) {
   if (!enabled) {
-    return null;
+    return (
+      <p className="mt-2 text-[11px] text-text-muted">
+        Enable AI suggestions in Settings for Quick Focus chips.
+      </p>
+    );
   }
 
   if (loading) {

@@ -1,7 +1,6 @@
 import {
   CORPUS_NOTES_STORAGE_KEY,
   FRAGMENTS_STORAGE_KEY,
-  LANGUAGE_CARD_DRAFTS_STORAGE_KEY,
   LANGUAGE_CARDS_STORAGE_KEY,
   SNIPPET_CHAT_PORT_NAME,
   SNIPPET_NOTES_STORAGE_KEY,
@@ -589,17 +588,19 @@ class ChromeCorpusRepository implements CorpusRepository {
       areaName: string,
     ): void => {
       if (areaName !== 'local') return;
-      if (
-        changes[FRAGMENTS_STORAGE_KEY] ||
-        changes[SNIPPET_NOTES_STORAGE_KEY] ||
-        changes[LANGUAGE_CARDS_STORAGE_KEY] ||
-        changes[LANGUAGE_CARD_DRAFTS_STORAGE_KEY] ||
-        changes[CORPUS_NOTES_STORAGE_KEY] ||
-        changes[TRANSCRIPTS_STORAGE_KEY] ||
-        changes[WEB_RESTORE_STATUS_STORAGE_KEY]
-      ) {
-        listener();
+      const changedKeys = Object.keys(changes).filter(
+        (key) =>
+          key === FRAGMENTS_STORAGE_KEY ||
+          key === SNIPPET_NOTES_STORAGE_KEY ||
+          key === LANGUAGE_CARDS_STORAGE_KEY ||
+          key === CORPUS_NOTES_STORAGE_KEY ||
+          key === TRANSCRIPTS_STORAGE_KEY ||
+          key === WEB_RESTORE_STATUS_STORAGE_KEY,
+      );
+      if (changedKeys.length === 0) {
+        return;
       }
+      listener();
     };
 
     chrome.storage.onChanged.addListener(onStorageChanged);

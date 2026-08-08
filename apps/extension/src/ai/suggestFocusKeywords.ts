@@ -29,6 +29,7 @@ export async function suggestFocusKeywords(
   }
 
   const settings = await getSemiaSettings();
+  const nativeLanguage = settings.nativeLanguage?.trim() || 'zh-TW';
   const userLevelMode =
     input.userLevelMode ?? getFocusKeywordMode(settings);
 
@@ -36,6 +37,7 @@ export async function suggestFocusKeywords(
     fragment: input.fragment,
     originalSpeech,
     userLevelMode,
+    nativeLanguage,
   });
 
   const content = await completeChat(system, user);

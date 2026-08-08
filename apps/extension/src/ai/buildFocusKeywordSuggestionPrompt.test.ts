@@ -20,27 +20,37 @@ const FRAGMENT: LanguageFragment = {
 };
 
 describe('buildFocusKeywordSuggestionPrompt', () => {
-  it('includes daily mode and original speech only', () => {
+  it('includes global semantic filter, languages, and original speech user block', () => {
     const { system, user } = buildFocusKeywordSuggestionPrompt({
       fragment: FRAGMENT,
       originalSpeech: 'Be careful with formal emails.',
       userLevelMode: 'daily',
+      nativeLanguage: 'zh-TW',
     });
 
-    expect(system).toContain('User level mode: Daily');
-    expect(system).toContain('Original speech');
+    expect(system).toContain('expert language acquisition assistant');
+    expect(system).toContain('The source language of [Original Speech] is: en');
+    expect(system).toContain(
+      "The user's native (target) language is: Traditional Chinese",
+    );
+    expect(system).toContain('8-Year-Old Native Speaker Rule');
+    expect(system).toContain('No Overlapping/Redundant Subsets');
+    expect(system).toContain('swing most between');
     expect(system).not.toContain('context window');
-    expect(user).toBe('Original speech:\nBe careful with formal emails.');
+    expect(user).toBe(
+      '[Original Speech]\nBe careful with formal emails.',
+    );
   });
 
-  it('includes advanced fallback rule', () => {
+  it('includes advanced mode fallback in system prompt', () => {
     const { system } = buildFocusKeywordSuggestionPrompt({
       fragment: FRAGMENT,
       originalSpeech: 'Be careful with formal emails.',
       userLevelMode: 'advanced',
+      nativeLanguage: 'zh-TW',
     });
 
-    expect(system).toContain('User level mode: Advanced');
-    expect(system).toContain('still return 1 candidate');
+    expect(system).toContain("user's level mode (advanced)");
+    expect(system).toContain('you MUST still find exactly 1 best candidate');
   });
 });

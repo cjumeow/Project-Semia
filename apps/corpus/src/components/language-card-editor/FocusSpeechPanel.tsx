@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type RefObject } from 'react';
 import type { FocusKeywordCandidate } from '@semia/shared';
 import { speechPreview } from '@semia/shared';
 import { ChevronToggleIcon } from '../shared/ChevronToggleIcon';
@@ -21,16 +21,19 @@ type FocusSpeechPanelProps = {
 function FocusSetPopover({
   anchor,
   actionClass,
+  popoverRef,
   onSetFocus,
   onDismiss,
 }: {
   anchor: FocusSelectionAnchor;
   actionClass: string;
+  popoverRef: RefObject<HTMLDivElement | null>;
   onSetFocus: () => void;
   onDismiss: () => void;
 }) {
   return (
     <div
+      ref={popoverRef}
       className="pointer-events-auto fixed z-50 -translate-x-1/2 -translate-y-full"
       style={{ top: anchor.top - 8, left: anchor.left }}
     >
@@ -64,8 +67,9 @@ function HighlightedSpeech({
   onSetFocus: (text: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { anchor, clearAnchor, handleDoubleClick, handleMouseUp } =
-    useFocusTextSelection(containerRef);
+    useFocusTextSelection(containerRef, popoverRef);
 
   const chipTexts = chips.map((chip) => chip.text);
   const pattern =
@@ -111,6 +115,7 @@ function HighlightedSpeech({
         <FocusSetPopover
           anchor={anchor}
           actionClass={cursorClasses.action}
+          popoverRef={popoverRef}
           onSetFocus={() => onSetFocus(anchor.text)}
           onDismiss={clearAnchor}
         />
